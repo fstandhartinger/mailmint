@@ -95,7 +95,11 @@ Every path (webhook body, `GET /v1/messages/:id`, n8n node output) returns exact
   "parse": {
     "request_id": "req_…",
     "schema_version": 3,                          // which version of the mailbox schema was used
-    "model": "moonshotai/Kimi-K3-TEE",            // null when no LLM pass ran
+    "model": "moonshotai/Kimi-K3-TEE",            // RESOLVED dated id, never an alias.
+                                                  // Providers move models under aliases and a
+                                                  // silent swap looks exactly like a prompt
+                                                  // regression. null when no LLM pass ran.
+    "cost": { "input_tokens": 4120, "output_tokens": 380, "llm_calls": 1, "usd": 0.00021 },
     "llm_used": true,
     "timings_ms": { "total": 1421, "mime": 8, "deterministic": 21, "llm": 1380, "persist": 12 },
     "warnings": []
@@ -225,6 +229,96 @@ confidence 0 and flag `type_error:<field>`.
 
 `POST /v1/parse` is the stateless endpoint: it lets anyone try the parser without an
 address, and it is what the n8n *regular* node calls when given mail from another node.
+
+## 3a. The internal wire format — FROZEN, byte for byte
+
+This section exists because it did not, and the cost was the whole product: `smtpd`
+sent `x-mailmint-internal-secret` / `{address}` / `{raw_mime_base64}` while the API
+expected `x-mailmint-internal` / `{to}` / `{raw_mime}`, and every message a stranger
+sent would have been rejected with `451`. Both sides had passing tests. Both tested
+against their own fake of the other. **Nobody tested the seam.**
+
+Header on every `/internal/*` request, exactly this name, compared in constant time:
+
+    x-mailmint-internal: <INTERNAL_SECRET>
+
+### `POST /internal/resolve`
+
+    -> { "to": "k7m2xq4h9bwz+tag@parse.example.com" }
+    200 { "mailbox_id": "mbx_…", "token": "k7m2xq4h9bwz", "account_id": "acc_…", "paused": false }
+    404 { "error": { "code": "unknown_mailbox" } }        <- MUST be 404, never 200
+
+**A 200 means the mailbox exists. There is no `{"ok": false}` form.** Returning 200
+with a falsy body for an unknown recipient defeats RCPT-time rejection entirely: every
+address on the domain resolves, dictionary probes become free, and rejection moves to
+after DATA, which is backscatter. Callers treat any 2xx as "exists" and they are right to.
+
+### `POST /internal/deliver`
+
+    -> { "raw_mime":  "<base64 of the original bytes>",     // NOT raw_mime_base64
+         "mailbox_token": "k7m2xq4h9bwz",
+         "message_id": "<CAF…@mail.gmail.com>",             // idempotency key, may be null
+         "envelope": { "from", "to", "helo", "remote_ip", "tls", "source" },
+         "auth": { … }, "auth_details": { … } }             // optional, from the intake
+    200 { "message_id": "msg_…", "status": "received", "duplicate": false }
+
+### Status codes are a contract, not a suggestion
+
+The caller decides whether to spool-and-retry or to reject in session based ONLY on
+these. Getting this wrong loses mail silently, which is worse than losing it loudly.
+
+| status | meaning | caller must |
+|---|---|---|
+| 200 | accepted | reply 250 |
+| 400, 401, 403, 422 | **permanent** — the request is malformed or unauthorised | NOT retry; alert; fail loudly |
+| 404, 410 | no such mailbox | reject in session `550 5.1.1` |
+| 413 | too large | reject in session `552 5.3.4` |
+| 429, 408 | back off | retry |
+| 5xx, timeout, connection error | temporary | spool and retry |
+
+A malformed request is a bug in us and must never be retried for four days and then
+dropped. **Nothing may be discarded silently.** When the spool gives up, that is an
+operational alert (`mail.spool_gave_up` at `error`), and the message is kept.
+
+### The test that must exist
+
+One test starts the REAL `packages/smtpd` against the REAL `packages/api` against a
+REAL database, sends a message over a real TCP socket, and asserts the row lands.
+No fakes on either side. If that test does not run in CI, this section is decoration.
+
+## 3b. Determinism is a feature we are giving up unless we defend it
+
+The honest thing the incumbents have that we do not: **a deterministic, inspectable rule that
+returns the same answer every time, and somewhere to stand when it is wrong.** This is not
+speculation — it is Parseur's own published comparison of their AI engine against their template
+engine, listing as cons of the AI: *"Results may vary slightly; limited debugging capability"*,
+*"Accuracy decreases as more fields are added"*, *"No option to mark fields as mandatory"*; and
+as pros of the templates: *"Deterministic results with debugging support"*, *"No Page Limit"*,
+*"Unlimited Fields"*, *"Language-independent performance"*.
+
+When a Mailparser rule returns the wrong value the user opens the filter chain and watches the
+preview change filter by filter. When our model returns the wrong value the user can edit a
+`hint` string and hope. That is materially worse, and an experienced buyer asks about it in the
+first ten minutes.
+
+So `source` is not decoration — it is our debugging surface, and these rules make it real:
+
+1. **A matched rule wins and its value is returned.** The output stays byte-identical run to run
+   for every field a rule resolved. That is the determinism the incumbents sell.
+2. **The model still runs, and still sees those fields** — not to overrule the rule, but to
+   cross-examine it. Agreement is what earns a confidence above ~0.9; disagreement keeps the
+   rule's value and lowers the score with `rule_llm_disagreement:<field>`. Determinism of the
+   *value*, verification of the *confidence*. Skipping the model where the rule is confident
+   removes our strongest verification signal exactly where it matters most.
+3. **`evidence` is the "where did this come from" pointer** the incumbents give by letting you
+   watch a preview. It must be a verbatim span, for every source, and it must contain the value.
+4. **Cost is published** per §1 `parse.cost`. Parseur puts `credits_used` / `ai_credits_used` on
+   the document object; nobody else does. Cost is the loudest complaint in the forum data and
+   this is nearly free to provide.
+
+Two limits to state plainly rather than paper over: a long document with many fields costs us
+more than it costs a rule chain, and our non-English accuracy rests on the model where no rules
+exist. Both are real, and both are why layer (a) is worth the effort.
 
 ## 4. Flags
 
