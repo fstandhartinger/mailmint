@@ -1,0 +1,26 @@
+Return-Path: <order@midrift.example.jp>
+Received: from mx.midrift.example.jp (mx.midrift.example.jp [203.104.153.10])
+ by mx.parse.example.com (Postfix) with ESMTPS id QQ6LVT21SJ
+ (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+ for <k7m2xq4h9bwz@parse.example.com>; Tue, 18 Aug 2026 12:04:21 +0900
+Authentication-Results: mx.parse.example.com;
+ dkim=pass header.d=midrift.example.jp;
+ spf=pass smtp.mailfrom=order@midrift.example.jp;
+ dmarc=pass header.from=midrift.example.jp
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=midrift.example.jp; s=mail;
+ h=from:to:subject:date:mime-version; bh=MC4xNzE5MzAwMzU0OTQzNTUzNw===;
+ b=MC4wODE2NzQ0MDAyMDE5NDA1MC44NTQ0ODMzNTIxOTYzMzkx
+MIME-Version: 1.0
+From: =?UTF-8?B?5qCq5byP5Lya56S+44Of44OJ44Oq44OV44OI?= <order@midrift.example.jp>
+To: k7m2xq4h9bwz@parse.example.com
+Subject: =?UTF-8?B?44GU5rOo5paH44GC44KK44GM44Go44GG44GU44GW44GE44G+44GZIEpQLTIwMjYtMzM4Mjcx?=
+Date: Tue, 18 Aug 2026 12:04:19 +0900
+Message-ID: <jp-2026-338271@midrift.example.jp>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: base64
+
+44GU5rOo5paH44GC44KK44GM44Go44GG44GU44GW44GE44G+44GZ44CCCgrms6jmlofnlarlj7c6
+IEpQLTIwMjYtMzM4MjcxCuazqOaWh+aXpTogMjAyNuW5tDjmnIgxOOaXpQrlkIjoqIjph5HpoY06
+IMKlMTIsODAwCuaUr+aJleaWueazlTog44Kv44Os44K444OD44OI44Kr44O844OJCgrllYblk4E6
+IOODr+OCpOODpOODrOOCueOCpOODpOODm+ODsyB4MQoK5qCq5byP5Lya56S+44Of44OJ44Oq44OV
+44OI

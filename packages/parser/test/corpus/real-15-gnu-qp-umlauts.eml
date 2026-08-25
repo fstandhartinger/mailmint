@@ -1,0 +1,75 @@
+Received: from list by lists.gnu.org with archive (Exim 4.90_1)
+	id 1tqshL-00037x-4G
+	for mharc-emacs-devel@gnu.org; Sat, 08 Mar 2025 06:50:31 -0500
+Received: from eggs.gnu.org ([2001:470:142:3::10])
+ by lists.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_256_GCM_SHA384:256)
+ (Exim 4.90_1) (envelope-from <gabrielsantosdesouza@disroot.org>)
+ id 1tqshJ-00037f-A8
+ for emacs-devel@gnu.org; Sat, 08 Mar 2025 06:50:29 -0500
+Received: from layka.disroot.org ([178.21.23.139])
+ by eggs.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_128_GCM_SHA256:128)
+ (Exim 4.90_1) (envelope-from <gabrielsantosdesouza@disroot.org>)
+ id 1tqshH-0002Ig-9b
+ for emacs-devel@gnu.org; Sat, 08 Mar 2025 06:50:29 -0500
+Received: from mail01.disroot.lan (localhost [127.0.0.1])
+ by disroot.org (Postfix) with ESMTP id 9450325D9B;
+ Sat,  8 Mar 2025 12:50:22 +0100 (CET)
+X-Virus-Scanned: SPAM Filter at disroot.org
+Received: from layka.disroot.org ([127.0.0.1])
+ by localhost (disroot.org [127.0.0.1]) (amavis, port 10024) with ESMTP
+ id m5nTbScmwyFc; Sat,  8 Mar 2025 12:50:18 +0100 (CET)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=disroot.org; s=mail;
+ t=1741434618; bh=pL79lmAT6Ji5HZ7woGcAliyYTZXLL9T74rJ2trQ3l48=;
+ h=Date:From:To:CC:Subject:In-Reply-To:References;
+ b=HjcElgBZCWj0iJ4SJ57iyucCQxFzhto4HmVq85P/h6WwfUEFDLTj1PhFNrjDtTkR1
+ 8VUzzrn96PxdMzWWg45P3SxacQ6kZhHb7ht9zpyavUlUZy/JR73ICrcIvDpQ7oquVj
+ FvlpViIE2YAunQXqYc6qNjlny3Cwgm1I4AjBjOAs0POmTzhHKGiWG0taAltl5FYNDL
+ 84Waj9/d/6bB+yo+sILnoT0q7uxUczQv0hyKFYTYnVtggiU5r1zoNIrvSL+j4TmjRY
+ qDIZGYAJELDGR9bLcbmY2qABaErjiGuPUJ4TGyUE22XzjG9u8tKsuIn2ARRZexuMyu
+ 3zPcLx+xQvK8g==
+Date: Sat, 08 Mar 2025 08:00:55 -0300
+From: Gabriel Santos <gabrielsantosdesouza@disroot.org>
+To: emacs-devel@gnu.org,
+ =?ISO-8859-1?Q?Jo=E3o_T=E1vora?= <joaotavora@gmail.com>
+CC: stefankangas@gmail.com
+Subject: Re: Considerations for adding additional default LSP-servers to eglot
+User-Agent: Thunderbird for Android
+In-Reply-To: <671EA403-2813-4F96-B792-62DD5607AD6C@disroot.org>
+References: <D693A087-B64C-4BFA-A0CF-3FEFCC22E6D1@disroot.org>
+ <CALDnm52O1F6kHegF1T6wKmW3O7UVnFL_wwkyrXtYz1ehzSdveg@mail.gmail.com>
+ <671EA403-2813-4F96-B792-62DD5607AD6C@disroot.org>
+Message-ID: <B91DAD38-E163-4565-8B5D-F9AE80641443@disroot.org>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+Received-SPF: pass client-ip=178.21.23.139;
+ envelope-from=gabrielsantosdesouza@disroot.org; helo=layka.disroot.org
+X-Spam_score_int: -20
+X-Spam_score: -2.1
+X-Spam_bar: --
+X-Spam_report: (-2.1 / 5.0 requ) BAYES_00=-1.9, DKIM_SIGNED=0.1,
+ DKIM_VALID=-0.1, DKIM_VALID_AU=-0.1, DKIM_VALID_EF=-0.1,
+ RCVD_IN_VALIDITY_RPBL_BLOCKED=0.001, RCVD_IN_VALIDITY_SAFE_BLOCKED=0.001,
+ SPF_HELO_NONE=0.001, SPF_PASS=-0.001 autolearn=ham autolearn_force=no
+X-Spam_action: no action
+X-BeenThere: emacs-devel@gnu.org
+X-Mailman-Version: 2.1.29
+Precedence: list
+List-Id: "Emacs development discussions." <emacs-devel.gnu.org>
+List-Unsubscribe: <https://lists.gnu.org/mailman/options/emacs-devel>,
+ <mailto:emacs-devel-request@gnu.org?subject=unsubscribe>
+List-Archive: <https://lists.gnu.org/archive/html/emacs-devel>
+List-Post: <mailto:emacs-devel@gnu.org>
+List-Help: <mailto:emacs-devel-request@gnu.org?subject=help>
+List-Subscribe: <https://lists.gnu.org/mailman/listinfo/emacs-devel>,
+ <mailto:emacs-devel-request@gnu.org?subject=subscribe>
+X-List-Received-Date: Sat, 08 Mar 2025 11:50:29 -0000
+
+>But I'll also look into where the VSCode extension installs the
+>language server too (if the plan is to reuse it so users don't have to re=
+install language servers)=2E
+
+The HyprLS VSCode extension doesn't install hyprls, so this isn't needed=
+=2E
+

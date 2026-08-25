@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Lint, build, and check the package
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/n8n-node
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: 'npm'
+
+      - run: npm ci --ignore-scripts
+        working-directory: .
+      - run: npm run lint
+      - run: npm run build
+      - run: node --test test/*.test.js
+
+      - name: The package must have zero runtime dependencies
+        run: |
+          deps=$(node -p "JSON.stringify(require('./package.json').dependencies || {})")
+          echo "dependencies: $deps"
+          test "$deps" = "{}" || { echo "::error::verified community nodes may not have runtime dependencies"; exit 1; }
+
+      - name: The packed tarball must contain both nodes, the credential and the icons
+        run: |
+          npm pack
+          tar tzf n8n-nodes-mailmint-*.tgz | sort | tee /tmp/files
+          for f in \
+            package/dist/nodes/MailMint/MailMint.node.js \
+            package/dist/nodes/MailMint/MailMint.node.json \
+            package/dist/nodes/MailMint/mailmint.svg \
+            package/dist/nodes/MailMint/mailmint.dark.svg \
+            package/dist/nodes/MailMintTrigger/MailMintTrigger.node.js \
+            package/dist/nodes/MailMintTrigger/MailMintTrigger.node.json \
+            package/dist/nodes/MailMintTrigger/mailmint.svg \
+            package/dist/credentials/MailMintApi.credentials.js \
+            package/dist/credentials/mailmint.svg \
+            package/README.md \
+            package/LICENSE.md ; do
+            grep -qx "$f" /tmp/files || { echo "::error::missing $f from the published package"; exit 1; }
+          done
+
+      - name: Both nodes must load and describe themselves
+        run: |
+          node -e "
+            const { MailMint } = require('./dist/nodes/MailMint/MailMint.node.js');
+            const { MailMintTrigger } = require('./dist/nodes/MailMintTrigger/MailMintTrigger.node.js');
+            const d = new MailMint().description;
+            if (d.name !== 'mailMint') throw new Error('unexpected node name: ' + d.name);
+            if (d.usableAsTool !== true) throw new Error('the node must be usable as an AI Agent tool');
+            const t = new MailMintTrigger().description;
+            if (t.polling !== true || !t.webhooks.length) throw new Error('the trigger must offer both modes');
+            console.log('nodes ok:', d.displayName, '+', t.displayName);
+          "

@@ -1,0 +1,19 @@
+{
+  "name": "@mailmint/smtpd",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MailMint inbound SMTP server. Zero runtime dependencies.",
+  "license": "UNLICENSED",
+  "type": "commonjs",
+  "main": "src/index.js",
+  "bin": { "mailmint-smtpd": "src/index.js" },
+  "engines": { "node": ">=20.10.0" },
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node --test test/",
+    "test:live": "node test/live-smtp.js",
+    "bench": "node test/bench.js"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

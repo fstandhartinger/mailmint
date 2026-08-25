@@ -1,0 +1,70 @@
+Return-Path: <auto-confirm@example-shop.com>
+Received: from mx.example-shop.com (mx.example-shop.com [52.94.236.248])
+ by mx.parse.example.com (Postfix) with ESMTPS id IFLNT5BRHX
+ (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+ for <k7m2xq4h9bwz@parse.example.com>; Tue, 19 Aug 2026 21:14:55 +0000
+Authentication-Results: mx.parse.example.com;
+ dkim=pass header.d=example-shop.com;
+ spf=pass smtp.mailfrom=auto-confirm@example-shop.com;
+ dmarc=pass header.from=example-shop.com
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=example-shop.com; s=mail;
+ h=from:to:subject:date:mime-version; bh=MC42ODY3MjQyMzQwMDQ5ODk5=;
+ b=MC43MTA4NjQ3MzQ0MzM4NjcwLjIxODczMDU5MDIwNTUyODMy
+MIME-Version: 1.0
+From: "example-shop.com" <auto-confirm@example-shop.com>
+To: k7m2xq4h9bwz@parse.example.com
+Subject: Your Example-Shop.com order of Anker 737 Power Bank...
+Date: Tue, 19 Aug 2026 21:14:52 +0000
+Message-ID: <01000198f2b1c0a0-order@example-shop.com>
+Content-Type: multipart/alternative;
+ boundary="----=_Part_88213_1092837465.1755782400000"
+
+------=_Part_88213_1092837465.1755782400000
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+
+Hello Florian,
+
+Thank you for your order. We'll send a confirmation when your item ships.
+
+Order # 114-7729183-4462618
+Order Date: August 19, 2026
+
+Arriving: Friday, August 22, 2026
+
+Anker 737 Power Bank (PowerCore 24K)          $109.99
+Qty: 1
+Sold by: AnkerDirect
+
+Item Subtotal: $109.99
+Shipping & Handling: $0.00
+Total Before Tax: $109.99
+Estimated Tax: $9.35
+Order Total: $119.34
+
+View or manage order:
+https://www.example-shop.com/gp/css/order-details?orderID=114-7729183-4462618
+------=_Part_88213_1092837465.1755782400000
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+<html><body><div style=3D"font-family:Arial">
+<div style=3D"display:none;max-height:0px;overflow:hidden">Arriving Friday=
+, August 22 &#8226; Order 114-7729183-4462618</div>
+<h2>Thanks for your order, Florian</h2>
+<table border=3D"0" cellpadding=3D"4" cellspacing=3D"0"><tr><td>Order #</t=
+d><td>114-7729183-4462618</td></tr>
+<tr><td>Order Date</td><td>August 19, 2026</td></tr></table>
+<table border=3D"0" cellpadding=3D"4" cellspacing=3D"0" width=3D"100%">
+<tr><th align=3D"left">Item</th><th align=3D"left">Qty</th><th align=3D"ri=
+ght">Price</th></tr>
+<tr><td>Anker 737 Power Bank (PowerCore 24K)</td><td>1</td><td align=3D"ri=
+ght">$109.99</td></tr>
+</table>
+<table border=3D"0" cellpadding=3D"2" cellspacing=3D"0">
+<tr><td>Item Subtotal:</td><td>$109.99</td></tr>
+<tr><td>Shipping &amp; Handling:</td><td>$0.00</td></tr>
+<tr><td>Estimated Tax:</td><td>$9.35</td></tr>
+<tr><td><b>Order Total:</b></td><td><b>$119.34</b></td></tr>
+</table></div></body></html>
+------=_Part_88213_1092837465.1755782400000--

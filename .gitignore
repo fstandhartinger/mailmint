@@ -7,3 +7,4 @@ spool/
 packages/*/dist/
 packages/*/*.tgz
 .local/
+.mailmint-intake-state.json

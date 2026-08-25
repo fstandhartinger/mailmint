@@ -1,0 +1,44 @@
+Return-Path: <facturation@ateliernumerique.fr>
+Received: from mx.ateliernumerique.fr (mx.ateliernumerique.fr [92.243.16.4])
+ by mx.parse.example.com (Postfix) with ESMTPS id QUS52MCFZ2
+ (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+ for <k7m2xq4h9bwz@parse.example.com>; Fri, 31 Jul 2026 16:40:12 +0200
+Authentication-Results: mx.parse.example.com;
+ dkim=pass header.d=ateliernumerique.fr;
+ spf=pass smtp.mailfrom=facturation@ateliernumerique.fr;
+ dmarc=pass header.from=ateliernumerique.fr
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ateliernumerique.fr; s=mail;
+ h=from:to:subject:date:mime-version; bh=MC4zMTEwNTM3ODE1MzY1MjE5Nw===;
+ b=MC4yODM1MDYzNjA3MzkwMTYwMzAuMTg2Njc1MjEwMDA4Nzc4MDc=
+MIME-Version: 1.0
+From: =?UTF-8?Q?Atelier_Num=C3=A9rique?= <facturation@ateliernumerique.fr>
+To: k7m2xq4h9bwz@parse.example.com
+Subject: =?UTF-8?B?RmFjdHVyZSBGQS0yMDI2LTA3MzEgLSBBdGVsaWVyIE51bcOpcmlxdWU=?=
+Date: Fri, 31 Jul 2026 16:40:09 +0200
+Message-ID: <fa-2026-0731@ateliernumerique.fr>
+Content-Language: fr-FR
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+Bonjour,
+
+Veuillez trouver ci-dessous votre facture.
+
+Num=C3=A9ro de facture : FA-2026-0731
+Date de facture : 31/07/2026
+=C3=89ch=C3=A9ance : 30/08/2026
+R=C3=A9f=C3=A9rence client : CLI-4471
+
+D=C3=A9signation                      Quantit=C3=A9    Prix unitaire      =
+Total
+Abonnement Pro (juillet)         1            149,00 EUR     149,00 EUR
+Utilisateurs suppl=C3=A9mentaires      3             29,00 EUR      87,00 =
+EUR
+
+Total HT :    236,00 EUR
+TVA 20% :      47,20 EUR
+Total TTC :   283,20 EUR
+
+Cordialement,
+Service facturation
+Atelier Numerique SAS

@@ -1,0 +1,78 @@
+Received: from list by lists.gnu.org with archive (Exim 4.90_1)
+	id 1uewSs-0001Er-RE
+	for mharc-bug-gnulib@gnu.org; Thu, 24 Jul 2025 09:58:31 -0400
+Received: from eggs.gnu.org ([2001:470:142:3::10])
+ by lists.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_256_GCM_SHA384:256)
+ (Exim 4.90_1) (envelope-from <pertusus@gnu.org>) id 1uewSl-0001Ac-Ke
+ for bug-gnulib@gnu.org; Thu, 24 Jul 2025 09:58:24 -0400
+Received: from smtp2-g21.free.fr ([212.27.42.2])
+ by eggs.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_256_GCM_SHA384:256)
+ (Exim 4.90_1) (envelope-from <pertusus@gnu.org>) id 1uewSj-0002ug-Sr
+ for bug-gnulib@gnu.org; Thu, 24 Jul 2025 09:58:23 -0400
+Received: from localhost (unknown
+ [IPv6:2001:861:e140:a830:5222:e784:87d1:3a61])
+ (Authenticated sender: pertusus@free.fr)
+ by smtp2-g21.free.fr (Postfix) with UTF8SMTPSA id C75062003BE;
+ Thu, 24 Jul 2025 15:58:17 +0200 (CEST)
+Date: Thu, 24 Jul 2025 15:58:44 +0200
+From: Patrice Dumas <pertusus@gnu.org>
+To: Bruno Haible <bruno@clisp.org>
+Cc: bug-gnulib@gnu.org, Patrice Dumas <pertusus@free.fr>
+Subject: Re: git-merge-changelog do not re-add ChangeLog entries
+Message-ID: <aII8FO-svvuXZT-Y@gnu.org>
+References: <aIExQhiDvG_EGhRj@free.fr> <16545826.WiZsEGxfJz@nimes>
+ <aIHjEy13OkaTrvVD@gnu.org> <4668318.PpUMLH0tvb@nimes>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="nbrZLRZDuh/2F4Rd"
+Content-Disposition: inline
+In-Reply-To: <4668318.PpUMLH0tvb@nimes>
+Received-SPF: softfail client-ip=212.27.42.2; envelope-from=pertusus@gnu.org;
+ helo=smtp2-g21.free.fr
+X-Spam_score_int: -11
+X-Spam_score: -1.2
+X-Spam_bar: -
+X-Spam_report: (-1.2 / 5.0 requ) BAYES_00=-1.9, RCVD_IN_DNSWL_NONE=-0.0001,
+ RCVD_IN_MSPIKE_H3=0.001, RCVD_IN_MSPIKE_WL=0.001,
+ RCVD_IN_VALIDITY_CERTIFIED_BLOCKED=0.001, RCVD_IN_VALIDITY_RPBL_BLOCKED=0.001,
+ SPF_HELO_PASS=-0.001, SPF_SOFTFAIL=0.665 autolearn=no autolearn_force=no
+X-Spam_action: no action
+X-BeenThere: bug-gnulib@gnu.org
+X-Mailman-Version: 2.1.29
+Precedence: list
+List-Id: Gnulib discussion list <bug-gnulib.gnu.org>
+List-Unsubscribe: <https://lists.gnu.org/mailman/options/bug-gnulib>,
+ <mailto:bug-gnulib-request@gnu.org?subject=unsubscribe>
+List-Archive: <https://lists.gnu.org/archive/html/bug-gnulib>
+List-Post: <mailto:bug-gnulib@gnu.org>
+List-Help: <mailto:bug-gnulib-request@gnu.org?subject=help>
+List-Subscribe: <https://lists.gnu.org/mailman/listinfo/bug-gnulib>,
+ <mailto:bug-gnulib-request@gnu.org?subject=subscribe>
+X-List-Received-Date: Thu, 24 Jul 2025 13:58:27 -0000
+
+
+--nbrZLRZDuh/2F4Rd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Thu, Jul 24, 2025 at 10:15:40AM +0200, Bruno Haible wrote:
+> Hi Patrice,
+> 
+> * To help debugging this, can you trace the /usr/bin/git-merge-changelog
+>   executable? Run 'sudo trace /usr/bin/git-merge-changelog' with the attached
+>   scripts.
+
+Here is the trace for the last use.  The ChangeLog entry was still
+removed (or not readded).
+
+-- 
+Pat
+
+--nbrZLRZDuh/2F4Rd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="git-merge-changelog.log"
+
+/usr/bin/git-merge-changelog .merge_file_IgmCGg .merge_file_XSDG2i .merge_file_hla3S4
+/usr/bin/git-merge-changelog .merge_file_aexEhi .merge_file_aRZxPK .merge_file_v59Vkq
+
+--nbrZLRZDuh/2F4Rd--
+

@@ -1,0 +1,50 @@
+Return-Path: <e@80x24.org>
+X-Spam-Checker-Version: SpamAssassin 4.0.1 (2024-03-25) on dcvr.yhbt.net
+X-Spam-Level: 
+X-Spam-Status: No, score=-4.0 required=3.0 tests=ALL_TRUSTED,AWL,BAYES_00,
+	DKIM_INVALID,DKIM_SIGNED shortcircuit=no autolearn=no
+	autolearn_force=no version=4.0.1
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=80x24.org;
+	s=selector1; t=1785112089;
+	bh=f1dlKGFL/NdO6kRnpGc4BSR8EJoR+5pH2SImwlqOs+E=;
+	h=Date:From:To:Subject:References:In-Reply-To:From;
+	b=ZjE2qLxW+ghQ61MQCIL3lc4TAge3QBR9ZurwSV47ytMxUS8YGUEFcB5WZ3MEYmYgE
+	 eyOjr+TimLlpjgBIqEJWdAyaoj7U5pSX0qVZXDqr5533sd4eg36Fi5hr8r3PLF/JMJ
+	 A07eYHYXHoB0Ci0kpO9FgV2zXx9fPMFwK1VRQ/K4=
+Received: from localhost (dcvr.yhbt.net [127.0.0.1])
+	by dcvr.yhbt.net (Postfix) with ESMTP id 37C611F6F8;
+	Mon, 27 Jul 2026 00:28:09 +0000 (UTC)
+Date: Mon, 27 Jul 2026 00:28:08 +0000
+From: Eric Wong <e@80x24.org>
+To: meta@public-inbox.org
+Subject: [SQUASH] t/lei-daemon: fix missing IPC require
+Message-ID: <20260727002808.M931260@dcvr>
+References: <20260726145804.2783707-1-e@80x24.org>
+ <20260726145804.2783707-6-e@80x24.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20260726145804.2783707-6-e@80x24.org>
+List-Id: <meta.public-inbox.org>
+
+`make check-run' hid the problem since that avoids spawning new
+Perl instances, but it's revealed when running `make test' or
+`make check'
+
+---
+ t/lei-daemon.t | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/t/lei-daemon.t b/t/lei-daemon.t
+index d23ec4291..f1b052ec2 100644
+--- a/t/lei-daemon.t
++++ b/t/lei-daemon.t
+@@ -3,6 +3,7 @@
+ # License: AGPL-3.0+ <https://www.gnu.org/licenses/agpl-3.0.txt>
+ use strict; use v5.10.1; use PublicInbox::TestCommon;
+ use Socket qw(AF_UNIX SOCK_SEQPACKET pack_sockaddr_un);
++require PublicInbox::IPC;
+ 
+ test_lei({ daemon_only => 1 }, sub {
+ 	my $sock = "$ENV{XDG_RUNTIME_DIR}/lei/5.seq.sock";
+

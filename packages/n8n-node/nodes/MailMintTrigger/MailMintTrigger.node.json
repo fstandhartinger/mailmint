@@ -1,0 +1,21 @@
+{
+	"node": "n8n-nodes-mailmint.mailMintTrigger",
+	"nodeVersion": "1.0",
+	"codexVersion": "1.0",
+	"categories": ["Communication", "Data & Storage"],
+	"alias": [
+		"Email",
+		"Email Trigger",
+		"Inbound Email",
+		"New Email",
+		"Parsed Email",
+		"Webhook",
+		"Polling",
+		"Mailbox",
+		"MailMint"
+	],
+	"resources": {
+		"credentialDocumentation": [{ "url": "https://mailmint.dev/docs#authentication" }],
+		"primaryDocumentation": [{ "url": "https://mailmint.dev/docs/n8n" }]
+	}
+}

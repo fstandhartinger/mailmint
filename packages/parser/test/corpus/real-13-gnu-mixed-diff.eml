@@ -1,0 +1,122 @@
+Received: from list by lists.gnu.org with archive (Exim 4.90_1)
+	id 1uYhgH-0005oi-LO
+	for mharc-emacs-devel@gnu.org; Mon, 07 Jul 2025 04:58:33 -0400
+Received: from eggs.gnu.org ([2001:470:142:3::10])
+ by lists.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_256_GCM_SHA384:256)
+ (Exim 4.90_1) (envelope-from <spwhitton@spwhitton.name>)
+ id 1uYhgE-0005mw-Ow
+ for emacs-devel@gnu.org; Mon, 07 Jul 2025 04:58:31 -0400
+Received: from sendmail.purelymail.com ([34.202.193.197])
+ by eggs.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_256_GCM_SHA384:256)
+ (Exim 4.90_1) (envelope-from <spwhitton@spwhitton.name>)
+ id 1uYhgA-0007Ga-29
+ for emacs-devel@gnu.org; Mon, 07 Jul 2025 04:58:30 -0400
+DKIM-Signature: a=rsa-sha256;
+ b=yKcbDzc03V6E/db1PyHUesJeCMeectymoPHWQnuL7u/ujJ2dRt8ftxrRCh+zNmuFpoRseP3gzuNVFJT33b2TBgOqcOSUULdeu2I+gKSqrDXND0INMYv3YOPhVO7Vc1CsUdmWvmOuqIj6sfKFH+MHF0ULco2h/QucIB4M7miCiNuxbQgBnH0Cd7SklYJrtsMVcxNEX3rZvC5twvXtpXej10j1DIz/uTb4Tfvs5B+PfIYWO1kNHXGOsJ0u6AAD5QIfdc5IL773uZI5zmPXiqKUXbo+OinvJFVyU73oCrFEXn1v+ez4cD73/lz/BfRYJHPbJ4vcV5x/2ptahyRkPPlu0w==;
+ s=purelymail2; d=spwhitton.name; v=1;
+ bh=px4xDnyrOQg6NQtB49dY3uf2VVIuIYEYtnJtc58NCKo=;
+ h=Received:Received:From:To:Subject:Date; 
+DKIM-Signature: a=rsa-sha256;
+ b=OuEVoq5VL3jFN7NPy07R/HW4c8/n0njETjLqWNfGji2Abz6AY1tptv6jWIuyJ458Yo0WQqyNv4gXTvbYh7r4eH852ha9eTAevKb45VhXbTHJF0OaOwWFC5LbbwZTp6lmTLXSpqmBZwXdf80zvrwEveZoVjbs15cEMvXUzaEkb2FKdKkpl77+V8+MPq2y0UWXZNgaodB0o2sPdZOUa62R4HYRK+P7tX70oQNNnyp7F8Ru9DCvLynKOnP2pI5MSkmkphAOh2R9wQnb7LlzsI64LmKoERQcO+ppVCy60/1o6IPDA9QPYGtZwLHpzI9z83OxOmnhO9b9NMpgSbYNabqeLA==;
+ s=purelymail2; d=purelymail.com; v=1;
+ bh=px4xDnyrOQg6NQtB49dY3uf2VVIuIYEYtnJtc58NCKo=;
+ h=Feedback-ID:Received:Received:From:To:Subject:Date; 
+Feedback-ID: 20115:3760:null:purelymail
+X-Pm-Original-To: emacs-devel@gnu.org
+Received: by smtp.purelymail.com (Purelymail SMTP) with ESMTPSA id -1161128574
+ for <emacs-devel@gnu.org>
+ (version=TLSv1.3 cipher=TLS_AES_256_GCM_SHA384);
+ Mon, 07 Jul 2025 08:58:23 +0000 (UTC)
+Received: by zephyr.silentflame.com (Postfix, from userid 1000)
+ id 610DB940228; Mon, 07 Jul 2025 09:58:23 +0100 (BST)
+From: Sean Whitton <spwhitton@spwhitton.name>
+To: emacs-devel@gnu.org
+Subject: Re: Error messages with text properties
+In-Reply-To: <874ivqo8wh.fsf@zephyr.silentflame.com>
+References: <874ivqo8wh.fsf@zephyr.silentflame.com>
+Date: Mon, 07 Jul 2025 09:58:23 +0100
+Message-ID: <87cyacl6mo.fsf@zephyr.silentflame.com>
+User-Agent: Gnus/5.13 (Gnus v5.13)
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="=-=-="
+Received-SPF: pass client-ip=34.202.193.197;
+ envelope-from=spwhitton@spwhitton.name; helo=sendmail.purelymail.com
+X-Spam_score_int: -30
+X-Spam_score: -3.1
+X-Spam_bar: ---
+X-Spam_report: (-3.1 / 5.0 requ) BAYES_00=-1.9, DKIM_SIGNED=0.1,
+ DKIM_VALID=-0.1, DKIM_VALID_AU=-0.1, DKIM_VALID_EF=-0.1, RCVD_IN_MSPIKE_H5=-1,
+ RCVD_IN_MSPIKE_WL=-0.01, RCVD_IN_VALIDITY_CERTIFIED_BLOCKED=0.001,
+ RCVD_IN_VALIDITY_RPBL_BLOCKED=0.001, SPF_HELO_PASS=-0.001,
+ SPF_PASS=-0.001 autolearn=ham autolearn_force=no
+X-Spam_action: no action
+X-BeenThere: emacs-devel@gnu.org
+X-Mailman-Version: 2.1.29
+Precedence: list
+List-Id: "Emacs development discussions." <emacs-devel.gnu.org>
+List-Unsubscribe: <https://lists.gnu.org/mailman/options/emacs-devel>,
+ <mailto:emacs-devel-request@gnu.org?subject=unsubscribe>
+List-Archive: <https://lists.gnu.org/archive/html/emacs-devel>
+List-Post: <mailto:emacs-devel@gnu.org>
+List-Help: <mailto:emacs-devel-request@gnu.org?subject=help>
+List-Subscribe: <https://lists.gnu.org/mailman/listinfo/emacs-devel>,
+ <mailto:emacs-devel-request@gnu.org?subject=subscribe>
+X-List-Received-Date: Mon, 07 Jul 2025 08:58:31 -0000
+
+--=-=-=
+Content-Type: text/plain
+
+Hello,
+
+Here is a change proposal.
+
+-- 
+Sean Whitton
+
+--=-=-=
+Content-Type: text/x-diff
+Content-Disposition: attachment;
+ filename=0001-print_error_message-Handle-user-error-to-the-echo-ar.patch
+
+>From 34a95c340ab8d724271dee729e7ad369f7a6b505 Mon Sep 17 00:00:00 2001
+From: Sean Whitton <spwhitton@spwhitton.name>
+Date: Mon, 7 Jul 2025 09:57:37 +0100
+Subject: [PATCH] print_error_message: Handle user-error to the echo area
+ specially
+
+* src/print.c (print_error_message): For a user-error to be
+printed to the echo area, use message3 in order to preserve
+fontification.
+---
+ src/print.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/src/print.c b/src/print.c
+index 138a21f18ab..bbeabf60b77 100644
+--- a/src/print.c
++++ b/src/print.c
+@@ -1118,6 +1118,18 @@ print_error_message (Lisp_Object data, Lisp_Object stream, const char *context,
+ 
+   tail = Fcdr_safe (data);
+ 
++  /* For a user-error displayed in the echo area, use message3 rather
++     than Fprinc in order to preserve fontification.
++     In particular, there might be hints to the user about keys they
++     could press to do what they seemed to want.  */
++  if (EQ (errname, Quser_error) && EQ (stream, Qt)
++      /* These should always be true for a user-error, but check.  */
++      && !NILP (XCAR (tail)) && NILP (XCDR (tail)))
++    {
++      message3 (XCAR (tail));
++      return;
++    }
++
+   /* For file-error, make error message by concatenating
+      all the data items.  They are all strings.  */
+   if (!NILP (file_error) && CONSP (tail))
+-- 
+2.47.2
+
+
+--=-=-=--
+

@@ -1,0 +1,59 @@
+Return-Path: <statements@nordbank.example.at>
+Received: from mx.nordbank.example.at (mx.nordbank.example.at [213.129.232.11])
+ by mx.parse.example.com (Postfix) with ESMTPS id HRHXYC7VTQ
+ (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+ for <k7m2xq4h9bwz@parse.example.com>; Wed, 01 Jul 2026 04:00:12 +0200
+Authentication-Results: mx.parse.example.com;
+ dkim=pass header.d=nordbank.example.at;
+ spf=pass smtp.mailfrom=statements@nordbank.example.at;
+ dmarc=pass header.from=nordbank.example.at
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=nordbank.example.at; s=mail;
+ h=from:to:subject:date:mime-version; bh=MC42MjQ1MTE1MDAxMTQ3NTE5=;
+ b=MC43NjQzNDk4MzQxMjM5MjgxMC4xOTc5ODY3NzM2MTcyMjIwNg==
+MIME-Version: 1.0
+From: =?utf-8?Q?Nordbank_=C3=96sterreich?= <statements@nordbank.example.at>
+To: k7m2xq4h9bwz@parse.example.com
+Subject: =?utf-8?Q?Quartalsabschluss_ST-2026-Q2?=
+Date: Wed, 01 Jul 2026 04:00:10 +0200
+Message-ID: <st-2026-q2@nordbank.example.at>
+Content-Type: multipart/mixed;
+ boundary="lvl1_aaaa"
+
+--lvl1_aaaa
+Content-Type: multipart/related;
+ boundary="lvl2_bbbb"
+
+--lvl2_bbbb
+Content-Type: multipart/alternative;
+ boundary="lvl3_cccc"
+
+--lvl3_cccc
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+Quarterly statement attached. Statement number: ST-2026-Q2. Balance: 2 480=
+,00 EUR.
+--lvl3_cccc
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+<html><body><p>Quarterly statement attached.</p><p>Statement number: ST-20=
+26-Q2<br>Balance: 2&nbsp;480,00&nbsp;EUR</p></body></html>
+--lvl3_cccc--
+
+--lvl2_bbbb--
+
+--lvl1_aaaa
+Content-Type: application/pdf
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename*0*=utf-8''Quartalsabschluss%20;
+ filename*1*=M%C3%A4rz%2DJuni.pdf
+
+JVBERi0xLjQKMSAwIG9iajw8L1R5cGUvQ2F0YWxvZy9QYWdlcyAyIDAgUj4+ZW5kb2JqCjIgMCBv
+Ymo8PC9UeXBlL1BhZ2VzL0tpZHNbMyAwIFJdL0NvdW50IDE+PmVuZG9iagozIDAgb2JqPDwvVHlw
+ZS9QYWdlL1BhcmVudCAyIDAgUi9NZWRpYUJveFswIDAgNTk1IDg0Ml0vQ29udGVudHMgNCAwIFI+
+PmVuZG9iago0IDAgb2JqPDwvTGVuZ3RoIDYwPj5zdHJlYW0KQlQgL0YxIDEyIFRmIDcyIDcyMCBU
+ZCAoU1QtMjAyNi1RMikgVGogRVQKZW5kc3RyZWFtIGVuZG9iagp0cmFpbGVyPDwvUm9vdCAxIDAg
+Uj4+CiUlRU9GCg==
+--lvl1_aaaa--

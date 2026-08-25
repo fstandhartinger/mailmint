@@ -1,0 +1,60 @@
+Received: from list by lists.gnu.org with archive (Exim 4.90_1)
+	id 1uepy5-0001l5-O3
+	for mharc-emacs-devel@gnu.org; Thu, 24 Jul 2025 03:02:17 -0400
+Received: from eggs.gnu.org ([2001:470:142:3::10])
+ by lists.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_256_GCM_SHA384:256)
+ (Exim 4.90_1) (envelope-from <eliz@gnu.org>) id 1uepy3-0001i7-Bl
+ for emacs-devel@gnu.org; Thu, 24 Jul 2025 03:02:15 -0400
+Received: from fencepost.gnu.org ([2001:470:142:3::e])
+ by eggs.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_256_GCM_SHA384:256)
+ (Exim 4.90_1) (envelope-from <eliz@gnu.org>)
+ id 1uepy2-00086J-TC; Thu, 24 Jul 2025 03:02:14 -0400
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed; d=gnu.org;
+ s=fencepost-gnu-org; h=MIME-version:References:Subject:In-Reply-To:To:From:
+ Date; bh=CQAh50H/VdyyjTnQJ+qM3oXg454/QMak6iribKEawRQ=; b=SQm3MNKvovQHkBBfkIFa
+ KJaKyhfj3QCA0NcvmsAFlWqoPQggnXunyIgAsKxkN2UAJ8p0ApF4eTDJgm1N6g3IVsDxvVz4UW4oK
+ NY7nBNiPklT4qvjUdiFI+CQNGoCQvN7/oig3QVstwbH7Xkfotxyo8/TzWME6eBmFnvjrH0s2qVLI/
+ xDBRkKr6qTYDyHUUtH/DtSuAj0db4xtuNehVjo5vqdzTA80lSZ3I9PPVi0GzG9DwDpnWpl6gUPZQA
+ o7cUJymiepqmgtksp7Z5BZDBWnacADNCqIlAhgyRuaU4hLaNASgZzvkeBpp7FVmrnTKFdJ/jzMTMG
+ qO7buIzsZH9a6Q==;
+Date: Thu, 24 Jul 2025 10:02:11 +0300
+Message-Id: <86tt325ax8.fsf@gnu.org>
+From: Eli Zaretskii <eliz@gnu.org>
+To: Elijah Gabe =?iso-8859-1?Q?P=E9rez?= <eg642616@gmail.com>
+Cc: emacs-devel@gnu.org, John Wiegley <johnw@gnu.org>
+In-Reply-To: <87ms8uv73h.fsf@gmail.com> (message from Elijah Gabe
+ =?iso-8859-1?Q?P=E9rez?= on Wed, 23 Jul 2025 17:08:02 -0600)
+Subject: Re: [ELPA] New Package: use-package-extras
+References: <87ms8uv73h.fsf@gmail.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-BeenThere: emacs-devel@gnu.org
+X-Mailman-Version: 2.1.29
+Precedence: list
+List-Id: "Emacs development discussions." <emacs-devel.gnu.org>
+List-Unsubscribe: <https://lists.gnu.org/mailman/options/emacs-devel>,
+ <mailto:emacs-devel-request@gnu.org?subject=unsubscribe>
+List-Archive: <https://lists.gnu.org/archive/html/emacs-devel>
+List-Post: <mailto:emacs-devel@gnu.org>
+List-Help: <mailto:emacs-devel-request@gnu.org?subject=help>
+List-Subscribe: <https://lists.gnu.org/mailman/listinfo/emacs-devel>,
+ <mailto:emacs-devel-request@gnu.org?subject=subscribe>
+X-List-Received-Date: Thu, 24 Jul 2025 07:02:15 -0000
+
+> From: Elijah Gabe Pérez <eg642616@gmail.com>
+> Date: Wed, 23 Jul 2025 17:08:02 -0600
+> 
+> Hello, i want to submit my package use-package-extras to GNU ELPA
+> (source code can be found here: https://github.com/DevelopmentCool2449/use-package-extras).
+> 
+> use-package-extras is an extension for use-package that adds additional
+> keywords for a cleaner and simple configuration.
+> 
+> All the details can be found in the README file:
+> https://raw.githubusercontent.com/DevelopmentCool2449/use-package-extras/refs/heads/main/README
+> (javascript-free URL)
+
+Shouldn't we first consider these extensions for addition to what's in
+core?
+

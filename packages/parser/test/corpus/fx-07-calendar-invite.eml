@@ -1,0 +1,58 @@
+Return-Path: <ilse.brandt@meridian-labs.io>
+Received: from mx.meridian-labs.io (mx.meridian-labs.io [209.85.219.41])
+ by mx.parse.example.com (Postfix) with ESMTPS id LHFVIII4CL
+ (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+ for <k7m2xq4h9bwz@parse.example.com>; Mon, 25 Aug 2026 08:15:04 +0000
+Authentication-Results: mx.parse.example.com;
+ dkim=pass header.d=meridian-labs.io;
+ spf=pass smtp.mailfrom=ilse.brandt@meridian-labs.io;
+ dmarc=pass header.from=meridian-labs.io
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=meridian-labs.io; s=mail;
+ h=from:to:subject:date:mime-version; bh=MC4xMzg2MTg4NjIxNzg3OTUzOA===;
+ b=MC45MDU2MzA4Njk5ODkxNzA0MC45NzQyNDExNjYyODE2MDI2
+MIME-Version: 1.0
+From: Ilse Brandt <ilse.brandt@meridian-labs.io>
+To: k7m2xq4h9bwz@parse.example.com
+Subject: Invitation: Q3 pricing review @ Thu Sep 3, 2026 3pm - 4pm (CEST)
+Date: Mon, 25 Aug 2026 08:15:02 +0000
+Message-ID: <00000000000q3pricing@google.com>
+Content-Type: multipart/alternative;
+ boundary="cal_9a8b7c6d5e4f"
+
+--cal_9a8b7c6d5e4f
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+You have been invited to the following event.
+
+Q3 pricing review
+
+When: Thu Sep 3, 2026 3pm - 4pm (Central European Summer Time)
+Where: Meridian Labs HQ, Room 4.02
+Organizer: Ilse Brandt (ilse.brandt@meridian-labs.io)
+
+Agenda: renewal terms, volume tiers, the MailMint pilot.
+--cal_9a8b7c6d5e4f
+Content-Type: text/calendar; charset=UTF-8; method=REQUEST
+Content-Transfer-Encoding: 7bit
+
+BEGIN:VCALENDAR
+PRODID:-//Google Inc//Google Calendar 70.9054//EN
+VERSION:2.0
+CALSCALE:GREGORIAN
+METHOD:REQUEST
+BEGIN:VEVENT
+DTSTART:20260903T130000Z
+DTEND:20260903T140000Z
+DTSTAMP:20260825T081500Z
+ORGANIZER;CN=Ilse Brandt:mailto:ilse.brandt@meridian-labs.io
+UID:6b1f2c0a-4d3e-11f1-9a2b-0242ac120002
+ATTENDEE;CUTYPE=INDIVIDUAL;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:k7m2xq4h9bwz@parse.example.com
+SUMMARY:Q3 pricing review
+LOCATION:Meridian Labs HQ\, Room 4.02
+DESCRIPTION:Agenda: renewal terms\, volume tiers\, the MailMint pilot.
+SEQUENCE:0
+STATUS:CONFIRMED
+END:VEVENT
+END:VCALENDAR
+--cal_9a8b7c6d5e4f--

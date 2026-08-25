@@ -1,0 +1,124 @@
+Received: from list by lists.gnu.org with archive (Exim 4.90_1)
+	id 1tq59v-0005vV-22
+	for mharc-emacs-devel@gnu.org; Thu, 06 Mar 2025 01:56:43 -0500
+Received: from eggs.gnu.org ([2001:470:142:3::10])
+ by lists.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_256_GCM_SHA384:256)
+ (Exim 4.90_1) (envelope-from <paaguti@gmail.com>) id 1tq59t-0005v6-2S
+ for emacs-devel@gnu.org; Thu, 06 Mar 2025 01:56:41 -0500
+Received: from mail-ej1-x62f.google.com ([2a00:1450:4864:20::62f])
+ by eggs.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_128_GCM_SHA256:128)
+ (Exim 4.90_1) (envelope-from <paaguti@gmail.com>) id 1tq59r-0007lh-C3
+ for emacs-devel@gnu.org; Thu, 06 Mar 2025 01:56:40 -0500
+Received: by mail-ej1-x62f.google.com with SMTP id
+ a640c23a62f3a-abf64aa2a80so61788866b.0
+ for <emacs-devel@gnu.org>; Wed, 05 Mar 2025 22:56:38 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+ d=gmail.com; s=20230601; t=1741244197; x=1741848997; darn=gnu.org;
+ h=cc:to:subject:message-id:date:from:mime-version:from:to:cc:subject
+ :date:message-id:reply-to;
+ bh=4t3kNyDwCJwXmvGaknr6aLTdl1YEZw2QTl77hxyJ27k=;
+ b=VgPvy/xMGdESr7ML6xYl76AlYgOyxY10FPXcH/QU7lkee0heqewMyFOODTeKg7uphu
+ noi6EkH71nLD1p2lc6pG3jIFxDa4Xf/9CBY3l67m4E5RWpZVDx2MIkj93tKDLLcHCQIl
+ 8PAkYZqykkrsGZJnHCHvfeuy2RxvJeP4wwkxM7SYPnowQdbmSTRdvFsunKxb+0p86XMk
+ Sr0cplvLLSVYrrAvr2Pp/tJ80LpIi1jg/YwaEB2ImF6E19xtce+4muiGnum1S5i7lUb6
+ 9prJbmN+HPzDMmgPRbwJZUR8K/rb44YvpuXNxXnvOIfIbMPb+Nknqq3II1rhLxewpa2z
+ yI1g==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+ d=1e100.net; s=20230601; t=1741244197; x=1741848997;
+ h=cc:to:subject:message-id:date:from:mime-version:x-gm-message-state
+ :from:to:cc:subject:date:message-id:reply-to;
+ bh=4t3kNyDwCJwXmvGaknr6aLTdl1YEZw2QTl77hxyJ27k=;
+ b=kVsqCK2lgK1/MLC5Ivpa2DD3ckab7lyDDa8O+gbrqq8ODXBuU4HZ1ptSjdQEHhoSlW
+ HfxP4ABST86bzdCtyGhhxz4Yia4y6Nd7AwzUFl+rAW+DL3brolYZhfJu2ektizey2rSt
+ EIK/VjGBVLLuGgwBrEw0itVaP8Dz57rmkUwCbcsclAya/x3losYhWlMRfNSK0596wbRH
+ hAoxaPgr4JyRGPLL9QjxxzLM4pGdNC6cWSIeNNNxydATcaZ7AXDDg9UzQVNcGIXHQ9j3
+ xLW6mSinZs/LVPPk6jM0LVDIvrFO1GYwrpmK+9niwp7iWjyihTJO+0IuCtg6phVH3Zqa
+ Rysw==
+X-Gm-Message-State: AOJu0Yw+7WHU3puTxDBaY1mYf6Rt1yglOa5MxVRBPxN/T+e9Bu6kwMP2
+ WL5MCZf3tdfZL9MeYD3utW3lMa/N8Rl2izjYKqRBpDjAthrc7hIR2uV/PLEHQzeoeVatbdwej7+
+ fZSNr3HOYjwuGCLTnHEYExaLC54Q=
+X-Gm-Gg: ASbGncsY5DS1p55hy92W10p/zzM0ZgZYfpLmvIoqeqMQn18jskrmPRrdW/nlDk+bGeJ
+ bMBj/XYpCEDWnrk3jNMA+PjFWMSDjcxTiWftM/JhJ0CHcyS3exzNL2VheHb4BCMNQn2kT9RJ/S8
+ P/D4Fypdx+3Bq/SxCxIID2n7QC
+X-Google-Smtp-Source: AGHT+IGx5D+DBXJEL6XtJ7h9eMjrqVzOJ5aR3DyVT55GG6noDmZeeGrUd7Tnw4UhMoOoH/pEmAA9bK9COPy189B2Cks=
+X-Received: by 2002:a17:907:9494:b0:ac1:f002:d840 with SMTP id
+ a640c23a62f3a-ac20da862d9mr702706566b.45.1741244196702; Wed, 05 Mar 2025
+ 22:56:36 -0800 (PST)
+MIME-Version: 1.0
+From: Pedro Andres Aranda Gutierrez <paaguti@gmail.com>
+Date: Thu, 6 Mar 2025 07:56:10 +0100
+X-Gm-Features: AQ5f1Jo8B0eLfBxb-Rg8gTKKCNki5MKnWWKVKE_-t-nXTW6KZZ4TuOgE7q98LGA
+Message-ID: <CAO48Bk_DzmSbh9W5h4L3aZJgF2-tG-0tiRccy=is6PnPxDSPfQ@mail.gmail.com>
+Subject: Re: Re: Automatic light/dark theme switching based on desktop settings
+To: koppel@ece.lsu.edu
+Cc: emacs-devel <emacs-devel@gnu.org>, davidimagid@gmail.com
+Content-Type: multipart/alternative; boundary="000000000000cfd09d062fa701bc"
+Received-SPF: pass client-ip=2a00:1450:4864:20::62f;
+ envelope-from=paaguti@gmail.com; helo=mail-ej1-x62f.google.com
+X-Spam_score_int: -20
+X-Spam_score: -2.1
+X-Spam_bar: --
+X-Spam_report: (-2.1 / 5.0 requ) BAYES_00=-1.9, DKIM_SIGNED=0.1,
+ DKIM_VALID=-0.1, DKIM_VALID_AU=-0.1, DKIM_VALID_EF=-0.1, FREEMAIL_FROM=0.001,
+ HTML_MESSAGE=0.001, RCVD_IN_DNSWL_NONE=-0.0001, SPF_HELO_NONE=0.001,
+ SPF_PASS=-0.001 autolearn=ham autolearn_force=no
+X-Spam_action: no action
+X-BeenThere: emacs-devel@gnu.org
+X-Mailman-Version: 2.1.29
+Precedence: list
+List-Id: "Emacs development discussions." <emacs-devel.gnu.org>
+List-Unsubscribe: <https://lists.gnu.org/mailman/options/emacs-devel>,
+ <mailto:emacs-devel-request@gnu.org?subject=unsubscribe>
+List-Archive: <https://lists.gnu.org/archive/html/emacs-devel>
+List-Post: <mailto:emacs-devel@gnu.org>
+List-Help: <mailto:emacs-devel-request@gnu.org?subject=help>
+List-Subscribe: <https://lists.gnu.org/mailman/listinfo/emacs-devel>,
+ <mailto:emacs-devel-request@gnu.org?subject=subscribe>
+X-List-Received-Date: Thu, 06 Mar 2025 06:56:41 -0000
+
+--000000000000cfd09d062fa701bc
+Content-Type: text/plain; charset="UTF-8"
+
+Hi,
+
+nice try, but it doesn't work on other OSes or distros. In my case, I have
+a triple KO on Ubuntu 22.04 GNOME/Wayland, macOS and FreeBSD KDE/x11. The
+idea is nice although it depends a lot on user QoE.
+
+In my case, I cycle my themes with a keybinding (switching from
+nordic-aurora to nordic-light) depending on what I need at any point in
+time and without having to change the whole system appearance.
+
+I'll keep a pointer for reference though, just in case -)
+
+Best, /PA
+-- 
+Fragen sind nicht da, um beantwortet zu werden,
+Fragen sind da um gestellt zu werden
+Georg Kreisler
+
+Sagen's Paradeiser, write BE.
+Year 1 of the New Koprocracy
+
+--000000000000cfd09d062fa701bc
+Content-Type: text/html; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+<div dir=3D"ltr"><div>Hi,</div><div><br></div><div>nice try, but it doesn&#=
+39;t work on other OSes or distros. In my case, I have a triple KO on Ubunt=
+u 22.04 GNOME/Wayland, macOS and FreeBSD KDE/x11. The idea is nice although=
+ it depends a lot on user QoE.=C2=A0</div><div><br></div><div>In my case, I=
+ cycle my themes with a keybinding (switching from nordic-aurora to nordic-=
+light) depending on what I need at any point in time and without having to =
+change the whole system appearance.=C2=A0</div><div><br></div><div>I&#39;ll=
+ keep a pointer for reference though, just in case -)</div><div><br></div><=
+div>Best, /PA</div><span class=3D"gmail_signature_prefix">-- </span><br><di=
+v dir=3D"ltr" class=3D"gmail_signature" data-smartmail=3D"gmail_signature">=
+<div dir=3D"ltr"><div dir=3D"ltr"><div><div>Fragen sind nicht da, um beantw=
+ortet zu werden,<br></div>Fragen sind da um gestellt zu werden<br></div>Geo=
+rg Kreisler</div><div><br></div><div>Sagen&#39;s Paradeiser, write BE.</div=
+><div>Year 1 of the New Koprocracy</div><div><br><br></div></div></div></di=
+v>
+
+--000000000000cfd09d062fa701bc--
+

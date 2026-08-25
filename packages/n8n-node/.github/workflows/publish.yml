@@ -1,0 +1,65 @@
+# Publishes this n8n community node package to npm on every version tag push.
+#
+# From May 1 2026 n8n requires community nodes submitted for verification to be
+# published via GitHub Actions with an npm provenance statement. This workflow
+# satisfies that: provenance lets anyone verify the package was built by this
+# workflow, from this repository, at this commit.
+#
+# Setup: add an npm granular access token with read+write on packages as the
+# repository secret NPM_TOKEN (Settings -> Secrets and variables -> Actions).
+# Alternatively configure npm Trusted Publishers for this repo and leave
+# NPM_TOKEN unset — the OIDC exchange is used instead.
+#
+# Release: `npm run release` locally bumps the version, tags and pushes, which
+# triggers this workflow.
+
+name: Publish
+
+on:
+  push:
+    tags:
+      - '*.*.*'
+  workflow_dispatch:
+
+jobs:
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+
+    permissions:
+      # Required to mint the OIDC token that signs the provenance attestation.
+      id-token: write
+      contents: read
+
+    defaults:
+      run:
+        working-directory: packages/n8n-node
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+        working-directory: .
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish with provenance
+        run: |
+          if [ -n "$NPM_TOKEN" ]; then
+            npm config set //registry.npmjs.org/:_authToken "$NPM_TOKEN"
+          fi
+          npm publish --provenance --access public
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

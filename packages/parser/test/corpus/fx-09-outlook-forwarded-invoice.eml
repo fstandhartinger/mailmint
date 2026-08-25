@@ -1,0 +1,57 @@
+Return-Path: <rowan@brackenhill.co.uk>
+Received: from mx.brackenhill.co.uk (mx.brackenhill.co.uk [40.107.20.88])
+ by mx.parse.example.com (Postfix) with ESMTPS id 1VCZKMQM2H
+ (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+ for <k7m2xq4h9bwz@parse.example.com>; Thu, 20 Aug 2026 07:15:33 +0000
+Authentication-Results: mx.parse.example.com;
+ dkim=pass header.d=brackenhill.co.uk;
+ spf=pass smtp.mailfrom=rowan@brackenhill.co.uk;
+ dmarc=pass header.from=brackenhill.co.uk
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=brackenhill.co.uk; s=mail;
+ h=from:to:subject:date:mime-version; bh=MC4wMzUwMDIxNjU4MDA1Nzc0Nw===;
+ b=MC42ODA4NjE5MTA3ODkzNjM2MC4yMjYwNTUxMDAyODM2ODc0Nw==
+MIME-Version: 1.0
+From: Rowan Fitzgibbon <rowan@brackenhill.co.uk>
+To: k7m2xq4h9bwz@parse.example.com
+Subject: FW: Cloudcrest invoice CC-2026-0912
+Date: Thu, 20 Aug 2026 07:15:30 +0000
+Message-ID: <AM0PR07MB6134FWD@AM0PR07MB6134.eurprd07.prod.outlook.com>
+X-MS-Has-Attach:
+X-MS-Exchange-Organization-SCL: -1
+Content-Type: multipart/alternative;
+ boundary="_004_AM0PR07MB6134A1B2C3D4E5F60AM0PR07MB6134eurp_"
+
+--_004_AM0PR07MB6134A1B2C3D4E5F60AM0PR07MB6134eurp_
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: base64
+
+SGkgLSBmb3J3YXJkaW5nIHRoaXMgb25lIGZvciBwYXltZW50LCBwbGVhc2UuDQoNClJvd2FuDQoN
+CkZyb206IGJpbGxpbmdAY2xvdWRjcmVzdC5pbyA8YmlsbGluZ0BjbG91ZGNyZXN0LmlvPg0KU2Vu
+dDogMjAgQXVndXN0IDIwMjYgMDY6MDMNClRvOiBSb3dhbiBGaXR6Z2liYm9uIDxyb3dhbkBicmFj
+a2VuaGlsbC5jby51az4NClN1YmplY3Q6IENsb3VkY3Jlc3QgaW52b2ljZSBDQy0yMDI2LTA5MTIN
+Cg0KWW91ciBDbG91ZGNyZXN0IGludm9pY2UgaXMgcmVhZHkuDQoNCkludm9pY2UgbnVtYmVyOiBD
+Qy0yMDI2LTA5MTINCkJpbGxpbmcgcGVyaW9kOiAwMSBKdWwgMjAyNiAtIDMxIEp1bCAyMDI2DQpB
+bW91bnQgZHVlOiDCozMxOC40NA0KRHVlIGRhdGU6IDAzIFNlcHRlbWJlciAyMDI2
+--_004_AM0PR07MB6134A1B2C3D4E5F60AM0PR07MB6134eurp_
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+<html><head><meta http-equiv=3D3D"Content-Type" content=3D3D"text/html; ch=
+arset=3D3Dutf-8"></head>
+<body lang=3D"EN-GB"><div class=3D"WordSection1">
+<p class=3D"MsoNormal">Hi &#8211; forwarding this one for payment, please.=
+</p>
+<p class=3D"MsoNormal">Rowan</p>
+<div><div style=3D"border:none;border-top:solid #E1E1E1 1.0pt;padding:3.0p=
+t 0cm 0cm 0cm">
+<p class=3D"MsoNormal"><b>From:</b> billing@cloudcrest.io &lt;billing@clou=
+dcrest.io&gt;<br>
+<b>Sent:</b> 20 August 2026 06:03<br><b>To:</b> Rowan Fitzgibbon &lt;rowan=
+@brackenhill.co.uk&gt;<br>
+<b>Subject:</b> Cloudcrest invoice CC-2026-0912</p></div>
+<p class=3D"MsoNormal">Your Cloudcrest invoice is ready.</p>
+<p class=3D"MsoNormal">Invoice number: CC-2026-0912<br>Billing period: 01 =
+Jul 2026 - 31 Jul 2026<br>
+Amount due: &#163;318.44<br>Due date: 03 September 2026</p>
+</div></div></body></html>
+--_004_AM0PR07MB6134A1B2C3D4E5F60AM0PR07MB6134eurp_--

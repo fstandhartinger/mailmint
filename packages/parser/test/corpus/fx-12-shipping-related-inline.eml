@@ -1,0 +1,67 @@
+Return-Path: <ship@brightloom.example.com>
+Received: from mx.brightloom.example.com (mx.brightloom.example.com [35.190.247.1])
+ by mx.parse.example.com (Postfix) with ESMTPS id 0EOF2WXQE7
+ (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+ for <k7m2xq4h9bwz@parse.example.com>; Sat, 22 Aug 2026 18:30:02 +0000
+Authentication-Results: mx.parse.example.com;
+ dkim=pass header.d=brightloom.example.com;
+ spf=pass smtp.mailfrom=ship@brightloom.example.com;
+ dmarc=pass header.from=brightloom.example.com
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=brightloom.example.com; s=mail;
+ h=from:to:subject:date:mime-version; bh=MC42MjkyOTg3MzEwODE2NjE2=;
+ b=MC45NDY5ODM4NTIyMjM4NzY5MC43OTc0NjM2MTA0NTI3OTk=
+MIME-Version: 1.0
+From: Brightloom Shipping <ship@brightloom.example.com>
+To: k7m2xq4h9bwz@parse.example.com
+Subject: Your Brightloom order SHP-55901 has shipped
+Date: Sat, 22 Aug 2026 18:30:00 +0000
+Message-ID: <shp-55901@brightloom.example.com>
+Content-Type: multipart/related; type="multipart/alternative";
+ boundary="rel_aa11bb22cc33"
+
+--rel_aa11bb22cc33
+Content-Type: multipart/alternative;
+ boundary="alt_dd44ee55ff66"
+
+--alt_dd44ee55ff66
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+
+Order SHP-55901 has shipped.
+
+Carrier: UPS
+Tracking number: 1Z999AA10123456784
+Shipped on: 08/22/2026
+Estimated delivery: 08/26/2026
+
+Ship to:
+Florian Standhartinger
+440 Terry Ave N
+Seattle, WA 98109
+
+Order total: $214.90
+--alt_dd44ee55ff66
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+<html><body><img src=3D"cid:logo.brightloom@shipping" alt=3D"Brightloom" w=
+idth=3D"120" height=3D"32">
+<h3>Your order has shipped</h3>
+<table cellpadding=3D"4" border=3D"0">
+<tr><td>Carrier</td><td>UPS</td></tr>
+<tr><td>Tracking number</td><td>1Z999AA10123456784</td></tr>
+<tr><td>Shipped on</td><td>08/22/2026</td></tr>
+<tr><td>Estimated delivery</td><td>08/26/2026</td></tr>
+<tr><td>Order total</td><td>$214.90</td></tr>
+</table></body></html>
+--alt_dd44ee55ff66--
+
+--rel_aa11bb22cc33
+Content-Type: image/png; name="logo.png"
+Content-Transfer-Encoding: base64
+Content-ID: <logo.brightloom@shipping>
+Content-Disposition: inline; filename="logo.png"
+
+iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGElEQVR4nGNkYGBgYPgPBAABBQAB
+f39/AAAAAElFTkSuQmCC
+--rel_aa11bb22cc33--

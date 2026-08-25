@@ -1,0 +1,97 @@
+Received: from list by lists.gnu.org with archive (Exim 4.90_1)
+	id 1toncS-0006Ez-1S
+	for mharc-emacs-devel@gnu.org; Sun, 02 Mar 2025 13:00:52 -0500
+Received: from eggs.gnu.org ([2001:470:142:3::10])
+ by lists.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_256_GCM_SHA384:256)
+ (Exim 4.90_1) (envelope-from <gabrielsantosdesouza@disroot.org>)
+ id 1toncQ-0006E1-En
+ for emacs-devel@gnu.org; Sun, 02 Mar 2025 13:00:50 -0500
+Received: from layka.disroot.org ([178.21.23.139])
+ by eggs.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_128_GCM_SHA256:128)
+ (Exim 4.90_1) (envelope-from <gabrielsantosdesouza@disroot.org>)
+ id 1toncO-00065n-6b; Sun, 02 Mar 2025 13:00:50 -0500
+Received: from mail01.disroot.lan (localhost [127.0.0.1])
+ by disroot.org (Postfix) with ESMTP id 748C320BCA;
+ Sun,  2 Mar 2025 19:00:42 +0100 (CET)
+X-Virus-Scanned: SPAM Filter at disroot.org
+Received: from layka.disroot.org ([127.0.0.1])
+ by localhost (disroot.org [127.0.0.1]) (amavis, port 10024) with ESMTP
+ id R_9-QogpoJTk; Sun,  2 Mar 2025 19:00:41 +0100 (CET)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=disroot.org; s=mail;
+ t=1740938441; bh=rOVFUj6Jk71QL0h0XHI2ywDveck6LA9LJc4mQ+H3UlY=;
+ h=From:To:Cc:Subject:Date;
+ b=Fna2S52YX67FIVfXdONkW+J5isSUjc+is0x6NGBGmjgRKSksY5Nk9V6r5bTQEahrh
+ PnCJm/izdKlriPgLuvzpanqhxFTOy0LwIduQQdFBQIuapSOJwjiar5U3q9tcoCXXB+
+ V+GIGJVfY5j5tVaVFFUILF2RwAR5aMvnxq6B0iJv2D/LmkJ7FZ2Yuq57iGY9B2wqge
+ dTiisbIx2Oh3BDyXJmXnxeEhwYWk3vCqn4eIDtnmfEu5QXmFELXKDjGDzdlONM04qY
+ GjIL8xMW37+hkqMtRxc4K1RBERMksDDfSJpIDhqhjwuGrPsMtriLPKVf6hvtBqPHfm
+ vODKaiX1FCzuQ==
+From: Gabriel Santos <gabrielsantosdesouza@disroot.org>
+To: Emacs Developers <emacs-devel@gnu.org>, Psionic K
+ <psionik@positron.solutions>, Po Lu <luangruo@yahoo.com>
+Cc: Stefan Kangas <stefankangas@gmail.com>, Eli Zaretskii <eliz@gnu.org>,
+ Philip Kaludercic <philipk@posteo.net>, acorallo@gnu.org
+Subject: Re: Providing Emacs Dependencies with Nix & Guix
+Date: Sun, 02 Mar 2025 15:00:47 -0300
+Message-ID: <877c57xqgg.fsf@disroot.org>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="=-=-="
+Received-SPF: pass client-ip=178.21.23.139;
+ envelope-from=gabrielsantosdesouza@disroot.org; helo=layka.disroot.org
+X-Spam_score_int: -20
+X-Spam_score: -2.1
+X-Spam_bar: --
+X-Spam_report: (-2.1 / 5.0 requ) BAYES_00=-1.9, DKIM_SIGNED=0.1,
+ DKIM_VALID=-0.1, DKIM_VALID_AU=-0.1, DKIM_VALID_EF=-0.1,
+ RCVD_IN_VALIDITY_CERTIFIED_BLOCKED=0.001, RCVD_IN_VALIDITY_RPBL_BLOCKED=0.001,
+ SPF_HELO_NONE=0.001, SPF_PASS=-0.001 autolearn=ham autolearn_force=no
+X-Spam_action: no action
+X-BeenThere: emacs-devel@gnu.org
+X-Mailman-Version: 2.1.29
+Precedence: list
+List-Id: "Emacs development discussions." <emacs-devel.gnu.org>
+List-Unsubscribe: <https://lists.gnu.org/mailman/options/emacs-devel>,
+ <mailto:emacs-devel-request@gnu.org?subject=unsubscribe>
+List-Archive: <https://lists.gnu.org/archive/html/emacs-devel>
+List-Post: <mailto:emacs-devel@gnu.org>
+List-Help: <mailto:emacs-devel-request@gnu.org?subject=help>
+List-Subscribe: <https://lists.gnu.org/mailman/listinfo/emacs-devel>,
+ <mailto:emacs-devel-request@gnu.org?subject=subscribe>
+X-List-Received-Date: Sun, 02 Mar 2025 18:00:50 -0000
+
+--=-=-=
+Content-Type: text/plain
+
+
+Attached is the .envrc file I previously mentioned (for Direnv).
+
+Should be easier to maintain than a Flake, but still provide the same
+feature of deploying a shell with development dependencies.
+
+I discovered "use flake" could be used without a Flake while trying to
+figure out what would be needed for Nix.
+"use flake nixpkgs#emacs" seems to pull in the build dependencies,
+as I was able to build Emacs with gcc (which I don't have installed in my system).
+
+A conditional is used to check for Guix first so a conflicting shell
+isn't deployed for those who have both on their system.
+
+
+--=-=-=
+Content-Type: text/plain
+Content-Disposition: attachment; filename=.envrc
+Content-Description: Direnv file
+
+# Direnv is a tool for defining development environments for projects.
+# It is used to deploy a development shell using either GNU Guix or Nix.
+
+# Check for Guix first.
+if type guix; then
+    # Emacs Next is an Emacs package closer to the version in development.
+    use guix --development emacs-next
+else
+    use flake nixpkgs#emacs
+fi
+
+--=-=-=--
+

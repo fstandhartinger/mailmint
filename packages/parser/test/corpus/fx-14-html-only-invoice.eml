@@ -1,0 +1,48 @@
+Return-Path: <billing@stackforge.dev>
+Received: from mx.stackforge.dev (mx.stackforge.dev [3.121.44.9])
+ by mx.parse.example.com (Postfix) with ESMTPS id MPRHPBZHFL
+ (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+ for <k7m2xq4h9bwz@parse.example.com>; Mon, 24 Aug 2026 03:11:50 +0000
+Authentication-Results: mx.parse.example.com;
+ dkim=pass header.d=stackforge.dev;
+ spf=pass smtp.mailfrom=billing@stackforge.dev;
+ dmarc=pass header.from=stackforge.dev
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=stackforge.dev; s=mail;
+ h=from:to:subject:date:mime-version; bh=MC44OTc0MjQzOTA1MzM1NTg0=;
+ b=MC44OTE1ODU1NDM3NzMyOTAyMC40NjA1MzM2NzMxMzA4NTA1
+MIME-Version: 1.0
+From: Stackforge Billing <billing@stackforge.dev>
+To: k7m2xq4h9bwz@parse.example.com
+Subject: Invoice 5A3C-0091 from Stackforge
+Date: Mon, 24 Aug 2026 03:11:47 +0000
+Message-ID: <inv-5a3c-0091@stackforge.dev>
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+<!doctype html><html><head><meta charset=3D"utf-8"><title>Invoice</title><=
+/head><body style=3D"font-family:-apple-system,Segoe UI,Roboto">
+<div style=3D"display:none!important;visibility:hidden;opacity:0;height:0;=
+width:0">Invoice 5A3C-0091 &#183; $1,240.00 due 2026-09-07</div>
+<table width=3D"100%"><tr><td align=3D"center"><table width=3D"560">
+<tr><td><h2>Invoice 5A3C-0091</h2>
+<p>Billed to Halverson Robotics Inc.<br>PO number: PO-2026-118</p>
+<table width=3D"100%" cellspacing=3D"0" cellpadding=3D"8" style=3D"border-=
+collapse:collapse">
+<tr><th align=3D"left">Description</th><th align=3D"center">Qty</th><th al=
+ign=3D"right">Unit</th><th align=3D"right">Amount</th></tr>
+<tr><td>Platform subscription &#8212; August 2026</td><td align=3D"center"=
+>1</td><td align=3D"right">$900.00</td><td align=3D"right">$900.00</td></t=
+r>
+<tr><td>Overage &#8212; 4,000,000 events</td><td align=3D"center">4</td><t=
+d align=3D"right">$60.00</td><td align=3D"right">$240.00</td></tr>
+<tr><td>Support plan</td><td align=3D"center">1</td><td align=3D"right">$1=
+00.00</td><td align=3D"right">$100.00</td></tr>
+</table>
+<p style=3D"text-align:right"><strong>Total due: $1,240.00</strong><br>Due=
+ date: 2026-09-07</p>
+<p><a href=3D"https://billing.stackforge.dev/inv/5A3C-0091">Pay invoice</a=
+></p>
+</td></tr></table></td></tr></table>
+<img src=3D"https://px.stackforge.dev/o.gif?i=3D5A3C-0091" width=3D"1" hei=
+ght=3D"1">
+</body></html>

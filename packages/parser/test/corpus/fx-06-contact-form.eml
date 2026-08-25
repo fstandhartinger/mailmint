@@ -1,0 +1,39 @@
+Return-Path: <wordpress@wildacrepottery.com>
+Received: from mx.wildacrepottery.com (mx.wildacrepottery.com [156.38.201.7])
+ by mx.parse.example.com (Postfix) with ESMTPS id LP0YEUOAPN
+ (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+ for <k7m2xq4h9bwz@parse.example.com>; Mon, 24 Aug 2026 09:42:11 +0000
+Authentication-Results: mx.parse.example.com;
+ dkim=pass header.d=wildacrepottery.com;
+ spf=pass smtp.mailfrom=wordpress@wildacrepottery.com;
+ dmarc=pass header.from=wildacrepottery.com
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=wildacrepottery.com; s=mail;
+ h=from:to:subject:date:mime-version; bh=MC40MjMyODQzNjcxNDQxMDI==;
+ b=MC42NzIwNjE5NjIxMTY4NjU1MC45MzkxODg4NjA0NzEwODgz
+MIME-Version: 1.0
+From: Wildacre Pottery <wordpress@wildacrepottery.com>
+Reply-To: Hannah Vosloo <hannah.vosloo@gmail.com>
+To: k7m2xq4h9bwz@parse.example.com
+Subject: New contact form submission: Bulk order enquiry for restaurant
+Date: Mon, 24 Aug 2026 09:42:09 +0000
+Message-ID: <wp-contact-88231@wildacrepottery.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+New submission from the contact form on wildacrepottery.com
+
+Name: Hannah Vosloo
+Email: hannah.vosloo@gmail.com
+Phone: +27 21 555 0134
+Company: Vosloo Interiors
+Budget: R 45 000
+Subject: Bulk order enquiry for restaurant
+
+Message:
+Hi, I run an interiors studio in Cape Town and I am pricing 60 dinner plates
+and 60 side plates in the speckled glaze for a restaurant opening in November.
+Could you let me know lead time and whether you offer a trade discount?
+
+Submitted: 2026-08-24 11:42:07 SAST
+IP: 105.184.22.9
+Page: https://wildacrepottery.com/contact

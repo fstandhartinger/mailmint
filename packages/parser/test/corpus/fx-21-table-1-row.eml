@@ -1,0 +1,42 @@
+Return-Path: <ap@meridian-parts.example.com>
+Received: from mx.meridian-parts.example.com (mx.meridian-parts.example.com [198.51.100.44])
+ by mx.parse.example.com (Postfix) with ESMTPS id BIGTBL1;
+ Mon, 25 Aug 2026 06:00:00 +0000
+Authentication-Results: mx.parse.example.com; dkim=pass header.d=meridian-parts.example.com; spf=pass smtp.mailfrom=ap@meridian-parts.example.com; dmarc=pass header.from=meridian-parts.example.com
+MIME-Version: 1.0
+From: Meridian Parts AP <ap@meridian-parts.example.com>
+To: k7m2xq4h9bwz@parse.example.com
+Subject: Invoice MP-2026-0001 (1 line items)
+Date: Mon, 25 Aug 2026 06:00:00 +0000
+Message-ID: <mp-2026-0001@meridian-parts.example.com>
+Content-Type: multipart/alternative;
+ boundary="bigtbl_1"
+
+--bigtbl_1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+Invoice MP-2026-0001
+
+Invoice number: MP-2026-0001
+Due date: 2026-10-15
+
+SKU          Description                                 Qty        Amount
+SKU-100001  Component 1 (spacer)                        2       $82.19
+
+Total: $82.19
+
+--bigtbl_1
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+<html><body><h2>Invoice MP-2026-0001</h2><p>Invoice number: MP-2026-0001</=
+p>
+<table cellpadding=3D"4" cellspacing=3D"0" border=3D"0" width=3D"100%">
+<tr><th align=3D"left">SKU</th><th align=3D"left">Description</th><th alig=
+n=3D"center">Qty</th><th align=3D"right">Amount</th></tr>
+<tr><td>SKU-100001</td><td>Component 1 (spacer)</td><td align=3D"center">2=
+</td><td align=3D"right">$82.19</td></tr>
+</table><p><b>Total: $82.19</b></p><p>Due date: 2026-10-15</p></body></htm=
+l>
+--bigtbl_1--

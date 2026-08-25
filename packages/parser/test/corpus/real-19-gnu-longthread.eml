@@ -1,0 +1,204 @@
+Received: from list by lists.gnu.org with archive (Exim 4.90_1)
+	id 1tquSy-00019c-IG
+	for mharc-emacs-devel@gnu.org; Sat, 08 Mar 2025 08:43:49 -0500
+Received: from eggs.gnu.org ([2001:470:142:3::10])
+ by lists.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_256_GCM_SHA384:256)
+ (Exim 4.90_1) (envelope-from <jb@jeremybryant.net>)
+ id 1tquSx-00019F-0S
+ for emacs-devel@gnu.org; Sat, 08 Mar 2025 08:43:47 -0500
+Received: from out-182.mta1.migadu.com ([95.215.58.182])
+ by eggs.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_256_GCM_SHA384:256)
+ (Exim 4.90_1) (envelope-from <jb@jeremybryant.net>)
+ id 1tquSt-0004dz-IG
+ for emacs-devel@gnu.org; Sat, 08 Mar 2025 08:43:46 -0500
+X-Report-Abuse: Please report any abuse attempt to abuse@migadu.com and
+ include these headers.
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=jeremybryant.net;
+ s=key1; t=1741441418;
+ h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+ to:to:cc:cc:mime-version:mime-version:content-type:content-type:
+ in-reply-to:in-reply-to:references:references;
+ bh=Ql/ilF3MDyqAvOgbnjbzCFAMMkESWT7vRTf9WWOxJS0=;
+ b=aqZKwk8KeA6optR7TF1jWzOPHeoe/ZwgfQyDlka3KjA+qJtBFXUjhmQUo1WurLVBt1CdbZ
+ SCdPftqREs/AgFIsAaYJs9CkCorlsdEiBbVasX1t6v8NkMVC4kk/SF4rXwluCLkGLq2yw/
+ LXmE3lS9tzzmiUYLZx0goOeE7kKyKwm1K/dymVe8rwEij38oCHCGHVZlAWbrbLxEGfUUjO
+ ScrxFLuAXIz2+j9mCjrFr71atmP+yZ6be5/eHgvdCKNR13YOK8byPY4pLouX8biFPmCtSx
+ wBshfRC3nfw0/u6A14qu7J129wTh8kT7ASBJ4buVhCcGKoDTHmfc8I6v6qZ+iQ==
+From: Jeremy Bryant <jb@jeremybryant.net>
+To: Pip Cet <pipcet@protonmail.com>
+Cc: Eli Zaretskii <eliz@gnu.org>,  emacs-devel@gnu.org,  Gerd =?utf-8?Q?M?=
+ =?utf-8?Q?=C3=B6llmann?= <gerd.moellmann@gmail.com>
+Subject: Re: [PATCH] igc: /etc/DEBUG - clamped states
+In-Reply-To: <87a59xf2ss.fsf@protonmail.com> (Pip Cet's message of "Fri, 07
+ Mar 2025 12:23:20 +0000")
+References: <174083699315.7435.17324213667514098918@vcs2.savannah.gnu.org>
+ <20250301134953.7258AC7AFBC@vcs2.savannah.gnu.org>
+ <87mse3z5kc.fsf@protonmail.com> <86pliymh7m.fsf@gnu.org>
+ <875xkp3f0g.fsf@jeremybryant.net> <86cyewki2b.fsf@gnu.org>
+ <87ikol23sc.fsf@jeremybryant.net> <87a59xf2ss.fsf@protonmail.com>
+Date: Sat, 08 Mar 2025 13:43:33 +0000
+Message-ID: <877c4z1vui.fsf@jeremybryant.net>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="=-=-="
+X-Migadu-Flow: FLOW_OUT
+Received-SPF: pass client-ip=95.215.58.182; envelope-from=jb@jeremybryant.net;
+ helo=out-182.mta1.migadu.com
+X-Spam_score_int: -23
+X-Spam_score: -2.4
+X-Spam_bar: --
+X-Spam_report: (-2.4 / 5.0 requ) BAYES_00=-1.9, DKIM_INVALID=0.1,
+ DKIM_SIGNED=0.1, RCVD_IN_DNSWL_LOW=-0.7, RCVD_IN_VALIDITY_RPBL_BLOCKED=0.001,
+ RCVD_IN_VALIDITY_SAFE_BLOCKED=0.001, SPF_HELO_PASS=-0.001,
+ SPF_PASS=-0.001 autolearn=ham autolearn_force=no
+X-Spam_action: no action
+X-BeenThere: emacs-devel@gnu.org
+X-Mailman-Version: 2.1.29
+Precedence: list
+List-Id: "Emacs development discussions." <emacs-devel.gnu.org>
+List-Unsubscribe: <https://lists.gnu.org/mailman/options/emacs-devel>,
+ <mailto:emacs-devel-request@gnu.org?subject=unsubscribe>
+List-Archive: <https://lists.gnu.org/archive/html/emacs-devel>
+List-Post: <mailto:emacs-devel@gnu.org>
+List-Help: <mailto:emacs-devel-request@gnu.org?subject=help>
+List-Subscribe: <https://lists.gnu.org/mailman/listinfo/emacs-devel>,
+ <mailto:emacs-devel-request@gnu.org?subject=subscribe>
+X-List-Received-Date: Sat, 08 Mar 2025 13:43:47 -0000
+
+--=-=-=
+Content-Type: text/plain
+
+Pip Cet <pipcet@protonmail.com> writes:
+
+> "Jeremy Bryant" <jb@jeremybryant.net> writes:
+>
+>> Eli Zaretskii <eliz@gnu.org> writes:
+>>
+>>>
+>>> This seems to be for etc/DEBUG more than anything else.
+>>
+>> As suggested, here is a patch to include it.
+
+Revised patch attached to address Eli's recommendation to put '(gdb) call...' and
+other items below.
+
+--=-=-=
+Content-Type: text/x-diff
+Content-Disposition: attachment;
+ filename=0001-etc-DEBUG-Document-debugging-the-igc.patch
+
+>From 3de908cab914f715dab882913466037dd4651729 Mon Sep 17 00:00:00 2001
+From: Jeremy Bryant <jb@jeremybryant.net>
+Date: Sat, 8 Mar 2025 13:34:51 +0000
+Subject: [PATCH] * etc/DEBUG: Document debugging the igc
+
+---
+ etc/DEBUG | 26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
+
+diff --git a/etc/DEBUG b/etc/DEBUG
+index ca061063454..b575acadb38 100644
+--- a/etc/DEBUG
++++ b/etc/DEBUG
+@@ -1364,6 +1364,32 @@ subsequent to which a reproduction of the exception precipitating the
+ spurious OOM error should be located.  This exception is invariably
+ indicative of a bug within Emacs that should be fixed.
+ 
++** Debugging Emacs with Incremental Garbage Collector (igc)
++
++The Emacs incremental garbage collector (igc), relies on the C library
++by Ravenbrook Limited, the Memory Pool System (MPS).  It is copyrighted
++under the 2-clause BSD license.
++
++Debugging memory management errors can be complex.
++
++The following is explained in the MPS documentation from Ravenbrook.
++See also the Info manual:
++(info "(MemoryPoolSystem) Debugging with the Memory Pool System")
++
++The key abstraction is the concept of memory `arena', which has four
++states.  Two of these are important for debugging, the clamped and
++parked states.  When debugging igc, you can clamp the arena before
++inspecting memory:
++
++     (gdb) call mps_arena_clamp(arena)
++
++and then release it afterwards with:
++
++     (gdb) call mps_arena_release(arena)
++
++
++
++
+ 
+ This file is part of GNU Emacs.
+ 
+-- 
+2.47.2
+
+
+--=-=-=
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+
+>
+> Note that mps_arena_clamp is useful for debugging non-MPS problems
+> only. MPS problems need to be debugged with "live" settings, it's only
+> when MPS gets in the way of debugging other problems that clamping is
+> potentially helpful, IMHO.
+
+OK, revised patch refers to igc rather than MPS
+>
+>> Some amendment to the above, e.g. I've tested the below
+>> which works on igc.
+>
+> (Note that there appears to be a problem when calling mps_arena_park
+> followed by mps_arena_step; the intended behavior is for mps_arena_step
+> to return the arena to the clamped state.  Unfortunately, the problem is
+> anecdotal at this point as I haven't been able to reproduce this problem
+> in a minimal setting.)
+
+OK, my patch doesn't include any reference to the above.  When you have
+a reproducible example we can document it.
+
+>> +
+>> +The MPS arena type has four states.  In particular, the clamped and
+>> +parked states are important when introspecting and debugging.  If you
+>> +are examining the contents of the heap, you don=E2=80=99t want data mov=
+ing under
+>> +your feet.  So for example, if your program is stopped in GDB you might
+>> +type:
+>
+> This may be pedantic, but this entire paragraph is taken verbatim from
+> the MPS documentation
+> (https://memory-pool-system.readthedocs.io/en/latest/topic/arena.html#c.m=
+ps_arena_clamp),
+> which is probably not okay from a copyright POV.
+>
+> Pip
+
+Revised patch includes rewritten para with clearer pointers to
+Ravenbrook.
+
+
+
+
+My mistake was to assume this fell under the 15-line rule and conflate the =
+text
+from Ravenbrook that says BSD 2-clause license is GPL-compatible, with
+simple inclusion in Emacs.  Sorry.
+
+
+
+
+(info "(MemoryPoolSystem) Memory Pool System Kit Open Source License")=20
+
+9 Memory Pool System Kit Open Source License
+********************************************
+
+This is the license under which the Memory Pool System Kit is made
+available by Ravenbrook Limited.  This license is generally known as the
+BSD 2-clause license(1).  It is GPL compatible(2) and OSI approved(3).
+
+--=-=-=--
+

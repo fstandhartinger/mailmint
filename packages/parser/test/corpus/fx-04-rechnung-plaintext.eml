@@ -1,0 +1,53 @@
+Return-Path: <buchhaltung@kaltenbrunner-systemtechnik.de>
+Received: from mx.kaltenbrunner-systemtechnik.de (mx.kaltenbrunner-systemtechnik.de [212.227.126.187])
+ by mx.parse.example.com (Postfix) with ESMTPS id 73MGWA7E81
+ (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+ for <k7m2xq4h9bwz@parse.example.com>; Fri, 14 Aug 2026 09:12:44 +0200
+Authentication-Results: mx.parse.example.com;
+ dkim=pass header.d=kaltenbrunner-systemtechnik.de;
+ spf=pass smtp.mailfrom=buchhaltung@kaltenbrunner-systemtechnik.de;
+ dmarc=pass header.from=kaltenbrunner-systemtechnik.de
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kaltenbrunner-systemtechnik.de; s=mail;
+ h=from:to:subject:date:mime-version; bh=MC45Mzg3NDE1Njg5OTYyOTE5=;
+ b=MC4zNzkzNTg5NjM2Njc4OTc4MC40MzEwODA1NzkzMzU2MTQz
+MIME-Version: 1.0
+From: "Kaltenbrunner Systemtechnik GmbH" <buchhaltung@kaltenbrunner-systemtechnik.de>
+To: k7m2xq4h9bwz@parse.example.com
+Subject: =?UTF-8?Q?Rechnung_RE-2026-00417_=E2=80=93_Kaltenbrunner_Systemtechnik?=
+Date: Fri, 14 Aug 2026 09:12:41 +0200
+Message-ID: <c3f1b2a4-1a9e-4b3c-9e11-8f0c2d3e4f50@kaltenbrunner-systemtechnik.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+Sehr geehrte Damen und Herren,
+
+anbei erhalten Sie unsere Rechnung.
+
+Rechnungsnummer:  RE-2026-00417
+Rechnungsdatum:   14.08.2026
+Kundennummer:     K-88231
+F=C3=A4llig am:        13.09.2026
+Zahlbar ohne Abzug innerhalb von 30 Tagen.
+
+Pos  Bezeichnung                         Menge      Einzelpreis        Bet=
+rag
+1    Wartungspauschale August            1          890,00 EUR     890,00 =
+EUR
+2    Zusatzlizenz Arbeitsplatz           4           74,50 EUR     298,00 =
+EUR
+3    Anfahrt und Spesen                  2           46,00 EUR      92,00 =
+EUR
+
+Zwischensumme:  1.280,00 EUR
+Umsatzsteuer 19%:  243,20 EUR
+Gesamtbetrag:  1.523,20 EUR
+
+Bitte =C3=BCberweisen Sie den Betrag auf IBAN DE02120300000000202051.
+
+Mit freundlichen Gr=C3=BC=C3=9Fen
+
+Marion Kaltenbrunner
+Buchhaltung
+Kaltenbrunner Systemtechnik GmbH
+Tel.: +49 89 552018-0
+USt-IdNr.: DE812345678

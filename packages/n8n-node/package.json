@@ -1,0 +1,65 @@
+{
+  "name": "n8n-nodes-mailmint",
+  "version": "0.1.0",
+  "description": "Turn inbound email into structured JSON. Define the fields you want right inside n8n, then receive parsed messages by webhook or polling — or parse mail that another node already fetched.",
+  "keywords": [
+    "n8n-community-node-package",
+    "n8n",
+    "email",
+    "email-parser",
+    "imap",
+    "inbound-email",
+    "eml",
+    "mime",
+    "invoice",
+    "extraction",
+    "mailmint"
+  ],
+  "license": "MIT",
+  "homepage": "https://mailmint.dev",
+  "author": {
+    "name": "Florian Standhartinger",
+    "email": "florian.standhartinger@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fstandhartinger/n8n-nodes-mailmint.git"
+  },
+  "bugs": {
+    "url": "https://github.com/fstandhartinger/n8n-nodes-mailmint/issues"
+  },
+  "engines": {
+    "node": ">=20.15"
+  },
+  "main": "index.js",
+  "scripts": {
+    "build": "n8n-node build && rm -rf dist/docs dist/package.json dist/tsconfig.tsbuildinfo && find dist -name '*.js.map' -delete",
+    "dev": "n8n-node dev",
+    "lint": "n8n-node lint",
+    "lintfix": "n8n-node lint --fix",
+    "pretest": "npm run build",
+    "test": "node --test test/*.test.js",
+    "release": "n8n-node release",
+    "prerelease": "n8n-node prerelease"
+  },
+  "files": [
+    "dist"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [
+      "dist/credentials/MailMintApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/MailMint/MailMint.node.js",
+      "dist/nodes/MailMintTrigger/MailMintTrigger.node.js"
+    ]
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@n8n/node-cli": "^0.44.5"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  }
+}

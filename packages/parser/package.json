@@ -1,0 +1,14 @@
+{
+  "name": "mailmint-parser",
+  "version": "0.1.0",
+  "description": "MailMint parsing engine: RFC822 -> canonical structured JSON.",
+  "license": "MIT",
+  "main": "src/index.js",
+  "engines": { "node": ">=20" },
+  "files": ["src", "README.md"],
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "accuracy": "node test/accuracy.js"
+  },
+  "dependencies": {}
+}

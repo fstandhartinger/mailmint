@@ -1,0 +1,21 @@
+{
+  "name": "mailmint-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MailMint REST API, persistence, webhook delivery and dashboard.",
+  "main": "src/server.js",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "migrate": "node src/migrate.js",
+    "test": "node --test --test-concurrency=1 test/*.test.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "express": "^4.21.2",
+    "mailmint-parser": "*",
+    "pg": "^8.13.1",
+    "stripe": "^17.6.0"
+  }
+}

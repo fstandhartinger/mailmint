@@ -1,0 +1,18 @@
+# MailMint inbound Email Worker.
+#   npx wrangler deploy --config src/worker/wrangler.toml
+name = "mailmint-email"
+main = "cloudflare-email-worker.js"
+compatibility_date = "2026-08-01"
+
+# The email handler needs no bindings, no KV, no durable objects, no queues.
+# Everything it needs arrives as a secret:
+#   npx wrangler secret put MAILMINT_ENDPOINT
+#   npx wrangler secret put MAILMINT_SECRET
+# Optional:
+#   npx wrangler secret put MAILMINT_ALSO_FORWARD_TO   # keep a human copy
+[vars]
+MAILMINT_ZONE = "parse.example.com"
+
+# Email Routing rules are configured in the dashboard or with
+#   npx wrangler email routing ...
+# See ops/cloudflare-setup.md for the exact click path.

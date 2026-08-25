@@ -1,0 +1,159 @@
+Return-Path: <ap@meridian-parts.example.com>
+Received: from mx.meridian-parts.example.com (mx.meridian-parts.example.com [198.51.100.44])
+ by mx.parse.example.com (Postfix) with ESMTPS id BIGTBL40;
+ Mon, 25 Aug 2026 06:00:00 +0000
+Authentication-Results: mx.parse.example.com; dkim=pass header.d=meridian-parts.example.com; spf=pass smtp.mailfrom=ap@meridian-parts.example.com; dmarc=pass header.from=meridian-parts.example.com
+MIME-Version: 1.0
+From: Meridian Parts AP <ap@meridian-parts.example.com>
+To: k7m2xq4h9bwz@parse.example.com
+Subject: Invoice MP-2026-0040 (40 line items)
+Date: Mon, 25 Aug 2026 06:00:00 +0000
+Message-ID: <mp-2026-0040@meridian-parts.example.com>
+Content-Type: multipart/alternative;
+ boundary="bigtbl_40"
+
+--bigtbl_40
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+Invoice MP-2026-0040
+
+Invoice number: MP-2026-0040
+Due date: 2026-10-15
+
+SKU          Description                                 Qty        Amount
+SKU-100001  Component 1 (spacer)                        2       $82.19
+SKU-100002  Component 2 (gasket)                        3       $71.38
+SKU-100003  Component 3 (washer)                        4       $60.57
+SKU-100004  Component 4 (bearing)                       1       $49.76
+SKU-100005  Component 5 (bracket)                       2       $38.95
+SKU-100006  Component 6 (spacer)                        3       $28.14
+SKU-100007  Component 7 (gasket)                        4       $17.33
+SKU-100008  Component 8 (washer)                        1        $6.52
+SKU-100009  Component 9 (bearing)                       2       $85.71
+SKU-100010  Component 10 (bracket)                      3       $74.90
+SKU-100011  Component 11 (spacer)                       4       $64.09
+SKU-100012  Component 12 (gasket)                       1       $53.28
+SKU-100013  Component 13 (washer)                       2       $42.47
+SKU-100014  Component 14 (bearing)                      3       $31.66
+SKU-100015  Component 15 (bracket)                      4       $20.85
+SKU-100016  Component 16 (spacer)                       1       $10.04
+SKU-100017  Component 17 (gasket)                       2       $89.23
+SKU-100018  Component 18 (washer)                       3       $78.42
+SKU-100019  Component 19 (bearing)                      4       $67.61
+SKU-100020  Component 20 (bracket)                      1       $56.80
+SKU-100021  Component 21 (spacer)                       2       $45.99
+SKU-100022  Component 22 (gasket)                       3       $35.18
+SKU-100023  Component 23 (washer)                       4       $24.37
+SKU-100024  Component 24 (bearing)                      1       $13.56
+SKU-100025  Component 25 (bracket)                      2       $92.75
+SKU-100026  Component 26 (spacer)                       3       $81.94
+SKU-100027  Component 27 (gasket)                       4       $71.13
+SKU-100028  Component 28 (washer)                       1       $60.32
+SKU-100029  Component 29 (bearing)                      2       $49.51
+SKU-100030  Component 30 (bracket)                      3       $38.70
+SKU-100031  Component 31 (spacer)                       4       $27.89
+SKU-100032  Component 32 (gasket)                       1       $17.08
+SKU-100033  Component 33 (washer)                       2        $6.27
+SKU-100034  Component 34 (bearing)                      3       $85.46
+SKU-100035  Component 35 (bracket)                      4       $74.65
+SKU-100036  Component 36 (spacer)                       1       $63.84
+SKU-100037  Component 37 (gasket)                       2       $53.03
+SKU-100038  Component 38 (washer)                       3       $42.22
+SKU-100039  Component 39 (bearing)                      4       $31.41
+SKU-100040  Component 40 (bracket)                      1       $20.60
+
+Total: $1965.80
+
+--bigtbl_40
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+<html><body><h2>Invoice MP-2026-0040</h2><p>Invoice number: MP-2026-0040</=
+p>
+<table cellpadding=3D"4" cellspacing=3D"0" border=3D"0" width=3D"100%">
+<tr><th align=3D"left">SKU</th><th align=3D"left">Description</th><th alig=
+n=3D"center">Qty</th><th align=3D"right">Amount</th></tr>
+<tr><td>SKU-100001</td><td>Component 1 (spacer)</td><td align=3D"center">2=
+</td><td align=3D"right">$82.19</td></tr>
+<tr><td>SKU-100002</td><td>Component 2 (gasket)</td><td align=3D"center">3=
+</td><td align=3D"right">$71.38</td></tr>
+<tr><td>SKU-100003</td><td>Component 3 (washer)</td><td align=3D"center">4=
+</td><td align=3D"right">$60.57</td></tr>
+<tr><td>SKU-100004</td><td>Component 4 (bearing)</td><td align=3D"center">=
+1</td><td align=3D"right">$49.76</td></tr>
+<tr><td>SKU-100005</td><td>Component 5 (bracket)</td><td align=3D"center">=
+2</td><td align=3D"right">$38.95</td></tr>
+<tr><td>SKU-100006</td><td>Component 6 (spacer)</td><td align=3D"center">3=
+</td><td align=3D"right">$28.14</td></tr>
+<tr><td>SKU-100007</td><td>Component 7 (gasket)</td><td align=3D"center">4=
+</td><td align=3D"right">$17.33</td></tr>
+<tr><td>SKU-100008</td><td>Component 8 (washer)</td><td align=3D"center">1=
+</td><td align=3D"right">$6.52</td></tr>
+<tr><td>SKU-100009</td><td>Component 9 (bearing)</td><td align=3D"center">=
+2</td><td align=3D"right">$85.71</td></tr>
+<tr><td>SKU-100010</td><td>Component 10 (bracket)</td><td align=3D"center"=
+>3</td><td align=3D"right">$74.90</td></tr>
+<tr><td>SKU-100011</td><td>Component 11 (spacer)</td><td align=3D"center">=
+4</td><td align=3D"right">$64.09</td></tr>
+<tr><td>SKU-100012</td><td>Component 12 (gasket)</td><td align=3D"center">=
+1</td><td align=3D"right">$53.28</td></tr>
+<tr><td>SKU-100013</td><td>Component 13 (washer)</td><td align=3D"center">=
+2</td><td align=3D"right">$42.47</td></tr>
+<tr><td>SKU-100014</td><td>Component 14 (bearing)</td><td align=3D"center"=
+>3</td><td align=3D"right">$31.66</td></tr>
+<tr><td>SKU-100015</td><td>Component 15 (bracket)</td><td align=3D"center"=
+>4</td><td align=3D"right">$20.85</td></tr>
+<tr><td>SKU-100016</td><td>Component 16 (spacer)</td><td align=3D"center">=
+1</td><td align=3D"right">$10.04</td></tr>
+<tr><td>SKU-100017</td><td>Component 17 (gasket)</td><td align=3D"center">=
+2</td><td align=3D"right">$89.23</td></tr>
+<tr><td>SKU-100018</td><td>Component 18 (washer)</td><td align=3D"center">=
+3</td><td align=3D"right">$78.42</td></tr>
+<tr><td>SKU-100019</td><td>Component 19 (bearing)</td><td align=3D"center"=
+>4</td><td align=3D"right">$67.61</td></tr>
+<tr><td>SKU-100020</td><td>Component 20 (bracket)</td><td align=3D"center"=
+>1</td><td align=3D"right">$56.80</td></tr>
+<tr><td>SKU-100021</td><td>Component 21 (spacer)</td><td align=3D"center">=
+2</td><td align=3D"right">$45.99</td></tr>
+<tr><td>SKU-100022</td><td>Component 22 (gasket)</td><td align=3D"center">=
+3</td><td align=3D"right">$35.18</td></tr>
+<tr><td>SKU-100023</td><td>Component 23 (washer)</td><td align=3D"center">=
+4</td><td align=3D"right">$24.37</td></tr>
+<tr><td>SKU-100024</td><td>Component 24 (bearing)</td><td align=3D"center"=
+>1</td><td align=3D"right">$13.56</td></tr>
+<tr><td>SKU-100025</td><td>Component 25 (bracket)</td><td align=3D"center"=
+>2</td><td align=3D"right">$92.75</td></tr>
+<tr><td>SKU-100026</td><td>Component 26 (spacer)</td><td align=3D"center">=
+3</td><td align=3D"right">$81.94</td></tr>
+<tr><td>SKU-100027</td><td>Component 27 (gasket)</td><td align=3D"center">=
+4</td><td align=3D"right">$71.13</td></tr>
+<tr><td>SKU-100028</td><td>Component 28 (washer)</td><td align=3D"center">=
+1</td><td align=3D"right">$60.32</td></tr>
+<tr><td>SKU-100029</td><td>Component 29 (bearing)</td><td align=3D"center"=
+>2</td><td align=3D"right">$49.51</td></tr>
+<tr><td>SKU-100030</td><td>Component 30 (bracket)</td><td align=3D"center"=
+>3</td><td align=3D"right">$38.70</td></tr>
+<tr><td>SKU-100031</td><td>Component 31 (spacer)</td><td align=3D"center">=
+4</td><td align=3D"right">$27.89</td></tr>
+<tr><td>SKU-100032</td><td>Component 32 (gasket)</td><td align=3D"center">=
+1</td><td align=3D"right">$17.08</td></tr>
+<tr><td>SKU-100033</td><td>Component 33 (washer)</td><td align=3D"center">=
+2</td><td align=3D"right">$6.27</td></tr>
+<tr><td>SKU-100034</td><td>Component 34 (bearing)</td><td align=3D"center"=
+>3</td><td align=3D"right">$85.46</td></tr>
+<tr><td>SKU-100035</td><td>Component 35 (bracket)</td><td align=3D"center"=
+>4</td><td align=3D"right">$74.65</td></tr>
+<tr><td>SKU-100036</td><td>Component 36 (spacer)</td><td align=3D"center">=
+1</td><td align=3D"right">$63.84</td></tr>
+<tr><td>SKU-100037</td><td>Component 37 (gasket)</td><td align=3D"center">=
+2</td><td align=3D"right">$53.03</td></tr>
+<tr><td>SKU-100038</td><td>Component 38 (washer)</td><td align=3D"center">=
+3</td><td align=3D"right">$42.22</td></tr>
+<tr><td>SKU-100039</td><td>Component 39 (bearing)</td><td align=3D"center"=
+>4</td><td align=3D"right">$31.41</td></tr>
+<tr><td>SKU-100040</td><td>Component 40 (bracket)</td><td align=3D"center"=
+>1</td><td align=3D"right">$20.60</td></tr>
+</table><p><b>Total: $1965.80</b></p><p>Due date: 2026-10-15</p></body></h=
+tml>
+--bigtbl_40--

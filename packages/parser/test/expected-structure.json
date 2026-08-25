@@ -1,0 +1,524 @@
+{
+ "fx-01-stripe-receipt.eml": {
+  "attachments": [],
+  "date": "2026-08-21T14:02:09.000Z",
+  "from": {
+   "email": "receipts@northwind-analytics.com",
+   "name": "Northwind Analytics"
+  },
+  "has_html": true,
+  "has_text": true,
+  "message_id": "<rcpt-2451-8827@northwind-analytics.com>",
+  "subject": "Your receipt from Northwind Analytics #2451-8827"
+ },
+ "fx-02-order-confirmation.eml": {
+  "attachments": [],
+  "date": "2026-08-19T21:14:52.000Z",
+  "from": {
+   "email": "auto-confirm@example-shop.com",
+   "name": "example-shop.com"
+  },
+  "has_html": true,
+  "has_text": true,
+  "message_id": "<01000198f2b1c0a0-order@example-shop.com>",
+  "subject": "Your Example-Shop.com order of Anker 737 Power Bank..."
+ },
+ "fx-03-dhl-versand-latin1.eml": {
+  "attachments": [],
+  "date": "2026-08-25T04:31:00.000Z",
+  "from": {
+   "email": "noreply@versandbenachrichtigung.example.de",
+   "name": "DHL Paket"
+  },
+  "has_html": true,
+  "has_text": true,
+  "message_id": "<20260825043100.JJD00039@versandbenachrichtigung.example.de>",
+  "subject": "Ihre Sendung JJD000390009991234567 ist unterwegs - Zustellung am 27.08."
+ },
+ "fx-04-rechnung-plaintext.eml": {
+  "attachments": [],
+  "date": "2026-08-14T07:12:41.000Z",
+  "from": {
+   "email": "buchhaltung@kaltenbrunner-systemtechnik.de",
+   "name": "Kaltenbrunner Systemtechnik GmbH"
+  },
+  "has_html": false,
+  "has_text": true,
+  "message_id": "<c3f1b2a4-1a9e-4b3c-9e11-8f0c2d3e4f50@kaltenbrunner-systemtechnik.de>",
+  "subject": "Rechnung RE-2026-00417 – Kaltenbrunner Systemtechnik"
+ },
+ "fx-05-invoice-pdf-attachment.eml": {
+  "attachments": [
+   {
+    "content_type": "application/pdf",
+    "filename": "Invoice INV-10428.pdf",
+    "size": 333
+   }
+  ],
+  "date": "2026-08-01T07:44:16.000Z",
+  "from": {
+   "email": "ar@ellinghurst.co.uk",
+   "name": "Priya Raghunathan"
+  },
+  "has_html": true,
+  "has_text": true,
+  "message_id": "<CAF9x8Qz+INV10428@mail.ellinghurst.co.uk>",
+  "subject": "Invoice INV-10428 from Ellinghurst Consulting Ltd"
+ },
+ "fx-06-contact-form.eml": {
+  "attachments": [],
+  "date": "2026-08-24T09:42:09.000Z",
+  "from": {
+   "email": "wordpress@wildacrepottery.com",
+   "name": "Wildacre Pottery"
+  },
+  "has_html": false,
+  "has_text": true,
+  "message_id": "<wp-contact-88231@wildacrepottery.com>",
+  "subject": "New contact form submission: Bulk order enquiry for restaurant"
+ },
+ "fx-07-calendar-invite.eml": {
+  "attachments": [
+   {
+    "content_type": "text/calendar",
+    "filename": null,
+    "size": 605
+   }
+  ],
+  "date": "2026-08-25T08:15:02.000Z",
+  "from": {
+   "email": "ilse.brandt@meridian-labs.io",
+   "name": "Ilse Brandt"
+  },
+  "has_html": false,
+  "has_text": true,
+  "message_id": "<00000000000q3pricing@google.com>",
+  "subject": "Invitation: Q3 pricing review @ Thu Sep 3, 2026 3pm - 4pm (CEST)"
+ },
+ "fx-08-reply-chain-invoice.eml": {
+  "attachments": [],
+  "date": "2026-08-24T15:22:38.000Z",
+  "from": {
+   "email": "tomas@halvard.se",
+   "name": "Tomas Berglund"
+  },
+  "has_html": false,
+  "has_text": true,
+  "message_id": "<CAF9y@mail.halvard.se>",
+  "subject": "Re: Wrong total on INV-77211"
+ },
+ "fx-09-outlook-forwarded-invoice.eml": {
+  "attachments": [],
+  "date": "2026-08-20T07:15:30.000Z",
+  "from": {
+   "email": "rowan@brackenhill.co.uk",
+   "name": "Rowan Fitzgibbon"
+  },
+  "has_html": true,
+  "has_text": true,
+  "message_id": "<AM0PR07MB6134FWD@AM0PR07MB6134.eurprd07.prod.outlook.com>",
+  "subject": "FW: Cloudcrest invoice CC-2026-0912"
+ },
+ "fx-10-japanese-receipt.eml": {
+  "attachments": [],
+  "date": "2026-08-18T03:04:19.000Z",
+  "from": {
+   "email": "order@midrift.example.jp",
+   "name": "株式会社ミドリフト"
+  },
+  "has_html": false,
+  "has_text": true,
+  "message_id": "<jp-2026-338271@midrift.example.jp>",
+  "subject": "ご注文ありがとうございます JP-2026-338271"
+ },
+ "fx-11-utility-bill-pipes.eml": {
+  "attachments": [],
+  "date": "2026-08-15T04:02:10.000Z",
+  "from": {
+   "email": "bills@ridgewayenergy.co.uk",
+   "name": "Ridgeway Energy"
+  },
+  "has_html": false,
+  "has_text": true,
+  "message_id": "<bill-7729441502-202608@ridgewayenergy.co.uk>",
+  "subject": "Your electricity bill for 15 Jul - 14 Aug 2026"
+ },
+ "fx-12-shipping-related-inline.eml": {
+  "attachments": [
+   {
+    "content_type": "image/png",
+    "filename": "logo.png",
+    "size": 72
+   }
+  ],
+  "date": "2026-08-22T18:30:00.000Z",
+  "from": {
+   "email": "ship@brightloom.example.com",
+   "name": "Brightloom Shipping"
+  },
+  "has_html": true,
+  "has_text": true,
+  "message_id": "<shp-55901@brightloom.example.com>",
+  "subject": "Your Brightloom order SHP-55901 has shipped"
+ },
+ "fx-13-facture-francaise.eml": {
+  "attachments": [],
+  "date": "2026-07-31T14:40:09.000Z",
+  "from": {
+   "email": "facturation@ateliernumerique.fr",
+   "name": "Atelier Numérique"
+  },
+  "has_html": false,
+  "has_text": true,
+  "message_id": "<fa-2026-0731@ateliernumerique.fr>",
+  "subject": "Facture FA-2026-0731 - Atelier Numérique"
+ },
+ "fx-14-html-only-invoice.eml": {
+  "attachments": [],
+  "date": "2026-08-24T03:11:47.000Z",
+  "from": {
+   "email": "billing@stackforge.dev",
+   "name": "Stackforge Billing"
+  },
+  "has_html": true,
+  "has_text": false,
+  "message_id": "<inv-5a3c-0091@stackforge.dev>",
+  "subject": "Invoice 5A3C-0091 from Stackforge"
+ },
+ "fx-15-broken-boundary.eml": {
+  "attachments": [],
+  "date": "2026-08-25T01:00:00.000Z",
+  "from": {
+   "email": "noreply@brokenmailer.example.net",
+   "name": "Broken Mailer"
+  },
+  "has_html": false,
+  "has_text": false,
+  "message_id": "<brk-0001@brokenmailer.example.net>",
+  "subject": "Invoice BRK-0001"
+ },
+ "fx-16-nested-rfc2231.eml": {
+  "attachments": [
+   {
+    "content_type": "application/pdf",
+    "filename": "Quartalsabschluss März-Juni.pdf",
+    "size": 295
+   }
+  ],
+  "date": "2026-07-01T02:00:10.000Z",
+  "from": {
+   "email": "statements@nordbank.example.at",
+   "name": "Nordbank Österreich"
+  },
+  "has_html": true,
+  "has_text": true,
+  "message_id": "<st-2026-q2@nordbank.example.at>",
+  "subject": "Quartalsabschluss ST-2026-Q2"
+ },
+ "fx-17-ride-receipt-de.eml": {
+  "attachments": [],
+  "date": "2026-08-23T19:52:05.000Z",
+  "from": {
+   "email": "noreply@fahrten.example.com",
+   "name": "Fahrten Belege"
+  },
+  "has_html": true,
+  "has_text": true,
+  "message_id": "<ride-8827-4419@fahrten.example.com>",
+  "subject": "Ihre Fahrt am Sonntagabend – 27,84 €"
+ },
+ "fx-18-ambiguous-dates.eml": {
+  "attachments": [],
+  "date": "2026-04-03T10:00:00.000Z",
+  "from": {
+   "email": "accounts@driftwoodsupply.com",
+   "name": "Driftwood Supply"
+  },
+  "has_html": false,
+  "has_text": true,
+  "message_id": "<amb-2026-004@driftwoodsupply.com>",
+  "subject": "Invoice AMB-2026-004"
+ },
+ "real-01-gnu-latin1-qp-reply.eml": {
+  "attachments": [],
+  "date": "2025-07-19T06:33:13.000Z",
+  "from": {
+   "email": "eliz@gnu.org",
+   "name": "Eli Zaretskii"
+  },
+  "has_html": false,
+  "has_text": true,
+  "message_id": "<86bjpgg05y.fsf@gnu.org>",
+  "subject": "Re: Use other mode than fundamental-mode for files without a file extension or available major mode"
+ },
+ "real-02-gnu-rfc2047-iso8859.eml": {
+  "attachments": [],
+  "date": "2025-07-24T07:02:11.000Z",
+  "from": {
+   "email": "eliz@gnu.org",
+   "name": "Eli Zaretskii"
+  },
+  "has_html": false,
+  "has_text": true,
+  "message_id": "<86tt325ax8.fsf@gnu.org>",
+  "subject": "Re: [ELPA] New Package: use-package-extras"
+ },
+ "real-03-gnu-folded-headers.eml": {
+  "attachments": [],
+  "date": "2025-03-14T12:07:35.000Z",
+  "from": {
+   "email": "eliz@gnu.org",
+   "name": "Eli Zaretskii"
+  },
+  "has_html": false,
+  "has_text": true,
+  "message_id": "<86ikobzugo.fsf@gnu.org>",
+  "subject": "Re: Implement dragging and resizing of tty child frames"
+ },
+ "real-04-gnu-base64.eml": {
+  "attachments": [],
+  "date": "2025-03-03T18:24:45.000Z",
+  "from": {
+   "email": "bugs@gnu.support",
+   "name": "Jean Louis"
+  },
+  "has_html": false,
+  "has_text": true,
+  "message_id": "<Z8Xz7Rj6TySRGv02@false>",
+  "subject": "Re: Sending html mail with rmail"
+ },
+ "real-05-gnu-base64-multipart.eml": {
+  "attachments": [],
+  "date": "2025-07-25T12:43:39.000Z",
+  "from": {
+   "email": "enometh@meer.net",
+   "name": "Madhu"
+  },
+  "has_html": false,
+  "has_text": true,
+  "message_id": "<20250725.181339.2273401147482280086.enometh@meer.net>",
+  "subject": "Re: describe-input-methdod and describe-char"
+ },
+ "real-06-gnu-pgp-signed.eml": {
+  "attachments": [
+   {
+    "content_type": "application/pgp-signature",
+    "filename": "signature.asc",
+    "size": 849
+   }
+  ],
+  "date": "2025-03-17T23:08:15.000Z",
+  "from": {
+   "email": "seb@k-7.ch",
+   "name": "Sébastien Gendre"
+  },
+  "has_html": false,
+  "has_text": true,
+  "message_id": "<87ecyvb6hs.fsf@k-7.ch>",
+  "subject": "New \"completion-preview-mode\""
+ },
+ "real-07-gnu-signed-attach.eml": {
+  "attachments": [
+   {
+    "content_type": "application/pgp-signature",
+    "filename": "signature.asc",
+    "size": 195
+   }
+  ],
+  "date": "2025-07-06T14:29:22.000Z",
+  "from": {
+   "email": "tomas@tuxteam.de",
+   "name": null
+  },
+  "has_html": false,
+  "has_text": true,
+  "message_id": "<aGqIQk2kcaWf9qln@tuxteam.de>",
+  "subject": "Re: Help with bug#61988 (image.o: undefined reference to symbol 'WebPGetInfo'), please."
+ },
+ "real-08-gnu-alt-qp.eml": {
+  "attachments": [],
+  "date": "2025-03-11T22:57:45.000Z",
+  "from": {
+   "email": "jforst.mailman@gmail.com",
+   "name": "Jake"
+  },
+  "has_html": true,
+  "has_text": true,
+  "message_id": "<CAJqVjv9crdP8gEj+uNJup46qrmWY0Za6i+BtCq+wEOVwQhbqvw@mail.gmail.com>",
+  "subject": "Autoload tramp-revert-buffer-with-sudo?"
+ },
+ "real-09-gnu-alt-qp2.eml": {
+  "attachments": [],
+  "date": "2025-07-07T18:00:49.000Z",
+  "from": {
+   "email": "boris@shminke.com",
+   "name": "Boris Shminke"
+  },
+  "has_html": true,
+  "has_text": true,
+  "message_id": "<2a3bba02-804c-4dc4-970b-26d2909cfc2a@me.com>",
+  "subject": "Re: [ELPA] New package: flymake-pyrefly"
+ },
+ "real-10-gnu-alt-html.eml": {
+  "attachments": [],
+  "date": "2025-03-13T16:02:40.000Z",
+  "from": {
+   "email": "psionik@positron.solutions",
+   "name": "Psionic K"
+  },
+  "has_html": true,
+  "has_text": true,
+  "message_id": "<CADQMGARGZXxS3Fsyq7Rkzw_w8Gi-fPFx_7cq3AEiX_pORqpDng@mail.gmail.com>",
+  "subject": "Re: Sinister, a package for split-window-leftists"
+ },
+ "real-11-gnu-mixed-attach.eml": {
+  "attachments": [
+   {
+    "content_type": "text/plain",
+    "filename": "git-merge-changelog.log",
+    "size": 172
+   }
+  ],
+  "date": "2025-07-24T13:58:44.000Z",
+  "from": {
+   "email": "pertusus@gnu.org",
+   "name": "Patrice Dumas"
+  },
+  "has_html": false,
+  "has_text": true,
+  "message_id": "<aII8FO-svvuXZT-Y@gnu.org>",
+  "subject": "Re: git-merge-changelog do not re-add ChangeLog entries"
+ },
+ "real-12-gnu-patch-attach.eml": {
+  "attachments": [
+   {
+    "content_type": "text/plain",
+    "filename": ".envrc",
+    "size": 337
+   }
+  ],
+  "date": "2025-03-02T18:00:47.000Z",
+  "from": {
+   "email": "gabrielsantosdesouza@disroot.org",
+   "name": "Gabriel Santos"
+  },
+  "has_html": false,
+  "has_text": true,
+  "message_id": "<877c57xqgg.fsf@disroot.org>",
+  "subject": "Re: Providing Emacs Dependencies with Nix & Guix"
+ },
+ "real-13-gnu-mixed-diff.eml": {
+  "attachments": [
+   {
+    "content_type": "text/x-diff",
+    "filename": "0001-print_error_message-Handle-user-error-to-the-echo-ar.patch",
+    "size": 1346
+   }
+  ],
+  "date": "2025-07-07T08:58:23.000Z",
+  "from": {
+   "email": "spwhitton@spwhitton.name",
+   "name": "Sean Whitton"
+  },
+  "has_html": false,
+  "has_text": true,
+  "message_id": "<87cyacl6mo.fsf@zephyr.silentflame.com>",
+  "subject": "Re: Error messages with text properties"
+ },
+ "real-14-gnu-encoded-subject.eml": {
+  "attachments": [],
+  "date": "2025-04-01T02:37:46.000Z",
+  "from": {
+   "email": "gabrielsantosdesouza@disroot.org",
+   "name": "Gabriel Santos"
+  },
+  "has_html": false,
+  "has_text": true,
+  "message_id": "<E275EF26-66A6-4420-B15D-F84B82847D7A@disroot.org>",
+  "subject": "Re: master b98fe25c2ee: Enhance 'icomplete-vertical-mode' customization options."
+ },
+ "real-15-gnu-qp-umlauts.eml": {
+  "attachments": [],
+  "date": "2025-03-08T11:00:55.000Z",
+  "from": {
+   "email": "gabrielsantosdesouza@disroot.org",
+   "name": "Gabriel Santos"
+  },
+  "has_html": false,
+  "has_text": true,
+  "message_id": "<B91DAD38-E163-4565-8B5D-F9AE80641443@disroot.org>",
+  "subject": "Re: Considerations for adding additional default LSP-servers to eglot"
+ },
+ "real-16-gnu-alt-base64.eml": {
+  "attachments": [],
+  "date": "2025-07-12T08:19:55.000Z",
+  "from": {
+   "email": "include_yy@qq.com",
+   "name": "Yue Yi"
+  },
+  "has_html": true,
+  "has_text": true,
+  "message_id": "<tencent_4FB463E73FA78B7772B88F6382951DE51F07@qq.com>",
+  "subject": "bug#78394: 31.0.50; Questions about native-comp-speed and type decl"
+ },
+ "real-17-gnu-alt-base64-2.eml": {
+  "attachments": [],
+  "date": "2025-03-18T09:11:54.000Z",
+  "from": {
+   "email": "the_wurfkreuz@proton.me",
+   "name": "the_wurfkreuz"
+  },
+  "has_html": true,
+  "has_text": true,
+  "message_id": "<ojVRda38Ey1Ow1cXuaNpG-LW_MjrvmE9ut9YzdWqdANE8Th9Z4OCDvbNDD77gHSNwtkB6qqK3BuVfhTQFHZWAqTLbPs5UuAwTSfzPTrFY5A=@proton.me>",
+  "subject": "bug#77095: 31.0.50; Using fill-region doesn't produce commented lines in yaml-ts-mode"
+ },
+ "real-18-gnu-quoted-sig.eml": {
+  "attachments": [],
+  "date": "2025-03-06T06:56:10.000Z",
+  "from": {
+   "email": "paaguti@gmail.com",
+   "name": "Pedro Andres Aranda Gutierrez"
+  },
+  "has_html": true,
+  "has_text": true,
+  "message_id": "<CAO48Bk_DzmSbh9W5h4L3aZJgF2-tG-0tiRccy=is6PnPxDSPfQ@mail.gmail.com>",
+  "subject": "Re: Re: Automatic light/dark theme switching based on desktop settings"
+ },
+ "real-19-gnu-longthread.eml": {
+  "attachments": [
+   {
+    "content_type": "text/x-diff",
+    "filename": "0001-etc-DEBUG-Document-debugging-the-igc.patch",
+    "size": 1489
+   }
+  ],
+  "date": "2025-03-08T13:43:33.000Z",
+  "from": {
+   "email": "jb@jeremybryant.net",
+   "name": "Jeremy Bryant"
+  },
+  "has_html": false,
+  "has_text": true,
+  "message_id": "<877c4z1vui.fsf@jeremybryant.net>",
+  "subject": "Re: [PATCH] igc: /etc/DEBUG - clamped states"
+ },
+ "real-20-gnu-reply-chain.eml": {
+  "attachments": [
+   {
+    "content_type": "text/x-patch",
+    "filename": "0001-vasnprintf-Silence-Wswitch-unreachable-warning.patch",
+    "size": 1648
+   }
+  ],
+  "date": "2025-07-06T21:05:03.000Z",
+  "from": {
+   "email": "collin.funk1@gmail.com",
+   "name": "Collin Funk"
+  },
+  "has_html": false,
+  "has_text": true,
+  "message_id": "<87a55h81z4.fsf@gmail.com>",
+  "subject": "vasnprintf: Silence -Wswitch-unreachable warning."
+ }
+}

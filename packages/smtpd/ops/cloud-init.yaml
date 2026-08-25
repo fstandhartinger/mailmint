@@ -1,0 +1,317 @@
+#cloud-config
+# MailMint inbound SMTP server — Debian 13 (trixie).
+#
+#   hcloud server create --name mx1 --type cx22 --image debian-13 \
+#     --user-data-from-file packages/smtpd/ops/cloud-init.yaml \
+#     --ssh-key <your-key>
+#
+# Before you boot it, edit the write_files block below: MAILMINT_ENV holds the
+# whole configuration and there is nothing else to change. After boot:
+#
+#   - point an A/AAAA record at the box   (mx1.example.com)
+#   - point the MX of your inbound domain at that name
+#   - set the PTR (reverse DNS) on the Hetzner console to the SAME name.
+#     Without a matching PTR, Gmail and Outlook will not talk to you.
+#   - run:  certbot certonly --standalone -d mx1.example.com
+#           systemctl restart mailmint-smtpd
+#
+# The service does NOT run as root. It gets CAP_NET_BIND_SERVICE so it can bind
+# port 25 as an unprivileged user, and nothing else.
+
+hostname: mx1
+preserve_hostname: false
+timezone: UTC
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - nftables
+  - unattended-upgrades
+  - apt-listchanges
+  - ca-certificates
+  - curl
+  - gnupg
+  - certbot
+  - fail2ban
+  - chrony
+
+users:
+  - name: mailmint
+    system: true
+    shell: /usr/sbin/nologin
+    home: /var/lib/mailmint
+    lock_passwd: true
+  - name: deploy
+    groups: [sudo]
+    shell: /bin/bash
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    ssh_authorized_keys:
+      # ---- REPLACE with your own public key ----
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI_REPLACE_ME deploy@mailmint
+
+write_files:
+  # ---------------------------------------------------------------- config --
+  - path: /etc/mailmint/smtpd.env
+    permissions: '0640'
+    owner: root:mailmint
+    content: |
+      # Everything the process reads. It is read ONCE at startup; to change any
+      # of it, edit here and `systemctl restart mailmint-smtpd`.
+      SMTP_HOST=0.0.0.0
+      SMTP_PORT=25
+      SMTP_HOSTNAME=mx1.example.com
+      INBOUND_DOMAINS=parse.example.com
+
+      API_URL=https://api.example.com
+      INTERNAL_SECRET=REPLACE_WITH_A_LONG_RANDOM_STRING
+
+      SPOOL_DIR=/var/lib/mailmint/spool
+      TLS_KEY_PATH=/etc/letsencrypt/live/mx1.example.com/privkey.pem
+      TLS_CERT_PATH=/etc/letsencrypt/live/mx1.example.com/fullchain.pem
+
+      MAX_MESSAGE_BYTES=26214400
+      MAX_RECIPIENTS=100
+      MAX_SESSIONS_PER_IP=10
+      MAX_CONCURRENT_SESSIONS=500
+      SESSION_TIMEOUT_MS=300000
+      MAX_ERRORS_PER_SESSION=20
+
+      SPF_ENABLED=true
+      DKIM_ENABLED=true
+      DMARC_ENABLED=true
+
+      LOG_LEVEL=info
+      NODE_OPTIONS=--max-old-space-size=768
+
+  # ---------------------------------------------------------------- systemd --
+  - path: /etc/systemd/system/mailmint-smtpd.service
+    permissions: '0644'
+    content: |
+      [Unit]
+      Description=MailMint inbound SMTP server
+      Documentation=https://github.com/mailmint/mailmint
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      Type=simple
+      User=mailmint
+      Group=mailmint
+      WorkingDirectory=/opt/mailmint/packages/smtpd
+      EnvironmentFile=/etc/mailmint/smtpd.env
+      ExecStart=/usr/bin/node /opt/mailmint/packages/smtpd/src/index.js
+
+      # Bind port 25 without being root. This is the ONLY privilege it gets.
+      AmbientCapabilities=CAP_NET_BIND_SERVICE
+      CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+      NoNewPrivileges=true
+
+      # Hardening
+      ProtectSystem=strict
+      ProtectHome=true
+      PrivateTmp=true
+      PrivateDevices=true
+      ProtectKernelTunables=true
+      ProtectKernelModules=true
+      ProtectKernelLogs=true
+      ProtectControlGroups=true
+      ProtectClock=true
+      ProtectHostname=true
+      ProtectProc=invisible
+      RestrictSUIDSGID=true
+      RestrictRealtime=true
+      RestrictNamespaces=true
+      RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+      LockPersonality=true
+      MemoryDenyWriteExecute=false
+      SystemCallArchitectures=native
+      SystemCallFilter=@system-service
+      UMask=0077
+
+      # The only writable paths
+      ReadWritePaths=/var/lib/mailmint
+      StateDirectory=mailmint
+      # Certificates are read-only
+      ReadOnlyPaths=/etc/letsencrypt
+
+      # Restart forever; mail must not stop arriving because of one crash
+      Restart=always
+      RestartSec=2
+      StartLimitIntervalSec=0
+
+      LimitNOFILE=65535
+      OOMPolicy=continue
+
+      StandardOutput=journal
+      StandardError=journal
+      SyslogIdentifier=mailmint-smtpd
+
+      [Install]
+      WantedBy=multi-user.target
+
+  # ---------------------------------------------------------------- nftables --
+  - path: /etc/nftables.conf
+    permissions: '0755'
+    content: |
+      #!/usr/sbin/nft -f
+      flush ruleset
+
+      table inet filter {
+        set smtp_flood {
+          type ipv4_addr
+          flags dynamic,timeout
+          timeout 10m
+        }
+
+        chain input {
+          type filter hook input priority filter; policy drop;
+
+          iif lo accept
+          ct state established,related accept
+          ct state invalid drop
+
+          # ICMP: keep PMTU discovery working, rate-limit the rest
+          ip protocol icmp icmp type { echo-request, destination-unreachable, time-exceeded } limit rate 10/second accept
+          ip6 nexthdr ipv6-icmp accept
+
+          # 22 ssh, 25 smtp, 80 + 443 for ACME and health
+          tcp dport 22 ct state new limit rate 10/minute accept
+          tcp dport 25 ct state new limit rate 60/second burst 120 packets accept
+          tcp dport { 80, 443 } accept
+
+          counter drop
+        }
+
+        chain forward { type filter hook forward priority filter; policy drop; }
+        chain output  { type filter hook output  priority filter; policy accept; }
+      }
+
+  - path: /etc/apt/apt.conf.d/50unattended-upgrades
+    permissions: '0644'
+    content: |
+      Unattended-Upgrade::Origins-Pattern {
+        "origin=Debian,codename=${distro_codename},label=Debian";
+        "origin=Debian,codename=${distro_codename},label=Debian-Security";
+        "origin=Debian,codename=${distro_codename}-security,label=Debian-Security";
+      };
+      Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
+      Unattended-Upgrade::Remove-Unused-Dependencies "true";
+      Unattended-Upgrade::Automatic-Reboot "true";
+      Unattended-Upgrade::Automatic-Reboot-Time "04:17";
+      Unattended-Upgrade::MailReport "on-change";
+
+  - path: /etc/apt/apt.conf.d/20auto-upgrades
+    permissions: '0644'
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+      APT::Periodic::AutocleanInterval "7";
+
+  - path: /etc/systemd/journald.conf.d/mailmint.conf
+    permissions: '0644'
+    content: |
+      [Journal]
+      Storage=persistent
+      Compress=yes
+      SystemMaxUse=1G
+      SystemMaxFileSize=64M
+      MaxRetentionSec=30day
+      RateLimitIntervalSec=10s
+      RateLimitBurst=20000
+      ForwardToSyslog=no
+
+  - path: /etc/ssh/sshd_config.d/99-mailmint.conf
+    permissions: '0644'
+    content: |
+      PermitRootLogin no
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      X11Forwarding no
+      MaxAuthTries 3
+
+  - path: /etc/fail2ban/jail.d/mailmint.local
+    permissions: '0644'
+    content: |
+      [sshd]
+      enabled = true
+      backend = systemd
+      maxretry = 3
+      bantime = 1h
+
+  - path: /etc/logrotate.d/mailmint-spool
+    permissions: '0644'
+    content: |
+      # Messages that exhausted their retries are kept for replay, not forever.
+      /var/lib/mailmint/spool/failed/*.eml {
+        daily
+        rotate 14
+        missingok
+        notifempty
+        nocreate
+      }
+
+  # A one-shot deploy helper, so the box can be rebuilt from scratch.
+  - path: /usr/local/sbin/mailmint-deploy
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      # Usage: mailmint-deploy <git-url> [ref]
+      set -euo pipefail
+      REPO="${1:?usage: mailmint-deploy <git-url> [ref]}"
+      REF="${2:-main}"
+      install -d -o mailmint -g mailmint /opt/mailmint
+      if [ -d /opt/mailmint/.git ]; then
+        git -C /opt/mailmint fetch --depth 1 origin "$REF"
+        git -C /opt/mailmint reset --hard FETCH_HEAD
+      else
+        git clone --depth 1 --branch "$REF" "$REPO" /opt/mailmint
+      fi
+      chown -R mailmint:mailmint /opt/mailmint
+      # packages/smtpd has ZERO runtime dependencies: there is nothing to install.
+      systemctl restart mailmint-smtpd
+      systemctl --no-pager status mailmint-smtpd
+
+runcmd:
+  # --- Node 22 from NodeSource -------------------------------------------
+  - install -d -m 0755 /etc/apt/keyrings
+  - curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key -o /etc/apt/keyrings/nodesource.asc
+  - echo "deb [signed-by=/etc/apt/keyrings/nodesource.asc] https://deb.nodesource.com/node_22.x nodistro main" > /etc/apt/sources.list.d/nodesource.list
+  - apt-get update
+  - apt-get install -y nodejs git
+  - node --version
+
+  # --- directories --------------------------------------------------------
+  - install -d -o mailmint -g mailmint -m 0750 /var/lib/mailmint
+  - install -d -o mailmint -g mailmint -m 0750 /var/lib/mailmint/spool
+  - install -d -o mailmint -g mailmint -m 0750 /var/lib/mailmint/spool/failed
+  - install -d -o root -g mailmint -m 0750 /etc/mailmint
+
+  # let the service read the certificate without being root
+  - groupadd -f ssl-cert
+  - usermod -aG ssl-cert mailmint
+  - install -d -m 0755 /etc/letsencrypt
+
+  # --- firewall -----------------------------------------------------------
+  - systemctl enable --now nftables
+  - nft -f /etc/nftables.conf
+
+  # --- services -----------------------------------------------------------
+  - systemctl restart systemd-journald
+  - systemctl enable --now chrony
+  - systemctl enable --now fail2ban
+  - systemctl restart ssh || systemctl restart sshd
+  - systemctl daemon-reload
+  # Enabled but NOT started: /opt/mailmint does not exist until you deploy.
+  #   mailmint-deploy https://github.com/you/mailmint.git main
+  - systemctl enable mailmint-smtpd
+
+final_message: |
+  MailMint MX host is up after $UPTIME seconds.
+
+  Still to do, in this order:
+    1. dig +short -x <this ip>        # must return this host's name
+    2. certbot certonly --standalone -d $(hostname -f)
+    3. edit /etc/mailmint/smtpd.env   (INTERNAL_SECRET, API_URL, domains)
+    4. mailmint-deploy https://github.com/you/mailmint.git main
+    5. swaks --to test@parse.example.com --server $(hostname -f)   # from elsewhere

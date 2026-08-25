@@ -1,0 +1,24 @@
+Return-Path: <noreply@brokenmailer.example.net>
+Received: from mx.brokenmailer.example.net (mx.brokenmailer.example.net [198.51.100.7])
+ by mx.parse.example.com (Postfix) with ESMTPS id F1VMOB6WSX
+ (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+ for <k7m2xq4h9bwz@parse.example.com>; Mon, 25 Aug 2026 01:00:00 +0000
+Authentication-Results: mx.parse.example.com;
+ dkim=pass header.d=brokenmailer.example.net;
+ spf=pass smtp.mailfrom=noreply@brokenmailer.example.net;
+ dmarc=pass header.from=brokenmailer.example.net
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=brokenmailer.example.net; s=mail;
+ h=from:to:subject:date:mime-version; bh=MC4xMDg4ODY0ODI3NTM5OTEyNg===;
+ b=MC4zMjA5MjI3NDg2MjUxMjA5MzAuNzk2NjU2NjY5MTM0OTU4Ng==
+MIME-Version: 1.0
+From: Broken Mailer <noreply@brokenmailer.example.net>
+To: k7m2xq4h9bwz@parse.example.com
+Subject: Invoice BRK-0001
+Date: Mon, 25 Aug 2026 01:00:00 +0000
+Message-ID: <brk-0001@brokenmailer.example.net>
+Content-Type: multipart/alternative; boundary="does-not-appear-anywhere"
+
+This message declares a multipart body but the boundary never shows up.
+
+Invoice number: BRK-0001
+Total: $10.00

@@ -1,0 +1,38 @@
+{
+	"node": "n8n-nodes-mailmint.mailMint",
+	"nodeVersion": "1.0",
+	"codexVersion": "1.0",
+	"categories": ["Communication", "Data & Storage", "Utility"],
+	"alias": [
+		"Email",
+		"Email Parser",
+		"Parse Email",
+		"Inbound Email",
+		"Email to JSON",
+		"EML",
+		"MIME",
+		"IMAP",
+		"Extract",
+		"Extraction",
+		"Structured Data",
+		"Invoice",
+		"Receipt",
+		"Order",
+		"Shipping",
+		"Attachment",
+		"Line Items",
+		"Table",
+		"Reparse",
+		"Needs Review",
+		"Confidence",
+		"Mailbox",
+		"MailMint"
+	],
+	"subcategories": {
+		"Utility": ["Data Transformation"]
+	},
+	"resources": {
+		"credentialDocumentation": [{ "url": "https://mailmint.dev/docs#authentication" }],
+		"primaryDocumentation": [{ "url": "https://mailmint.dev/docs/n8n" }]
+	}
+}

@@ -1,0 +1,31 @@
+# Render blueprint for the API. The smtpd does NOT live here — it needs port 25
+# and a static IP with reverse DNS, which is what the mail VPS is for.
+services:
+  - type: web
+    name: mailmint-api
+    runtime: docker
+    plan: starter
+    region: frankfurt
+    dockerfilePath: ./packages/api/Dockerfile
+    dockerContext: .
+    healthCheckPath: /healthz
+    envVars:
+      - key: PORT
+        value: 3100
+      - key: PUBLIC_URL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      # Shared with the smtpd on the mail VPS. /internal/* is closed without it.
+      - key: INTERNAL_SECRET
+        generateValue: true
+      - key: INBOUND_DOMAIN
+        sync: false
+      - key: CHUTES_API_KEY
+        sync: false
+      - key: LOG_LEVEL
+        value: info
+      # Billing stays dormant until this is deliberately flipped to 1 AND a
+      # Stripe key is present. Nothing here creates a live Stripe object.
+      - key: MAILMINT_BILLING
+        value: 0

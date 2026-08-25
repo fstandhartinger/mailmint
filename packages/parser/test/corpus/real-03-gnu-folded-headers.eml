@@ -1,0 +1,64 @@
+Received: from list by lists.gnu.org with archive (Exim 4.90_1)
+	id 1tt3pQ-0007Mm-KR
+	for mharc-emacs-devel@gnu.org; Fri, 14 Mar 2025 08:07:53 -0400
+Received: from eggs.gnu.org ([2001:470:142:3::10])
+ by lists.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_256_GCM_SHA384:256)
+ (Exim 4.90_1) (envelope-from <eliz@gnu.org>) id 1tt3pK-0007Ky-Iv
+ for emacs-devel@gnu.org; Fri, 14 Mar 2025 08:07:46 -0400
+Received: from fencepost.gnu.org ([2001:470:142:3::e])
+ by eggs.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_256_GCM_SHA384:256)
+ (Exim 4.90_1) (envelope-from <eliz@gnu.org>)
+ id 1tt3pI-0002P0-B2; Fri, 14 Mar 2025 08:07:44 -0400
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed; d=gnu.org;
+ s=fencepost-gnu-org; h=MIME-version:References:Subject:In-Reply-To:To:From:
+ Date; bh=02kcQGdZ6OIDScDQ3IKMBc8ZB+1/TaaGVAp1L+DSnCQ=; b=FLC4N4/EclsIA7M/XpBw
+ vJ/vjMh57AzTq5nxUQUWrT4+X8iZvzKCcd0LRQzzUOcQLEKrPiXbcY0zZTrgg4EEAje1FPFy/3Ypx
+ poPh6Eyxn5Jgr2+D+QATzDN0YrdJFQNbJAufyzkCDNTsioSDwO9FLBiauA33s+c0oO4zgG8l7TmpW
+ rs8RJ26XiNYnxlZaBEBxAWPMm8uYg25iBltKJl5jl51tTq55mn20/wmR9/qBhGTQ3BTCkGbb7Q50c
+ WL+qxqiSlLtMND992R73PkXZFHDPsoKJFgclWEMYlzwHIuRn2gYlC87Kr+QdIWRolX+StWxv77PJ3
+ HxDsqRpzaOGoXQ==;
+Date: Fri, 14 Mar 2025 14:07:35 +0200
+Message-Id: <86ikobzugo.fsf@gnu.org>
+From: Eli Zaretskii <eliz@gnu.org>
+To: Gerd =?iso-8859-1?Q?M=F6llmann?= <gerd.moellmann@gmail.com>
+Cc: rudalics@gmx.at, emacs-devel@gnu.org, monnier@iro.umontreal.ca
+In-Reply-To: <m2bju40wp1.fsf@gmail.com> (message from Gerd
+ =?iso-8859-1?Q?M=F6llmann?= on Fri, 14 Mar 2025 10:48:42 +0100)
+Subject: Re: Implement dragging and resizing of tty child frames
+References: <863244c4-aed7-4b9d-a3f1-34a56451b99d@gmx.at>
+ <m2tt7xhxpo.fsf@gmail.com>
+ <be6a8a10-90ec-4b18-ba78-13664e55dd2f@gmx.at>
+ <m2cyeki7fh.fsf@gmail.com> <m28qp8i5vp.fsf@gmail.com>
+ <e1367500-4c67-4e15-88be-c6bdf1f1772a@gmx.at> <m2bju40wp1.fsf@gmail.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-BeenThere: emacs-devel@gnu.org
+X-Mailman-Version: 2.1.29
+Precedence: list
+List-Id: "Emacs development discussions." <emacs-devel.gnu.org>
+List-Unsubscribe: <https://lists.gnu.org/mailman/options/emacs-devel>,
+ <mailto:emacs-devel-request@gnu.org?subject=unsubscribe>
+List-Archive: <https://lists.gnu.org/archive/html/emacs-devel>
+List-Post: <mailto:emacs-devel@gnu.org>
+List-Help: <mailto:emacs-devel-request@gnu.org?subject=help>
+List-Subscribe: <https://lists.gnu.org/mailman/listinfo/emacs-devel>,
+ <mailto:emacs-devel-request@gnu.org?subject=subscribe>
+X-List-Received-Date: Fri, 14 Mar 2025 12:07:47 -0000
+
+> From: Gerd Möllmann <gerd.moellmann@gmail.com>
+> Cc: emacs-devel <emacs-devel@gnu.org>,  Stefan Monnier
+>  <monnier@iro.umontreal.ca>
+> Date: Fri, 14 Mar 2025 10:48:42 +0100
+> 
+> martin rudalics <rudalics@gmx.at> writes:
+> 
+> > New comprehensive patch attached.  I see no more problems with tm.el.
+> 
+> Confirmed.
+> 
+> The mouse-posn-property/menu-bar is still open, though. Let's see what
+> Eli and Stefan say.
+
+Say about what?
+

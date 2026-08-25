@@ -1,0 +1,39 @@
+Return-Path: <bills@ridgewayenergy.co.uk>
+Received: from mx.ridgewayenergy.co.uk (mx.ridgewayenergy.co.uk [213.86.99.14])
+ by mx.parse.example.com (Postfix) with ESMTPS id FFY5Z2NPOZ
+ (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+ for <k7m2xq4h9bwz@parse.example.com>; Sat, 15 Aug 2026 05:02:13 +0100
+Authentication-Results: mx.parse.example.com;
+ dkim=pass header.d=ridgewayenergy.co.uk;
+ spf=pass smtp.mailfrom=bills@ridgewayenergy.co.uk;
+ dmarc=pass header.from=ridgewayenergy.co.uk
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ridgewayenergy.co.uk; s=mail;
+ h=from:to:subject:date:mime-version; bh=MC42OTM5MzkwOTI5Mzk5MjE4=;
+ b=MC44NzQ4NjcwODMyNzkxNzk4MC45ODk0NDA2Mjg4Mzk0MTkz
+MIME-Version: 1.0
+From: Ridgeway Energy <bills@ridgewayenergy.co.uk>
+To: k7m2xq4h9bwz@parse.example.com
+Subject: Your electricity bill for 15 Jul - 14 Aug 2026
+Date: Sat, 15 Aug 2026 05:02:10 +0100
+Message-ID: <bill-7729441502-202608@ridgewayenergy.co.uk>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+
+Your Ridgeway Energy bill is ready
+
+Account number: 7729-4415-02
+Bill date: 2026-08-15
+Due date: 2026-09-01
+Billing period: 2026-07-15 to 2026-08-14
+
+| Charge                | Units    | Rate      | Amount   |
+|-----------------------|----------|-----------|----------|
+| Electricity           | 412 kWh  | 0.2841    | 117.05   |
+| Standing charge       | 31 days  | 0.6032    | 18.70    |
+| VAT (5%)              |          |           | 6.79     |
+| Total                 |          |           | 142.54   |
+
+Amount due: GBP 142.54
+Pay online: https://my.ridgewayenergy.co.uk/pay/7729441502
+
+Ridgeway Energy Ltd, registered in England 08812234.

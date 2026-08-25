@@ -1,0 +1,92 @@
+Received: from list by lists.gnu.org with archive (Exim 4.90_1)
+	id 1ufHvt-0005tL-Cn
+	for mharc-help-gnu-emacs@gnu.org; Fri, 25 Jul 2025 08:53:56 -0400
+Received: from eggs.gnu.org ([2001:470:142:3::10])
+ by lists.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_256_GCM_SHA384:256)
+ (Exim 4.90_1) (envelope-from <enometh@meer.net>) id 1ufHvk-0005lY-AU
+ for help-gnu-emacs@gnu.org; Fri, 25 Jul 2025 08:53:45 -0400
+Received: from smtp1.ctinetworks.com ([205.166.61.198])
+ by eggs.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_256_GCM_SHA384:256)
+ (Exim 4.90_1) (envelope-from <enometh@meer.net>)
+ id 1ufHvi-0007oh-B0; Fri, 25 Jul 2025 08:53:44 -0400
+X-ctinetworks-Watermark: 1754311461.30722@Gl5jKpNJt8EYY60MA5+bGg
+X-ctinetworks-Envelope-From: enometh@meer.net
+X-ctinetworks-SpamCheck: 
+X-ctinetworks-VirusCheck: Found to be clean
+X-ctinetworks-Message-ID: 38E6B2064FC5.A3BDB
+Received: from localhost (unknown [117.254.37.181])
+ (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+ key-exchange X25519 server-signature RSA-PSS (4096 bits))
+ (No client certificate requested)
+ (Authenticated sender: enometh@meer.net)
+ by smtp1.ctinetworks.com (Postfix) with ESMTPSA id 38E6B2064FC5;
+ Fri, 25 Jul 2025 08:44:19 -0400 (EDT)
+DKIM-Filter: OpenDKIM Filter v2.11.0 smtp1.ctinetworks.com 38E6B2064FC5
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=meer.net;
+ s=ctidkims1; t=1753447461;
+ bh=f9exagqikj6hiq0pL0d+9No6STvFZIzN7+6fC6lGqj4=;
+ h=Date:To:Cc:Subject:From:In-Reply-To:References:From;
+ b=C5nH+Q/6jxQYVgQeuV1USCfK4b5qmACmz6LTkp5zg0sUCNxt7WWDkP50E3hi/sXz3
+ aQ1tyMcI8bV7Lxo9CpH0i8WF7VzT46DwGHQedZNnHo8Qr585C76TocBayvdzhrKA3Q
+ wRyUjyZQlA+PaCXpNxNZxJCv3W/fcERLo6+Zv2XM=
+Date: Fri, 25 Jul 2025 18:13:39 +0530 (IST)
+Message-Id: <20250725.181339.2273401147482280086.enometh@meer.net>
+To: eliz@gnu.org
+Cc: help-gnu-emacs@gnu.org
+Subject: Re: describe-input-methdod and describe-char
+From: Madhu <enometh@meer.net>
+In-Reply-To: <86qzy44iny.fsf@gnu.org>
+References: <m3y0sd6jov.fsf@leonis4.robolove.meer.net> <86qzy44iny.fsf@gnu.org>
+X-Mailer: Mew version 6.9 on Emacs 31.0.50
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-7
+Content-Transfer-Encoding: base64
+Received-SPF: pass client-ip=205.166.61.198; envelope-from=enometh@meer.net;
+ helo=smtp1.ctinetworks.com
+X-Spam_score_int: -20
+X-Spam_score: -2.1
+X-Spam_bar: --
+X-Spam_report: (-2.1 / 5.0 requ) BAYES_00=-1.9, DKIM_SIGNED=0.1,
+ DKIM_VALID=-0.1, DKIM_VALID_AU=-0.1, DKIM_VALID_EF=-0.1,
+ RCVD_IN_VALIDITY_RPBL_BLOCKED=0.001, RCVD_IN_VALIDITY_SAFE_BLOCKED=0.001,
+ SPF_HELO_PASS=-0.001, SPF_PASS=-0.001 autolearn=ham autolearn_force=no
+X-Spam_action: no action
+X-BeenThere: help-gnu-emacs@gnu.org
+X-Mailman-Version: 2.1.29
+Precedence: list
+List-Id: Users list for the GNU Emacs text editor <help-gnu-emacs.gnu.org>
+List-Unsubscribe: <https://lists.gnu.org/mailman/options/help-gnu-emacs>,
+ <mailto:help-gnu-emacs-request@gnu.org?subject=unsubscribe>
+List-Archive: <https://lists.gnu.org/archive/html/help-gnu-emacs>
+List-Post: <mailto:help-gnu-emacs@gnu.org>
+List-Help: <mailto:help-gnu-emacs-request@gnu.org?subject=help>
+List-Subscribe: <https://lists.gnu.org/mailman/listinfo/help-gnu-emacs>,
+ <mailto:help-gnu-emacs-request@gnu.org?subject=subscribe>
+X-List-Received-Date: Fri, 25 Jul 2025 12:53:46 -0000
+
+KiAgRWxpIFphcmV0c2tpaSA8ZWxpekBnbnUub3JnPiA8ODZxenk0NGlueS5mc2ZAZ251Lm9yZz4N
+Cldyb3RlIG9uIEZyaSwgMjUgSnVsIDIwMjUgMTQ6MjQ6NDkgKzAzMDANCj4+IERhdGU6IEZyaSwg
+MjUgSnVsIDIwMjUgMDg6NDk6NDQgKzA1MzANCj4+IEZyb206ICBNYWRodSB2aWEgVXNlcnMgbGlz
+dCBmb3IgdGhlIEdOVSBFbWFjcyB0ZXh0IGVkaXRvciA8aGVscC1nbnUtZW1hY3NAZ251Lm9yZz4N
+Cj4+IGFuZCBoaXQgQy14ID0gKGRlc2NyaWJlLWNoYXIpIGl0IHJldHVybnMgU1BDLiB3aXRoIGEg
+dGV4dCBwcm9wZXJ0eSBvZg0KPj4gImludmlzaWJsZSINCj4+DQo+PiBXb3VsZCBpdCBiZSBwb3Nz
+aWJsZSB0byBwcm9ncmFtdGljYWxseSBkZWNvZGUgdGhlIHByb3BlcnRpZXMvY29tcG9zaXRpb24N
+Cj4+IG9mIHRoZSBsYXlvdXQgc3RyaW5nIGFuZCByZXR1cm4gIkdSRUVLIENBUElUQUwgTEVUVEVS
+IFpFVEEiIHdoZW4NCj4+IGF0dGVtcHRpbmcgdG8gZGVzY3JpYmUgdGhhdCBrZXlib2FyZCBib3gg
+d2l0aD8NCj4NCj4gSSBkb24ndCB0aGluayBJIHVuZGVyc3RhbmQgdGhlIHF1ZXN0aW9uLiAgVGhl
+IGFib3ZlIGluZm9ybWF0aW9uIGZyb20NCj4gZGVzY3JpYmUtY2hhciBpcyBhYm91dCB0aGUgd3Jv
+bmcgYnVmZmVyIHBvc2l0aW9uLiAgSWYgeW91IGludm9rZSBpdA0KPiB3aXRoIHRoZSBidWZmZXIg
+cG9zaXRpb24gb2YgxiAod2hpY2ggaXMgb25lIGFmdGVyIHRoZSBwb3NpdGlvbiBvZiB0aGUNCj4g
+aW52aXNpYmxlIFNQQyBjaGFyYWN0ZXIpLCBFbWFjcyBzYXlzIGl0J3MgR1JFRUsgQ0FQSVRBTCBM
+RVRURVIgWkVUQS4NCg0Kb29wcyBJIHB1dCBkZXNjcmliZS1jaGFyIGluIHRoZSBzdWJqZWN0IGxp
+bmUsIGJ1dCBDLXggPSBpcyBub3QNCmRlc2NyaWJlLWNoYXIgYnV0IGlzIHdoYXQtY3Vyc29yLXBv
+c2l0aW9uLCB3aGljaCBpcyB0aGUgY29tbWFuZCBJIHdhcw0KYXNraW5nIGFib3V0LCBzb3JyeQ0K
+DQphIHZhbmlsbGEgZGVzY3JpYmUtY2hhciB3b24ndCB3b3JrIGhlcmUgYmVjYXVzZSBpdCB3aWxs
+IHJlcGxhY2UgdGhlDQpIZWxwIGJ1ZmZlci4NCg0KPiBJT1csIHRoZSBwcm9ibGVtIGluIHlvdXIg
+b3JpZ2luYWwgcmVjaXBlIGlzIHRoYXQgeW91IGFzc3VtZSB0aGUNCj4gY2hhcmFjdGVyIHVuZGVy
+IHRoZSBjdXJzb3IgaXMgbmVjZXNzYXJpbHkgdGhlIGNoYXJhY3RlciBhdCBwb2ludC4NCj4gVGhp
+cyBpcyBub3QgdHJ1ZSBpbiB0aGUgcHJlc2VuY2Ugb2YgaW52aXNpYmxlIHRleHQuDQoNCkRvZXMg
+KGdvdG8tY2hhciBOTk5OKSB3aGVyZSBOTk5OIGlzIHRoZSBwb3NpdGlvbiBvZiAiQ0FQSVRBTCBM
+RVRURVINClpFVEEiIGFuZCBjYWxsaW5nICh3aGF0LWN1cnNvci1wb3MpIHNob3cgdGhlIHByb2Js
+ZW0gSSB3YXMgc2VlaW5nPw0KLS0tQmVzdCBSZWdhcmRzLCBNYWRodQ0KDQo=
+

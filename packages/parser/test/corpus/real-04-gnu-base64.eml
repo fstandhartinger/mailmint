@@ -1,0 +1,85 @@
+Received: from list by lists.gnu.org with archive (Exim 4.90_1)
+	id 1tpAUK-0002Fv-E5
+	for mharc-help-gnu-emacs@gnu.org; Mon, 03 Mar 2025 13:26:00 -0500
+Received: from eggs.gnu.org ([2001:470:142:3::10])
+ by lists.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_256_GCM_SHA384:256)
+ (Exim 4.90_1) (envelope-from <bugs@gnu.support>) id 1tpAU7-00027V-Jp
+ for help-gnu-emacs@gnu.org; Mon, 03 Mar 2025 13:25:50 -0500
+Received: from stw1.rcdrun.com ([217.170.207.13])
+ by eggs.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_256_GCM_SHA384:256)
+ (Exim 4.90_1) (envelope-from <bugs@gnu.support>) id 1tpATp-0007zV-F7
+ for help-gnu-emacs@gnu.org; Mon, 03 Mar 2025 13:25:35 -0500
+Received: from localhost ([::ffff:196.250.67.215])
+ (AUTH: PLAIN admin, TLS: TLS1.3,256bits,ECDHE_RSA_AES_256_GCM_SHA384)
+ by stw1.rcdrun.com with ESMTPSA
+ id 000000000001E108.0000000067C5F3F7.003AC6AD; Mon, 03 Mar 2025 11:24:54 -0700
+Date: Mon, 3 Mar 2025 21:24:45 +0300
+From: Jean Louis <bugs@gnu.support>
+To: Arthur Alinovi <aalinovi@riseup.net>
+Cc: help-gnu-emacs@gnu.org
+Subject: Re: Sending html mail with rmail
+Message-ID: <Z8Xz7Rj6TySRGv02@false>
+Mail-Followup-To: Arthur Alinovi <aalinovi@riseup.net>, help-gnu-emacs@gnu.org
+References: <2aa6ae580bfe5f25@eddie.fios-router.home>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <2aa6ae580bfe5f25@eddie.fios-router.home>
+User-Agent: Mutt/2.2.12 (2023-09-09)
+Received-SPF: pass client-ip=217.170.207.13; envelope-from=bugs@gnu.support;
+ helo=stw1.rcdrun.com
+X-Spam_score_int: -18
+X-Spam_score: -1.9
+X-Spam_bar: -
+X-Spam_report: (-1.9 / 5.0 requ) BAYES_00=-1.9,
+ RCVD_IN_VALIDITY_CERTIFIED_BLOCKED=0.001, RCVD_IN_VALIDITY_RPBL_BLOCKED=0.001,
+ SPF_HELO_PASS=-0.001, SPF_PASS=-0.001 autolearn=ham autolearn_force=no
+X-Spam_action: no action
+X-BeenThere: help-gnu-emacs@gnu.org
+X-Mailman-Version: 2.1.29
+Precedence: list
+List-Id: Users list for the GNU Emacs text editor <help-gnu-emacs.gnu.org>
+List-Unsubscribe: <https://lists.gnu.org/mailman/options/help-gnu-emacs>,
+ <mailto:help-gnu-emacs-request@gnu.org?subject=unsubscribe>
+List-Archive: <https://lists.gnu.org/archive/html/help-gnu-emacs>
+List-Post: <mailto:help-gnu-emacs@gnu.org>
+List-Help: <mailto:help-gnu-emacs-request@gnu.org?subject=help>
+List-Subscribe: <https://lists.gnu.org/mailman/listinfo/help-gnu-emacs>,
+ <mailto:help-gnu-emacs-request@gnu.org?subject=subscribe>
+X-List-Received-Date: Mon, 03 Mar 2025 18:25:55 -0000
+
+* Arthur Alinovi <aalinovi@riseup.net> [2025-03-03 07:32]:
+> I started using rmail yesterday and am trying to figure out how to
+> send html mail.
+> 
+> If I attach an html file and then use M-x mml-insert part and choose
+> text/html what I get is 2 lines reading:
+> <#part type="text/html" disposition=inline>
+> <#/part>
+> followed by the attached message.
+> 
+> If I send it lke that I just get the raw html.
+> The only way to format the mail properly is to delete that <#/part>
+> line and insert it at the end of the email.
+> 
+> Is this the proper way to do it or am I doing something wrong?
+
+There must be a way to go, but if Rmail can provide multipart/mixed, that is the question.
+
+First this line must exist somewhere:
+
+Content-Type: multipart/mixed; boundary="=_your.example.com-1086685-1711109692-0001-2"
+
+  
+  --=_your.example.com-1086685-1711109692-0001-2
+  Content-Type: text/html; name="Insaatproductsview.html"; charset=utf-8
+  Content-Transfer-Encoding: base64
+  Content-Disposition: attachment; filename="Insaatproductsview.html"
+  
+and that one. 
+
+Try changing disposition to "attachment", maybe it starts working. 
+-- 
+Jean Louis
+

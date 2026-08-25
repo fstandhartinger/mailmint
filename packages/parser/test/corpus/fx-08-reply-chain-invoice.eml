@@ -1,0 +1,49 @@
+Return-Path: <tomas@halvard.se>
+Received: from mx.halvard.se (mx.halvard.se [194.71.11.22])
+ by mx.parse.example.com (Postfix) with ESMTPS id NFICXCKSOJ
+ (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+ for <k7m2xq4h9bwz@parse.example.com>; Mon, 24 Aug 2026 17:22:40 +0200
+Authentication-Results: mx.parse.example.com;
+ dkim=pass header.d=halvard.se;
+ spf=pass smtp.mailfrom=tomas@halvard.se;
+ dmarc=pass header.from=halvard.se
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=halvard.se; s=mail;
+ h=from:to:subject:date:mime-version; bh=MC45MTU4MDk0Nzc0NjY2OTI3=;
+ b=MC45NjQ2MTgxNzM0ODIzMDEyMC40NjQ5Njc0MjAxMTI1MzQy
+MIME-Version: 1.0
+From: Tomas Berglund <tomas@halvard.se>
+To: k7m2xq4h9bwz@parse.example.com
+Subject: Re: Wrong total on INV-77211
+In-Reply-To: <CAF3x@mail.example.com>
+References: <CAF1x@mail.halvard.se> <CAF3x@mail.example.com>
+Date: Mon, 24 Aug 2026 17:22:38 +0200
+Message-ID: <CAF9y@mail.halvard.se>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+Sorted - the corrected invoice is INV-77213 and the total is $2,415.60 inc=
+luding tax.
+Due date is September 12, 2026.
+
+Best,
+Tomas
+
+--
+Tomas Berglund | Finance
+Halvard AB | +46 8 121 489 00
+
+On Mon, Aug 24, 2026 at 4:51 PM Florian Standhartinger <k7m2xq4h9bwz@parse=
+.example.com> wrote:
+> Hi Tomas,
+>
+> The invoice you sent (INV-77211) has last month's total on it - $1,980.0=
+0.
+> Could you reissue?
+>
+> Thanks
+>
+> On Mon, Aug 24, 2026 at 2:10 PM Tomas Berglund <tomas@halvard.se> wrote:
+>> Invoice INV-77211 attached, total $1,980.00, due September 5, 2026.
+>>
+>> --
+>> Tomas

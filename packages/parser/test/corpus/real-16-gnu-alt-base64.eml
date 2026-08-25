@@ -1,0 +1,125 @@
+Received: from list by lists.gnu.org with archive (Exim 4.90_1)
+	id 1uaVU1-0006uE-U7
+	for mharc-bug-gnu-emacs@gnu.org; Sat, 12 Jul 2025 04:21:27 -0400
+Received: from eggs.gnu.org ([2001:470:142:3::10])
+ by lists.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_256_GCM_SHA384:256)
+ (Exim 4.90_1) (envelope-from <Debian-debbugs@debbugs.gnu.org>)
+ id 1uaVTj-0006jk-1C
+ for bug-gnu-emacs@gnu.org; Sat, 12 Jul 2025 04:21:04 -0400
+Received: from debbugs.gnu.org ([2001:470:142:5::43])
+ by eggs.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_128_GCM_SHA256:128)
+ (Exim 4.90_1) (envelope-from <Debian-debbugs@debbugs.gnu.org>)
+ id 1uaVTi-0006Dl-ON
+ for bug-gnu-emacs@gnu.org; Sat, 12 Jul 2025 04:21:02 -0400
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+ d=debbugs.gnu.org; s=debbugs-gnu-org; 
+ h=In-Reply-To:References:Date:Mime-Version:From:To:Subject;
+ bh=JS2ZUcRWR/jPMvZxrCRi11dncqVE7laI6gHTGscCezk=; 
+ b=Y57YmJKLvoHWrt5NJeNTxcJVjwRHuKUmDKoGRKLxZ5VjxRkBZGlGmlPl5WoEmdjB1BeJTfpR0UKbInNVvUxMxVx8LxW+38+72JTKVxxOJsByBmGFsWXH8ySePGOQWxbHmThc78KOphV5Xj7sKB1S3cEpamXf0s/0V7mnaajCkPe1d+O4vy4Y9k+87ABhkyawze2tMwgkcqBwSsgq8bbZp67GZSyJf0JPBhx23jEG7NT5PlPHOmIJlbAp8nNLP6Tiq6ocfrwVfKJSbS7dBGN0Y4Mz53bmPRP9hmfaiqxFCAnEGtpHUhHWjgWQeWAouBSC5OGbfckOX9+5N58k2n9CoA==;
+Received: from Debian-debbugs by debbugs.gnu.org with local (Exim 4.84_2)
+ (envelope-from <Debian-debbugs@debbugs.gnu.org>) id 1uaVTi-00033k-DO
+ for bug-gnu-emacs@gnu.org; Sat, 12 Jul 2025 04:21:02 -0400
+X-Loop: help-debbugs@gnu.org
+Subject: bug#78394: 31.0.50; Questions about native-comp-speed and type decl
+Resent-From: "Yue Yi" <include_yy@qq.com>
+Original-Sender: "Debbugs-submit" <debbugs-submit-bounces@debbugs.gnu.org>
+Resent-CC: bug-gnu-emacs@gnu.org
+Resent-Date: Sat, 12 Jul 2025 08:21:02 +0000
+Resent-Message-ID: <handler.78394.B78394.175230841611667@debbugs.gnu.org>
+Resent-Sender: help-debbugs@gnu.org
+X-GNU-PR-Message: followup 78394
+X-GNU-PR-Package: emacs
+X-GNU-PR-Keywords: 
+To: "Eli Zaretskii" <eliz@gnu.org>
+Cc: acorallo <acorallo@gnu.org>, 78394 <78394@debbugs.gnu.org>
+Received: via spool by 78394-submit@debbugs.gnu.org id=B78394.175230841611667
+ (code B ref 78394); Sat, 12 Jul 2025 08:21:02 +0000
+Received: (at 78394) by debbugs.gnu.org; 12 Jul 2025 08:20:16 +0000
+Received: from localhost ([127.0.0.1]:43632 helo=debbugs.gnu.org)
+ by debbugs.gnu.org with esmtp (Exim 4.84_2)
+ (envelope-from <debbugs-submit-bounces@debbugs.gnu.org>)
+ id 1uaVSx-000327-LJ
+ for submit@debbugs.gnu.org; Sat, 12 Jul 2025 04:20:15 -0400
+Received: from out203-205-221-191.mail.qq.com ([203.205.221.191]:37710)
+ by debbugs.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_256_GCM_SHA384:256)
+ (Exim 4.84_2) (envelope-from <include_yy@qq.com>) id 1uaVSt-0002wH-DP
+ for 78394@debbugs.gnu.org; Sat, 12 Jul 2025 04:20:14 -0400
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=qq.com; s=s201512;
+ t=1752308395; bh=JS2ZUcRWR/jPMvZxrCRi11dncqVE7laI6gHTGscCezk=;
+ h=From:To:Cc:Subject:Date:References:In-Reply-To;
+ b=UHqlSOIbE9cUzubtMtaBpvmDryBjWPyhx6OsgCPBjYK9m/jwgQdlBVMIqKaDRlcy6
+ Xn9a46nRAdqIg+WqKbpwi1ojib/LKO2Db4DWT3x1RaNoHXc7Bs1RWrLZlYQsxxpsIn
+ Po683Zg67LFtEP/kFbxmgGzb7Usvz3OIEffvgvTU=
+X-QQ-XMRINFO: NS+P29fieYNw95Bth2bWPxk=
+X-QQ-XMAILINFO: MDXfFvWcC4bZ546oA+OHKFG9E+BNPpKqsqq8dR9+Q9IlSP76bxMdFv2kj2RHKy
+ 9YiBZxLwajt6G0ZOeOM3Ywk0pTt1BORkYZ4lDMbi4f/weQmkFtIKGzce4Oi3e1PbdMzFBwPrscIM+
+ JNBPnTZbc1xIIeKcctNFQ/ANF1hk9OGmP6ZxV+AhB8P9PUo8TeWVXv/z9sKnFZnoLiY5Pmut0tKMH
+ rZGhpwUBjy80pMSLjqcAHWyI0yF+FIju/Iio47gLZyajBpd8wa1Su5I/IB40nRNtm+0qXpjhquX4y
+ QqSwWiHEQpqtqFk1VmxJcNKVsq1c86oYhEmMzD81EtCJvpgGn7krZRO0mxNZNqm+sqQfIRebBVW2E
+ 6OQR14qsvAba3Tl5dNbvnlKju6pnWKZnO/XuTtq7yLhqw4X8fRD7BO5Jxe8mmTiEVqwpU8KarREu6
+ s5585tMEgVYLOYuTCmstLR/VvPzeHvazdIsyqP7CE3RQf2jkRhzSLG8cGUPY8NogHp7DYJybFWuh/
+ BJIS21gE/GIEqD/laxdoYIJjk7eQnoMPRs6DdOooz3Vu/pNNDIH0JrXH1vxB/uWyDFxlCdtFtIyU5
+ Y2PwmDfVw4oVjypjz4ahColsf9Gd2O03DZZWD3S7+jVm2o6PfBRSNn97HPDl7dpPjCd0RCgJ0fK1v
+ sqWBV5dmcebVNAt1RFqVgTGjt30R2YoUwYH7TsWJbwF/s/oDEHlA2XtkOgFHZiY5CnTcCc/Tmf7H1
+ 36t3ELHU0nvPeblNp++lDh7UzCRZQ19UZuxFV67ODspHL6yuLO63i7SAMZrJitwMCcp1mzVtAXyjp
+ FaV0CyX3R1hoNFVipgzzcxYebFTGxs2mKkmaRTezb/2omRZawSijPC8VnAu1l/Rasxko3ZUk125Ig
+ 1YxJNbcCFY6J6A9iCjj5Rhp3ZB2o2BRTxqaV0kEySzzQGn4K+32dQvmDR8d5Cc/bhtLSn4Co67GnO
+ XargNYdG1hqOwo+7wHDlggosQLPulyOf/LjwQRjeekOkq4sEQ8O8ZzTAhi5k8enT83SyoW2H6nDV/
+ sFmSk2jz/8BCiNjU=
+From: "Yue Yi" <include_yy@qq.com>
+Mime-Version: 1.0
+Content-Type: multipart/alternative;
+ boundary="----=_NextPart_68721AAB_B9260480_0B3DFD41"
+Content-Transfer-Encoding: 8Bit
+Date: Sat, 12 Jul 2025 16:19:55 +0800
+X-Priority: 3
+Message-ID: <tencent_4FB463E73FA78B7772B88F6382951DE51F07@qq.com>
+X-QQ-MIME: TCMime 1.0 by Tencent
+X-Mailer: QQMail 2.x
+X-QQ-Mailer: QQMail 2.x
+References: <tencent_A138BF39C5BCA3C3BD1EDBAD282AA7A0390A@qq.com>
+ <868qktg8nq.fsf@gnu.org>
+In-Reply-To: <868qktg8nq.fsf@gnu.org>
+X-QQ-mid: xmapzb27-0t1752308395tuiu7cmcn
+X-Spam-Score: 3.6 (+++)
+X-BeenThere: debbugs-submit@debbugs.gnu.org
+X-Mailman-Version: 2.1.18
+Precedence: list
+Errors-To: debbugs-submit-bounces@debbugs.gnu.org
+Sender: "Debbugs-submit" <debbugs-submit-bounces@debbugs.gnu.org>
+X-Spam-Score: 2.6 (++)
+X-BeenThere: bug-gnu-emacs@gnu.org
+List-Id: "Bug reports for GNU Emacs,
+ the Swiss army knife of text editors" <bug-gnu-emacs.gnu.org>
+List-Unsubscribe: <https://lists.gnu.org/mailman/options/bug-gnu-emacs>,
+ <mailto:bug-gnu-emacs-request@gnu.org?subject=unsubscribe>
+List-Archive: <https://lists.gnu.org/archive/html/bug-gnu-emacs>
+List-Post: <mailto:bug-gnu-emacs@gnu.org>
+List-Help: <mailto:bug-gnu-emacs-request@gnu.org?subject=help>
+List-Subscribe: <https://lists.gnu.org/mailman/listinfo/bug-gnu-emacs>,
+ <mailto:bug-gnu-emacs-request@gnu.org?subject=subscribe>
+X-List-Received-Date: Sat, 12 Jul 2025 08:21:05 -0000
+
+This is a multi-part message in MIME format.
+
+------=_NextPart_68721AAB_B9260480_0B3DFD41
+Content-Type: text/plain;
+	charset="utf-8"
+Content-Transfer-Encoding: base64
+
+SXTigJlzIGdvb2QgZW5vdWdoIGZvciBtZSwgZmVlbCBmcmVlIHRvIGNsb3NlIGl0LCBUSUEu
+
+
+------=_NextPart_68721AAB_B9260480_0B3DFD41
+Content-Type: text/html;
+	charset="utf-8"
+Content-Transfer-Encoding: base64
+
+SXTigJlzIGdvb2QgZW5vdWdoIGZvciBtZSwgZmVlbCBmcmVlIHRvIGNsb3NlIGl0LCBUSUEu
+
+
+------=_NextPart_68721AAB_B9260480_0B3DFD41--
+
+
+
+

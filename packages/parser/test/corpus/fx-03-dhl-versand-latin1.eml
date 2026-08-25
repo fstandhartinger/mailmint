@@ -1,0 +1,62 @@
+Return-Path: <noreply@versandbenachrichtigung.example.de>
+Received: from mx.versandbenachrichtigung.example.de (mx.versandbenachrichtigung.example.de [80.150.6.143])
+ by mx.parse.example.com (Postfix) with ESMTPS id D64EEUSBUM
+ (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+ for <k7m2xq4h9bwz@parse.example.com>; Tue, 25 Aug 2026 06:31:02 +0200
+Authentication-Results: mx.parse.example.com;
+ dkim=pass header.d=versandbenachrichtigung.example.de;
+ spf=pass smtp.mailfrom=noreply@versandbenachrichtigung.example.de;
+ dmarc=pass header.from=versandbenachrichtigung.example.de
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=versandbenachrichtigung.example.de; s=mail;
+ h=from:to:subject:date:mime-version; bh=MC41NjUzODcyNDY2MTUzMQ===;
+ b=MC44MDcxOTYyNjEyNDE5MTkwLjc5MzcyMTE0OTI4MzA4Ng==
+MIME-Version: 1.0
+From: DHL Paket <noreply@versandbenachrichtigung.example.de>
+To: k7m2xq4h9bwz@parse.example.com
+Subject: =?iso-8859-1?Q?Ihre_Sendung_JJD000390009991234567_ist_unterwegs_=2D_Zustellung_am_27=2E08=2E?=
+Date: Tue, 25 Aug 2026 06:31:00 +0200
+Message-ID: <20260825043100.JJD00039@versandbenachrichtigung.example.de>
+X-Mailer: Microsoft Outlook 16.0
+Content-Type: multipart/alternative;
+ boundary="=_NextPart_000_0021_01DCF1A2.9B3C4D50"
+
+--=_NextPart_000_0021_01DCF1A2.9B3C4D50
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+Guten Tag Florian Standhartinger,
+
+Ihre Sendung ist unterwegs.
+
+Sendungsnummer: JJD000390009991234567
+Voraussichtliche Zustellung: 27.08.2026
+Empf=E4nger: Florian Standhartinger, Hauptstra=DFe 12, 80331 M=FCnchen
+
+Absender: Elektronik Versand GmbH
+Bestellnummer: BST-2026-44817
+
+Sendung verfolgen:
+https://www.dhl.de/de/privatkunden/pakete-empfangen/verfolgen.html?piececo=
+de=3DJJD000390009991234567
+
+Mit freundlichen Gr=FC=DFen
+Ihr DHL Team
+
+--
+Deutsche Post DHL Group
+Charles-de-Gaulle-Str. 20, 53113 Bonn
+--=_NextPart_000_0021_01DCF1A2.9B3C4D50
+Content-Type: text/html; charset=iso-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+<html><head><meta http-equiv=3D"Content-Type" content=3D"text/html; charse=
+t=3Diso-8859-1"></head>
+<body><p>Guten Tag Florian Standhartinger,</p><p>Ihre Sendung ist unterweg=
+s.</p>
+<table border=3D"0" cellpadding=3D"3">
+<tr><td>Sendungsnummer:</td><td>JJD000390009991234567</td></tr>
+<tr><td>Voraussichtliche Zustellung:</td><td>27.08.2026</td></tr>
+<tr><td>Bestellnummer:</td><td>BST-2026-44817</td></tr>
+</table>
+<p>Mit freundlichen Gr&uuml;&szlig;en<br>Ihr DHL Team</p></body></html>
+--=_NextPart_000_0021_01DCF1A2.9B3C4D50--

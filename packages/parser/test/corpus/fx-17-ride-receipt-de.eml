@@ -1,0 +1,62 @@
+Return-Path: <noreply@fahrten.example.com>
+Received: from mx.fahrten.example.com (mx.fahrten.example.com [104.36.195.20])
+ by mx.parse.example.com (Postfix) with ESMTPS id IYMMLEA3TI
+ (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+ for <k7m2xq4h9bwz@parse.example.com>; Sun, 23 Aug 2026 21:52:07 +0200
+Authentication-Results: mx.parse.example.com;
+ dkim=pass header.d=fahrten.example.com;
+ spf=pass smtp.mailfrom=noreply@fahrten.example.com;
+ dmarc=pass header.from=fahrten.example.com
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=fahrten.example.com; s=mail;
+ h=from:to:subject:date:mime-version; bh=MC4xNzEwNTM2NDkwMzA1MTkyMw===;
+ b=MC4zNzA3Nzc3MjA1Njc1MzU4MC4wNjk1NjQ5ODU1NDQ5NDA3Mw==
+MIME-Version: 1.0
+From: =?UTF-8?Q?Fahrten_Belege?= <noreply@fahrten.example.com>
+To: k7m2xq4h9bwz@parse.example.com
+Subject: =?UTF-8?Q?Ihre_Fahrt_am_Sonntagabend_=E2=80=93_27=2C84_=E2=82=AC?=
+Date: Sun, 23 Aug 2026 21:52:05 +0200
+Message-ID: <ride-8827-4419@fahrten.example.com>
+Content-Type: multipart/alternative;
+ boundary="ride_112233445566"
+
+--ride_112233445566
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+Danke f=C3=BCrs Fahren, Florian
+
+Gesamtbetrag  27,84 =E2=82=AC
+
+Fahrtdatum: 23. August 2026
+Fahrer: Andrei
+Zahlungsmittel: Visa =E2=80=A2=E2=80=A2=E2=80=A2=E2=80=A21881
+
+Fahrpreis            22,10 =E2=82=AC
+Buchungsgeb=C3=BChr        2,50 =E2=82=AC
+Wartezeit             1,24 =E2=82=AC
+Trinkgeld             2,00 =E2=82=AC
+
+Gesamt               27,84 =E2=82=AC
+
+Beleg-Nr.: R-8827-4419
+Abholung 21:14 =E2=80=93 Rosenheimer Platz, M=C3=BCnchen
+Ankunft 21:39 =E2=80=93 Flughafen M=C3=BCnchen Terminal 2
+--ride_112233445566
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+<html><body style=3D"font-family:Helvetica">
+<span style=3D"display:none;font-size:1px;color:#fff">Gesamtbetrag 27,84 &=
+euro; &#183; 23. August 2026</span>
+<h1 style=3D"font-size:32px">27,84 &euro;</h1>
+<p>Danke f&uuml;rs Fahren, Florian</p>
+<table width=3D"100%" cellpadding=3D"4" cellspacing=3D"0">
+<tr><td>Fahrpreis</td><td align=3D"right">22,10 &euro;</td></tr>
+<tr><td>Buchungsgeb&uuml;hr</td><td align=3D"right">2,50 &euro;</td></tr>
+<tr><td>Wartezeit</td><td align=3D"right">1,24 &euro;</td></tr>
+<tr><td>Trinkgeld</td><td align=3D"right">2,00 &euro;</td></tr>
+<tr><td><b>Gesamt</b></td><td align=3D"right"><b>27,84 &euro;</b></td></tr=
+>
+</table>
+<p>Beleg-Nr.: R-8827-4419</p></body></html>
+--ride_112233445566--

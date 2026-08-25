@@ -1,0 +1,22 @@
+{
+  "name": "mailmint-intake",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MailMint mailbox connector: IMAP polling, provider connectors and forwarding-confirmation detection. The intake path that needs no DNS change.",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "mailmint-intake": "bin/mailmint-intake.js"
+  },
+  "scripts": {
+    "test": "node --test --test-concurrency=1 --test-timeout=60000 test/*.test.js",
+    "poll": "node bin/mailmint-intake.js poll",
+    "watch": "node bin/mailmint-intake.js watch",
+    "test:unit": "node --test --test-concurrency=1 --test-timeout=30000 test/imap-wire.test.js test/imap-client.test.js test/connector.test.js test/forwarding.test.js test/state.test.js test/mailtm.test.js",
+    "test:live": "node --test --test-timeout=60000 test/live.test.js",
+    "probe": "node bin/mailmint-intake.js probe"
+  },
+  "dependencies": {}
+}

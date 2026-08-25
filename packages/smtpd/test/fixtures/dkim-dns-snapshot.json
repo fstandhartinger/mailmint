@@ -1,0 +1,39 @@
+{
+ "TXT:20251104._domainkey.gmail.com": [
+  [
+   "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtOzIjTYVUYZDbm03lsL4MGxSUVJWALTSueNRnCvCdM5d0i26EVUH7jprqIFdBSnMXQDHCkwcH1bFjtbfHCzFfWlpzOWducPPU0E+ut0rRqIy4NKY8CJlW39Q+AHJ70h+k2VadmQt0A1Yijg/Dk73NuJAz8KDNgz2x14nDVkINRlynAU7EosarRRhVGKqlNrYd",
+   "p/os6QYaetfYNdQRJDecOARNObGRET/sW0m5Ya5SBGsaw8VSGluCwSZh+zShTXaOyA1WnpHNtAoCQClFPn9vmm6Cb0Z2gYF0g/+qZ1FCnaj1+aaJGzhqVOXGtHGWM3dLpwC7Rul6STfFD521JeqpQIDAQAB"
+  ]
+ ],
+ "TXT:20240930._domainkey.peff.net": [
+  [
+   "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAiii8RneaBWE7SU+JFPwONByxJ2rXG2KSlKaH6yXaGabHmPEBeWOL07e5y7HpF7ZPU",
+   "RgJj+ppvOXEVgdFP/0e5dC8mSo3iZVGjXYWpEaoLzP4504lhlONwMtJU7GRxf03HVb5aTtEsnSu6JfBwpjqsVYbd/+Bw7VruAXopp4I3cMvkgTM81SvkEQhnsmojb58",
+   "2TnfpN1oQCf1wdEFDYtCWZtaaH29fKxbux2quhzUYCfz+U2MoHL4hOVEIjIAw6oNd3vV5ROvydcKspHyDRaL7be0mnKcPwcmqB2x7WajwW6EEVkk7KNUUoZ+rIGMko9",
+   "eTBV0u9UNsrSzipOZNrWOgwIDAQAB"
+  ]
+ ],
+ "TXT:fm3._domainkey.fastmail.com": [
+  [
+   "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAo5vfGAQG7vivmCe9BWEjpraaknyCi+HVkQnqEYR3S5D0hmPXjOIPdumhXQuPBjSL7GVpH9SKYNN/L2uf7SKgInq4efrujvoO/HkMBYa2gccETyTf+u211Hi+T+4YkavhQDKg3pBaFaQOculZQ9sOKnyagfRljt2Z9eCFaTuAE0mWrWHeBt0eerf6f3endve0N",
+   "BoH4U1+8h99zwmnuZ1Oba1tJrtWKOKFSTpQmegraJXHnRdSb9tRriVv5rOwQGY84WFchm6fz/knujOSW9d1Dzp2A8AFYsGMz1B2Z6rhs+T3pZafbgnxzAEsjR16eftnKVUKiwWpOr1FZm+ewD+lrwIDAQAB"
+  ]
+ ],
+ "TXT:fm3._domainkey.messagingengine.com": [
+  [
+   "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAms3Ek5VFJc0M0qryWHDgcNX2B+itLaZiOY2vQjw7QM/29EXpEgKDnpxp2JoR4jzTnl1NZaYmFZetSa09n4tBIBOs1PgtEURTFAUsqCRMcT1r6/ih90afnRRiVYkVEZU+i3BvalUsqYEAe257Uts7Cm4S3ajgJ9sjD23pLSyohBqy4CFofVixqFgkWH3g8iZ+p",
+   "AdtajbpPCAsxxyDqFZRjm/UMIlzEFKWE5vJ6+XodiveayZSq9OYWPCGfMy1ViuQL/WcLN8W/6k6J/0Ctkc1EPS1jpWvZxbe55Ibhpi/F4wREv+c9fCyK4AzsrHBFIoiuQVWOMaYXBfXuwUsAYP6FQIDAQAB"
+  ]
+ ],
+ "TXT:s31663417._domainkey.gmx.de": [
+  [
+   "v=DKIM1; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAujKq2O+04tKe1Z8z5K852dJIqyreVB8jR4Z8PpIVR3dzbLcJt/cDivXpJBFJ8jFU63jT5lNcTthBxXP+7t8lp6nDoW6Vlvzkp4W/Wts9U8ZIOXBkw4hOTzVTdsk0aKGASrf9USh7JN9PT61bP2nXJ1GnnuiJ4o8EabE8MqwPELUuCd1+my+8pMsQ/wqqDWKu1lVDW0n9",
+   "9+uL/fAcc3tN4xrl4qBCBfuo/Do/hnyEJeuVLq3nxpCBClYROspfdrpQ2fDul2TIzdqDJcbsf/n62yrydNwHsSl9HPaQc98pxyix9zFGCRHlf08F2livgBjwVQ7Evzmag8Qc8meoqsyHMwIDAQAB"
+  ]
+ ],
+ "TXT:selector1._domainkey.80x24.org": [
+  [
+   "v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDnjWZxs85odDwrWmSCp/gFQiGfyEsRE/b5qyvxp7Cxp5fQOymHa+v2vS6fIC591crn8hIKjpxEO1nES5ofFaupuRJSgB/23QblI9rTVxfQQkC24Ix6A+J3C2aP4bDxmcMHVqMap9ThzirsOORGguUJMlPmkD4LSii6Cichsr6HrwIDAQAB"
+  ]
+ ]
+}

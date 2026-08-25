@@ -1,0 +1,174 @@
+Received: from list by lists.gnu.org with archive (Exim 4.90_1)
+	id 1uYWY1-0005zG-J9
+	for mharc-bug-gnulib@gnu.org; Sun, 06 Jul 2025 17:05:18 -0400
+Received: from eggs.gnu.org ([2001:470:142:3::10])
+ by lists.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_256_GCM_SHA384:256)
+ (Exim 4.90_1) (envelope-from <collin.funk1@gmail.com>)
+ id 1uYWXt-0005tF-B0
+ for bug-gnulib@gnu.org; Sun, 06 Jul 2025 17:05:13 -0400
+Received: from mail-pl1-x62a.google.com ([2607:f8b0:4864:20::62a])
+ by eggs.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_128_GCM_SHA256:128)
+ (Exim 4.90_1) (envelope-from <collin.funk1@gmail.com>)
+ id 1uYWXq-0007hJ-Hk
+ for bug-gnulib@gnu.org; Sun, 06 Jul 2025 17:05:08 -0400
+Received: by mail-pl1-x62a.google.com with SMTP id
+ d9443c01a7336-235a3dd4f0dso14182175ad.0
+ for <bug-gnulib@gnu.org>; Sun, 06 Jul 2025 14:05:06 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+ d=gmail.com; s=20230601; t=1751835905; x=1752440705; darn=gnu.org;
+ h=mime-version:user-agent:message-id:date:subject:to:from:from:to:cc
+ :subject:date:message-id:reply-to;
+ bh=cf+ZMrXeYCO1fzHnG9dkD9CyClZY2quTnQw1wTDi3kY=;
+ b=lWFwOvB4et1LcfaBReJ2A8ta6ZU0fTRx7T0AKsqYTfE1iz1OTZ9j/dVFIA0nWBzF3X
+ IUL0KBKZTVUAFtbq8S9R1V3HSPQuwJZp11MluXHsb4tcsgPqy5T9UUbWxdoxZFT1lb2F
+ mehzC/hRtGpNeCVhDTev8U3zGRt8g16EkMMSHvuAEBGAigHlcrt72V052ILRfTdpgUL7
+ 4s9K3hf+ERWtXdMTSYh7W/+xwyrdjHMRWdI9Z4LqjgSD7lW24oL4CFzx25woMuVd+xVZ
+ WkaStmph3VgL0yfmiMfX4b/W9R+StpIphw0ziFZqQfEnpECRYq2u0cfO6wew3H9d9fem
+ 4Kmg==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+ d=1e100.net; s=20230601; t=1751835905; x=1752440705;
+ h=mime-version:user-agent:message-id:date:subject:to:from
+ :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to;
+ bh=cf+ZMrXeYCO1fzHnG9dkD9CyClZY2quTnQw1wTDi3kY=;
+ b=vMqKlQZLjSmf8uDhNu4Q3LZo9qsFZ6hMDKXAdAlGgo3ZyKYsvQs5Gl77MSA7okOuxD
+ /avLi3Mg++v7OHMbHwii/pxFnJCEI0l4VpWcI9r/o9okPcW53T/vc9fK7FoaYHWBP9HE
+ w4gm8RVOvGpukdlQ9L1DIWKAnxX7GQWcvil7E6lCI//H3JjWifHW4lIxokWcEapLuYLD
+ 2iP1UUa8vF+YyEU+FOfHFmAzw0PQrJ38ejb6/bqF5GNK+Eg4U6WSGGw4hmIq+39Rd5eA
+ X5eJHlolXEEDO/IN+Sol6CcvMdLb4y/mWn+R3ZYhOfFCxAILdIjYb6P7Zg9E1IrhI7h3
+ Y9iA==
+X-Gm-Message-State: AOJu0YyJ08DPE89jU5s5gwLdKZyr9c1zAjrnYWpAlmoQ8zsr10ksgBQ9
+ Iod85TBWPUbJrbPXoWD0x7KkZwA3Md8GhoB7dtcazkegaQkQjIJ+VqL3hRiocw==
+X-Gm-Gg: ASbGncur49gr5NltiaLBlvgiAsBdtMH7lBhQqJePuIWH0fezglbyHmnh+pg3gH/ARyE
+ BkWOR++TMQrCobnki52zB9IvESfM6yEJrG0A1EecCneAR1uaCd9KwNSEybAl3kAbOXav8Ko5BZK
+ bZOem67qHUQ9MHO7kMIymxTf9hnCZpFZxTslc6CFG+UiqmbmfYCOBeNUeYJx7zgVOL0H3l5u3VF
+ v7UmQX3EDcG2qGP2nMApRqcaFPLqh1Qu8v0LVUcVBNgH+7bfThzguFesbRBG6sT47nH0csGLf+m
+ W+EJP5jbjyZlD0zdN1FU5NEmtgxC5LK7iTOLD3XMtCum1ooXiBaaeQ==
+X-Google-Smtp-Source: AGHT+IGsrREQr+HDud2dBW3tGHKdnKYk9R7O0M/Vwghq7aZ3LF9L9pinuJD79btLNs4O034mTtO0Mg==
+X-Received: by 2002:a17:902:e5c3:b0:234:d7c5:a0ea with SMTP id
+ d9443c01a7336-23c91007448mr99644425ad.24.1751835904803; 
+ Sun, 06 Jul 2025 14:05:04 -0700 (PDT)
+Received: from fedora ([2601:646:8081:3770::37c4])
+ by smtp.gmail.com with ESMTPSA id
+ d9443c01a7336-23c8431e2afsm70405035ad.52.2025.07.06.14.05.03
+ (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+ Sun, 06 Jul 2025 14:05:04 -0700 (PDT)
+From: Collin Funk <collin.funk1@gmail.com>
+To: bug-gnulib@gnu.org, Bruno Haible <bruno@clisp.org>
+Subject: vasnprintf: Silence -Wswitch-unreachable warning.
+Date: Sun, 06 Jul 2025 14:05:03 -0700
+Message-ID: <87a55h81z4.fsf@gmail.com>
+User-Agent: Gnus/5.13 (Gnus v5.13)
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="=-=-="
+Received-SPF: pass client-ip=2607:f8b0:4864:20::62a;
+ envelope-from=collin.funk1@gmail.com; helo=mail-pl1-x62a.google.com
+X-Spam_score_int: -17
+X-Spam_score: -1.8
+X-Spam_bar: -
+X-Spam_report: (-1.8 / 5.0 requ) BAYES_00=-1.9, DKIM_SIGNED=0.1,
+ DKIM_VALID=-0.1, DKIM_VALID_AU=-0.1, DKIM_VALID_EF=-0.1,
+ FREEMAIL_ENVFROM_END_DIGIT=0.25, FREEMAIL_FROM=0.001,
+ RCVD_IN_DNSWL_NONE=-0.0001, SPF_HELO_NONE=0.001,
+ SPF_PASS=-0.001 autolearn=ham autolearn_force=no
+X-Spam_action: no action
+X-BeenThere: bug-gnulib@gnu.org
+X-Mailman-Version: 2.1.29
+Precedence: list
+List-Id: Gnulib discussion list <bug-gnulib.gnu.org>
+List-Unsubscribe: <https://lists.gnu.org/mailman/options/bug-gnulib>,
+ <mailto:bug-gnulib-request@gnu.org?subject=unsubscribe>
+List-Archive: <https://lists.gnu.org/archive/html/bug-gnulib>
+List-Post: <mailto:bug-gnulib@gnu.org>
+List-Help: <mailto:bug-gnulib-request@gnu.org?subject=help>
+List-Subscribe: <https://lists.gnu.org/mailman/listinfo/bug-gnulib>,
+ <mailto:bug-gnulib-request@gnu.org?subject=subscribe>
+X-List-Received-Date: Sun, 06 Jul 2025 21:05:14 -0000
+
+--=-=-=
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+Hi Bruno,
+
+On NetBSD I can see the following warning when compiling
+lib/c-vasnprintf.c:
+
+    depbase=3D`echo c-vasnprintf.o | sed 's|[^/]*$|.deps/&|;s|\.o$||'`; gcc=
+ -DHAVE_CONFIG_H -I. -I..  -DGNULIB_STRICT_CHECKING=3D1    -g -O2 -MT c-vas=
+nprintf.o -MD -MP -MF $depbase.Tpo -c -o c-vasnprintf.o c-vasnprintf.c && m=
+v -f $depbase.Tpo $depbase.Po
+    In file included from c-vasnprintf.c:46:
+    vasnprintf.c: In function 'c_vasnprintf':
+    vasnprintf.c:6662:35: warning: statement will never be executed [-Wswit=
+ch-unreachable]
+     6662 |                     pad_ourselves =3D 1;
+          |                     ~~~~~~~~~~~~~~^~~
+
+The cause is PAD_OURSELVES being initialized in a switch statement with
+no preceding case statement. In the C23 standard =C2=A7 6.8.5.3, Example 7,
+it explains that initilizations and function calls with no preceding
+case statement cannot be reached.
+
+It happens on a few other platforms IIRC, based on skimming the CI a
+while ago.
+
+Any objections to the attached patch? I know we don't care too much
+about warnings on other platforms, but since this is enabled by default,
+I think it is worth fixing.
+
+Collin
+
+
+--=-=-=
+Content-Type: text/x-patch
+Content-Disposition: attachment;
+ filename=0001-vasnprintf-Silence-Wswitch-unreachable-warning.patch
+
+>From 6f21a61a6458de619ad88fc0363fb2475646a150 Mon Sep 17 00:00:00 2001
+Message-ID: <6f21a61a6458de619ad88fc0363fb2475646a150.1751835887.git.collin.funk1@gmail.com>
+From: Collin Funk <collin.funk1@gmail.com>
+Date: Sun, 6 Jul 2025 13:48:53 -0700
+Subject: [PATCH] vasnprintf: Silence -Wswitch-unreachable warning.
+
+* lib/vasnprintf.c (VASNPRINTF): Don't place code in the switch
+statement unless there is a case statement before it.
+---
+ ChangeLog        | 4 ++++
+ lib/vasnprintf.c | 2 ++
+ 2 files changed, 6 insertions(+)
+
+diff --git a/ChangeLog b/ChangeLog
+index 286d589d23..be650c7dde 100644
+--- a/ChangeLog
++++ b/ChangeLog
+@@ -1,5 +1,9 @@
+ 2025-07-06  Collin Funk  <collin.funk1@gmail.com>
+ 
++	vasnprintf: Silence -Wswitch-unreachable warning.
++	* lib/vasnprintf.c (VASNPRINTF): Don't place code in the switch
++	statement unless there is a case statement before it.
++
+ 	pagealign_alloc: Don't assume pointers fit in 'unsigned long'.
+ 	* modules/pagealign_alloc (Depends-on): Add stdint-h.
+ 	* lib/pagealign_alloc.c: Include stdint.h.
+diff --git a/lib/vasnprintf.c b/lib/vasnprintf.c
+index f46e8701bd..f84a1690c7 100644
+--- a/lib/vasnprintf.c
++++ b/lib/vasnprintf.c
+@@ -6659,8 +6659,10 @@ VASNPRINTF (DCHAR_T *resultbuf, size_t *lengthp,
+                   case 'f': case 'F': case 'e': case 'E': case 'g': case 'G':
+                   case 'a': case 'A':
+ # endif
++# if !DCHAR_IS_TCHAR || ENABLE_UNISTDIO || NEED_PRINTF_FLAG_ZERO
+                     pad_ourselves = 1;
+                     break;
++# endif
+                   default:
+                     pad_ourselves = prec_ourselves | group_ourselves;
+                     break;
+-- 
+2.50.0
+
+
+--=-=-=--
+

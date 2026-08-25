@@ -1,0 +1,131 @@
+Received: from list by lists.gnu.org with archive (Exim 4.90_1)
+	id 1tuT0V-0000BP-50
+	for mharc-bug-gnu-emacs@gnu.org; Tue, 18 Mar 2025 05:13:07 -0400
+Received: from eggs.gnu.org ([2001:470:142:3::10])
+ by lists.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_256_GCM_SHA384:256)
+ (Exim 4.90_1) (envelope-from <Debian-debbugs@debbugs.gnu.org>)
+ id 1tuT0T-0000Ab-Rd
+ for bug-gnu-emacs@gnu.org; Tue, 18 Mar 2025 05:13:05 -0400
+Received: from debbugs.gnu.org ([2001:470:142:5::43])
+ by eggs.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_128_GCM_SHA256:128)
+ (Exim 4.90_1) (envelope-from <Debian-debbugs@debbugs.gnu.org>)
+ id 1tuT0T-0004fi-Iy
+ for bug-gnu-emacs@gnu.org; Tue, 18 Mar 2025 05:13:05 -0400
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+ d=debbugs.gnu.org; s=debbugs-gnu-org; 
+ h=MIME-Version:From:Date:To:Subject;
+ bh=5Lrv2Us6gGbgJGc3gHfvuUDNv4A88RPxe3rPrEVYOHQ=; 
+ b=lL+IJp0yx0P2d5egeBujcPIWYIkHdvx9rXIztCbLVX5xNwXuuRvN3ARdmeczkVcL06a0+RgPstK4FkNJU1xa9m8mzL0Qv2jXFjNLuh3PsqkEtwgTMQahNu2z3/2ldI13+4vuorCqkZBzAP/x0xulqsisSSVtKctR+rny58N5bwb+ad4FPengK/bDbdwcev6rqyT2u4/HzUgvaxdvAP0Gxk1xDwmK+nX7Kem1aFux8uq8Iyh2y0BGmQTav5ryGO9WIuMuFGuj658lXja21JnuCd40CS3Q0L97lYBUrNxzmip5Hl4GUtxa9jDMztGaGMW0572iADr4+P2l/Y58AnjW/g==;
+Received: from Debian-debbugs by debbugs.gnu.org with local (Exim 4.84_2)
+ (envelope-from <Debian-debbugs@debbugs.gnu.org>) id 1tuT0T-00045m-DK
+ for bug-gnu-emacs@gnu.org; Tue, 18 Mar 2025 05:13:05 -0400
+X-Loop: help-debbugs@gnu.org
+Subject: bug#77095: 31.0.50;
+ Using fill-region doesn't produce commented lines in yaml-ts-mode
+Resent-From: the_wurfkreuz <the_wurfkreuz@proton.me>
+Original-Sender: "Debbugs-submit" <debbugs-submit-bounces@debbugs.gnu.org>
+Resent-CC: bug-gnu-emacs@gnu.org
+Resent-Date: Tue, 18 Mar 2025 09:13:04 +0000
+Resent-Message-ID: <handler.77095.B.174228915115404@debbugs.gnu.org>
+Resent-Sender: help-debbugs@gnu.org
+X-GNU-PR-Message: report 77095
+X-GNU-PR-Package: emacs
+X-GNU-PR-Keywords: 
+To: 77095@debbugs.gnu.org
+X-Debbugs-Original-To: "bug-gnu-emacs@gnu.org" <bug-gnu-emacs@gnu.org>
+Received: via spool by submit@debbugs.gnu.org id=B.174228915115404
+ (code B ref -1); Tue, 18 Mar 2025 09:13:04 +0000
+Received: (at submit) by debbugs.gnu.org; 18 Mar 2025 09:12:31 +0000
+Received: from localhost ([127.0.0.1]:36825 helo=debbugs.gnu.org)
+ by debbugs.gnu.org with esmtp (Exim 4.84_2)
+ (envelope-from <debbugs-submit-bounces@debbugs.gnu.org>)
+ id 1tuSzq-0003za-GO
+ for submit@debbugs.gnu.org; Tue, 18 Mar 2025 05:12:31 -0400
+Received: from lists.gnu.org ([2001:470:142::17]:42708)
+ by debbugs.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_256_GCM_SHA384:256)
+ (Exim 4.84_2) (envelope-from <the_wurfkreuz@proton.me>)
+ id 1tuSzo-0003y6-B0
+ for submit@debbugs.gnu.org; Tue, 18 Mar 2025 05:12:25 -0400
+Received: from eggs.gnu.org ([2001:470:142:3::10])
+ by lists.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_256_GCM_SHA384:256)
+ (Exim 4.90_1) (envelope-from <the_wurfkreuz@proton.me>)
+ id 1tuSzV-0008Ly-TC
+ for bug-gnu-emacs@gnu.org; Tue, 18 Mar 2025 05:12:11 -0400
+Received: from mail-0301.mail-europe.com ([188.165.51.139])
+ by eggs.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_256_GCM_SHA384:256)
+ (Exim 4.90_1) (envelope-from <the_wurfkreuz@proton.me>)
+ id 1tuSzU-0004ZY-Cc
+ for bug-gnu-emacs@gnu.org; Tue, 18 Mar 2025 05:12:05 -0400
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=proton.me;
+ s=protonmail; t=1742289120; x=1742548320;
+ bh=5Lrv2Us6gGbgJGc3gHfvuUDNv4A88RPxe3rPrEVYOHQ=;
+ h=Date:To:From:Subject:Message-ID:Feedback-ID:From:To:Cc:Date:
+ Subject:Reply-To:Feedback-ID:Message-ID:BIMI-Selector:
+ List-Unsubscribe:List-Unsubscribe-Post;
+ b=kQ5dRBjGSK8PtLnTqCXQQTQC+wbaSzkq0ENVxAPldjEa8H+pz2ycfCM9zf9GK+G7O
+ EOXjvxADlO4bc5xyj5WYKAnWfMCE0SkhbjwNPQPTZPWUU0QLIgT+eYqEX0AxdlF2di
+ rb2NFQyri9XnNAGpgbek2jQX2MWDyRLxZLFeNrJQz0yCi5jME5ZPVErDJp425n6xv/
+ TadM8cvkBEIfjkytvAUzphO8wPPAkdf+6sD15cg+s3D9NAsQNpYBPZf7ru0t1AfxH/
+ 5DjSqJJfQDzxHm4EGFDmS3EzSXGy0WgKshFrUvIlaeWPuh4KFBXMFUWwvXZPZ1SUJp
+ gC1MEEWB8ojZg==
+Date: Tue, 18 Mar 2025 09:11:54 +0000
+From: the_wurfkreuz <the_wurfkreuz@proton.me>
+Message-ID: <ojVRda38Ey1Ow1cXuaNpG-LW_MjrvmE9ut9YzdWqdANE8Th9Z4OCDvbNDD77gHSNwtkB6qqK3BuVfhTQFHZWAqTLbPs5UuAwTSfzPTrFY5A=@proton.me>
+Feedback-ID: 66695528:user:proton
+X-Pm-Message-ID: abb1ef6730c6e301894b033f4a467d1606d4b306
+MIME-Version: 1.0
+Content-Type: multipart/alternative;
+ boundary="b1=_tkse7UmqbuVjR6lbZeExbT6qtkJ7vYm5QMqkoCzmRQ"
+Received-SPF: pass client-ip=188.165.51.139;
+ envelope-from=the_wurfkreuz@proton.me; helo=mail-0301.mail-europe.com
+X-Spam_score_int: -20
+X-Spam_score: -2.1
+X-Spam_bar: --
+X-Spam_report: (-2.1 / 5.0 requ) BAYES_00=-1.9, DKIM_SIGNED=0.1,
+ DKIM_VALID=-0.1, DKIM_VALID_AU=-0.1, DKIM_VALID_EF=-0.1, HTML_MESSAGE=0.001,
+ RCVD_IN_DNSWL_NONE=-0.0001, RCVD_IN_VALIDITY_RPBL_BLOCKED=0.001,
+ RCVD_IN_VALIDITY_SAFE_BLOCKED=0.001, SPF_HELO_NONE=0.001,
+ SPF_PASS=-0.001 autolearn=ham autolearn_force=no
+X-Spam_action: no action
+X-Spam-Score: 1.0 (+)
+X-BeenThere: debbugs-submit@debbugs.gnu.org
+X-Mailman-Version: 2.1.18
+Precedence: list
+Errors-To: debbugs-submit-bounces@debbugs.gnu.org
+Sender: "Debbugs-submit" <debbugs-submit-bounces@debbugs.gnu.org>
+X-Spam-Score: -0.0 (/)
+X-BeenThere: bug-gnu-emacs@gnu.org
+List-Id: "Bug reports for GNU Emacs,
+ the Swiss army knife of text editors" <bug-gnu-emacs.gnu.org>
+List-Unsubscribe: <https://lists.gnu.org/mailman/options/bug-gnu-emacs>,
+ <mailto:bug-gnu-emacs-request@gnu.org?subject=unsubscribe>
+List-Archive: <https://lists.gnu.org/archive/html/bug-gnu-emacs>
+List-Post: <mailto:bug-gnu-emacs@gnu.org>
+List-Help: <mailto:bug-gnu-emacs-request@gnu.org?subject=help>
+List-Subscribe: <https://lists.gnu.org/mailman/listinfo/bug-gnu-emacs>,
+ <mailto:bug-gnu-emacs-request@gnu.org?subject=subscribe>
+X-List-Received-Date: Tue, 18 Mar 2025 09:13:06 -0000
+
+--b1=_tkse7UmqbuVjR6lbZeExbT6qtkJ7vYm5QMqkoCzmRQ
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: base64
+
+SXQncyB0aGUgc2FtZSBpc3N1ZSBhcyBpbiB0aGlzIGJ1ZyByZXBvcnQgIzc1OTc4LCBidXQgZm9y
+IHlhbWwtdHMtbW9kZS4gRG8gaSBuZWVkIHRvIHByb3ZpZGUgcmVwcm9kdWN0aW9uIHN0ZXBzIHN0
+aWxsPw==
+
+--b1=_tkse7UmqbuVjR6lbZeExbT6qtkJ7vYm5QMqkoCzmRQ
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: base64
+
+PGRpdiBzdHlsZT0iZm9udC1mYW1pbHk6IEFyaWFsLCBzYW5zLXNlcmlmOyBmb250LXNpemU6IDE0
+cHg7Ij5JdCdzIHRoZSBzYW1lIGlzc3VlIGFzIGluIHRoaXMgYnVnIHJlcG9ydCZuYnNwOzxzcGFu
+PiM3NTk3ODwvc3Bhbj4sIGJ1dCBmb3IgeWFtbC10cy1tb2RlLiBEbyBpIG5lZWQgdG8gcHJvdmlk
+ZSByZXByb2R1Y3Rpb24gc3RlcHMgc3RpbGw/IDwvZGl2Pg==
+
+
+--b1=_tkse7UmqbuVjR6lbZeExbT6qtkJ7vYm5QMqkoCzmRQ--
+
+
+
+

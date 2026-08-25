@@ -1,0 +1,73 @@
+Return-Path: <ar@ellinghurst.co.uk>
+Received: from mx.ellinghurst.co.uk (mx.ellinghurst.co.uk [185.28.196.44])
+ by mx.parse.example.com (Postfix) with ESMTPS id 5IHC5OI0XI
+ (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+ for <k7m2xq4h9bwz@parse.example.com>; Sat, 01 Aug 2026 08:44:19 +0100
+Authentication-Results: mx.parse.example.com;
+ dkim=pass header.d=ellinghurst.co.uk;
+ spf=pass smtp.mailfrom=ar@ellinghurst.co.uk;
+ dmarc=pass header.from=ellinghurst.co.uk
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ellinghurst.co.uk; s=mail;
+ h=from:to:subject:date:mime-version; bh=MC43MzgxNjEzMjA2MDgwMjE1=;
+ b=MC4xMTUxMjg1Nzk4ODAwMDM2OTAuMzM5ODM5NjkyOTIzOTQzOA==
+MIME-Version: 1.0
+From: Priya Raghunathan <ar@ellinghurst.co.uk>
+To: k7m2xq4h9bwz@parse.example.com
+Cc: finance@ellinghurst.co.uk
+Subject: Invoice INV-10428 from Ellinghurst Consulting Ltd
+Date: Sat, 01 Aug 2026 08:44:16 +0100
+Message-ID: <CAF9x8Qz+INV10428@mail.ellinghurst.co.uk>
+Content-Type: multipart/mixed;
+ boundary="mixed_5f1c2d3e4b5a69780123"
+
+--mixed_5f1c2d3e4b5a69780123
+Content-Type: multipart/alternative;
+ boundary="alt_5f1c2d3e4b5a69780124"
+
+--alt_5f1c2d3e4b5a69780124
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+
+Hi there,
+
+Please find attached invoice INV-10428 for the month of July 2026.
+
+Invoice number: INV-10428
+Invoice date: 01/08/2026
+Due date: 31/08/2026
+Amount due: GBP 4,812.00
+
+Payment terms: Net 30. Reference INV-10428 on your transfer.
+
+Kind regards,
+Priya Raghunathan
+Accounts Receivable, Ellinghurst Consulting Ltd
++44 20 7946 0102
+--alt_5f1c2d3e4b5a69780124
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+<html><body><p>Hi there,</p><p>Please find attached invoice <b>INV-10428</=
+b> for the month of July 2026.</p>
+<table cellpadding=3D"4" border=3D"0">
+<tr><td>Invoice number:</td><td>INV-10428</td></tr>
+<tr><td>Invoice date:</td><td>01/08/2026</td></tr>
+<tr><td>Due date:</td><td>31/08/2026</td></tr>
+<tr><td>Amount due:</td><td>GBP 4,812.00</td></tr></table>
+<p>Kind regards,<br>Priya Raghunathan</p></body></html>
+--alt_5f1c2d3e4b5a69780124--
+
+--mixed_5f1c2d3e4b5a69780123
+Content-Type: application/pdf; name="Invoice INV-10428.pdf"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename*0="Invoice ";
+ filename*1="INV-10428.pdf"
+
+JVBERi0xLjQKMSAwIG9iajw8L1R5cGUvQ2F0YWxvZy9QYWdlcyAyIDAgUj4+ZW5kb2JqCjIgMCBv
+Ymo8PC9UeXBlL1BhZ2VzL0tpZHNbMyAwIFJdL0NvdW50IDE+PmVuZG9iagozIDAgb2JqPDwvVHlw
+ZS9QYWdlL1BhcmVudCAyIDAgUi9NZWRpYUJveFswIDAgNTk1IDg0Ml0vQ29udGVudHMgNCAwIFI+
+PmVuZG9iago0IDAgb2JqPDwvTGVuZ3RoIDYwPj5zdHJlYW0KQlQgL0YxIDEyIFRmIDcyIDcyMCBU
+ZCAoSU5WLTEwNDI4IEVsbGluZ2h1cnN0IENvbnN1bHRpbmcgTHRkIEdCUCA0ODEyLjAwKSBUaiBF
+VAplbmRzdHJlYW0gZW5kb2JqCnRyYWlsZXI8PC9Sb290IDEgMCBSPj4KJSVFT0YK
+--mixed_5f1c2d3e4b5a69780123--

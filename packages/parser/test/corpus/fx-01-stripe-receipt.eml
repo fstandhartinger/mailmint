@@ -1,0 +1,91 @@
+Return-Path: <receipts@northwind-analytics.com>
+Received: from mx.northwind-analytics.com (mx.northwind-analytics.com [54.240.8.31])
+ by mx.parse.example.com (Postfix) with ESMTPS id KHWUW2KZ42
+ (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+ for <k7m2xq4h9bwz@parse.example.com>; Fri, 21 Aug 2026 14:02:11 +0000
+Authentication-Results: mx.parse.example.com;
+ dkim=pass header.d=northwind-analytics.com;
+ spf=pass smtp.mailfrom=receipts@northwind-analytics.com;
+ dmarc=pass header.from=northwind-analytics.com
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=northwind-analytics.com; s=mail;
+ h=from:to:subject:date:mime-version; bh=MC42MzU3MzYwODI1MDkwOTA1=;
+ b=MC44MDMxMTE5MTAzMDYyNTE4MC4yOTY2MjY1ODQ5NjkzOTk=
+MIME-Version: 1.0
+From: Northwind Analytics <receipts@northwind-analytics.com>
+To: k7m2xq4h9bwz@parse.example.com
+Subject: Your receipt from Northwind Analytics #2451-8827
+Date: Fri, 21 Aug 2026 14:02:09 +0000
+Message-ID: <rcpt-2451-8827@northwind-analytics.com>
+X-Mailer: Postmark
+List-Unsubscribe: <https://northwind-analytics.com/u/abc>
+Content-Type: multipart/mixed;
+ boundary="000000000000a1b2c3d4e5f6"
+
+--000000000000a1b2c3d4e5f6
+Content-Type: multipart/alternative;
+ boundary="000000000000f6e5d4c3b2a1"
+
+--000000000000f6e5d4c3b2a1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+Receipt from Northwind Analytics
+
+Receipt #2451-8827
+Paid August 21, 2026
+
+Description                          Amount
+Pro plan (monthly)                   $49.00
+Additional seats x3                  $27.00
+Sales tax                             $6.08
+
+Total                                $82.08
+
+Charged to Visa ending 4242.
+Questions? support@northwind-analytics.com
+--000000000000f6e5d4c3b2a1
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN">
+<html><head><meta http-equiv=3D"Content-Type" content=3D"text/html; charse=
+t=3Dutf-8"><title>Your receipt</title>
+<style>body{margin:0}.h{display:none;font-size:0;line-height:0;max-height:=
+0;overflow:hidden}</style></head>
+<body style=3D"background:#f6f9fc;margin:0;padding:0">
+<span class=3D"h" style=3D"display:none;font-size:0px;line-height:0px;max-=
+height:0px;mso-hide:all">Your receipt for $82.08 &#8212; Pro plan (monthly=
+)</span>
+<table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0" border=3D"0"><tr=
+><td align=3D"center">
+<table width=3D"600" cellpadding=3D"0" cellspacing=3D"0" border=3D"0"><tr>=
+<td style=3D"padding:24px">
+<h1 style=3D"font:600 20px Helvetica">Receipt from Northwind Analytics</h1=
+>
+<p style=3D"font:14px Helvetica;color:#525f7f">Receipt <strong>#2451-8827<=
+/strong><br>Paid <strong>August 21, 2026</strong></p>
+<table width=3D"100%" cellpadding=3D"6" cellspacing=3D"0" border=3D"0" sty=
+le=3D"border-collapse:collapse">
+<thead><tr><th align=3D"left" style=3D"border-bottom:1px solid #e6ebf1">De=
+scription</th><th align=3D"right" style=3D"border-bottom:1px solid #e6ebf1=
+">Amount</th></tr></thead>
+<tbody>
+<tr><td align=3D"left">Pro plan (monthly)</td><td align=3D"right">$49.00</=
+td></tr>
+<tr><td align=3D"left">Additional seats x3</td><td align=3D"right">$27.00<=
+/td></tr>
+<tr><td align=3D"left">Sales tax</td><td align=3D"right">$6.08</td></tr>
+<tr><td align=3D"left"><strong>Total</strong></td><td align=3D"right"><str=
+ong>$82.08</strong></td></tr>
+</tbody></table>
+<p style=3D"font:12px Helvetica;color:#8898aa">Charged to Visa ending 4242=
+.</p>
+<a href=3D"https://dashboard.northwind-analytics.com/receipts/2451-8827">V=
+iew receipt online</a>
+</td></tr></table></td></tr></table>
+<img src=3D"https://track.northwind-analytics.com/o/2451-8827.gif" width=
+=3D"1" height=3D"1" alt=3D"" style=3D"display:block">
+</body></html>
+--000000000000f6e5d4c3b2a1--
+
+--000000000000a1b2c3d4e5f6--

@@ -1,0 +1,29 @@
+Return-Path: <accounts@driftwoodsupply.com>
+Received: from mx.driftwoodsupply.com (mx.driftwoodsupply.com [104.16.32.9])
+ by mx.parse.example.com (Postfix) with ESMTPS id PMLJDS0H1T
+ (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+ for <k7m2xq4h9bwz@parse.example.com>; Fri, 03 Apr 2026 10:00:00 +0000
+Authentication-Results: mx.parse.example.com;
+ dkim=pass header.d=driftwoodsupply.com;
+ spf=pass smtp.mailfrom=accounts@driftwoodsupply.com;
+ dmarc=pass header.from=driftwoodsupply.com
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=driftwoodsupply.com; s=mail;
+ h=from:to:subject:date:mime-version; bh=MC45NzA0ODAwMDk2ODc3MzU3=;
+ b=MC4zMDgxNzc0NzE0NjY3MzY5MC4xMzY1NTY4MTM2Njk1OTExNg==
+MIME-Version: 1.0
+From: Driftwood Supply <accounts@driftwoodsupply.com>
+To: k7m2xq4h9bwz@parse.example.com
+Subject: Invoice AMB-2026-004
+Date: Fri, 03 Apr 2026 10:00:00 +0000
+Message-ID: <amb-2026-004@driftwoodsupply.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+
+Invoice
+Invoice number: AMB-2026-004
+Invoice date: 03/04/2026
+Due date: 03/05/2026
+Total: $560.00
+
+All dates are in the format shown on our website.
+Ship date: 25/03/2026

@@ -1,0 +1,77 @@
+Received: from list by lists.gnu.org with archive (Exim 4.90_1)
+	id 1tzRVp-0005df-Hy
+	for mharc-emacs-devel@gnu.org; Mon, 31 Mar 2025 22:38:01 -0400
+Received: from eggs.gnu.org ([2001:470:142:3::10])
+ by lists.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_256_GCM_SHA384:256)
+ (Exim 4.90_1) (envelope-from <gabrielsantosdesouza@disroot.org>)
+ id 1tzRVn-0005dQ-SC
+ for emacs-devel@gnu.org; Mon, 31 Mar 2025 22:38:00 -0400
+Received: from layka.disroot.org ([178.21.23.139])
+ by eggs.gnu.org with esmtps (TLS1.2:ECDHE_RSA_AES_128_GCM_SHA256:128)
+ (Exim 4.90_1) (envelope-from <gabrielsantosdesouza@disroot.org>)
+ id 1tzRVl-0000uL-RZ
+ for emacs-devel@gnu.org; Mon, 31 Mar 2025 22:37:59 -0400
+Received: from mail01.disroot.lan (localhost [127.0.0.1])
+ by disroot.org (Postfix) with ESMTP id 4DDCA25C7E;
+ Tue,  1 Apr 2025 04:37:54 +0200 (CEST)
+X-Virus-Scanned: SPAM Filter at disroot.org
+Received: from layka.disroot.org ([127.0.0.1])
+ by localhost (disroot.org [127.0.0.1]) (amavis, port 10024) with ESMTP
+ id Z2U0MOO2aHSu; Tue,  1 Apr 2025 04:37:53 +0200 (CEST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=disroot.org; s=mail;
+ t=1743475073; bh=qbkDCLHTLr+xfuV+u71jDHjkToITYj0qYftlCTmAiBA=;
+ h=Date:From:To:Subject:In-Reply-To:References;
+ b=KsTizNAKB1lo4Y4P/JQli0LefRZiJLFAX/sEOVkY3BFG7/ng4lnKjVawdiU7W48AP
+ FOQ+u8CYC0jQ8mk+ypirPtIxak0SoHKB9rhhrQlhC2R5+xWK4eUCDKyWSnVZQPLJqG
+ 916BnniWqN/+ry1IMIerGTnyu8FmXItEbZZcHciATtk4K8soRE6SygFj41L6JeQ60m
+ IocBxIKikMeAP/1o0EGcnt7tkL3FY3hhkd76B1DAFqATWHwizIqvR4Irs8VMBhHZtV
+ MCxAy+HBRJcVmW2WXNghHEj2mgoJtu7Z395xmjLu1nrENLupxopBL8rDYZV5wCJRdV
+ GUYdaq+tzqiwA==
+Date: Mon, 31 Mar 2025 23:37:46 -0300
+From: Gabriel Santos <gabrielsantosdesouza@disroot.org>
+To: emacs-devel@gnu.org, Rahul Martim Juliato <rahuljuliato@gmail.com>,
+ Stefan Monnier <monnier@iro.umontreal.ca>
+Subject: =?US-ASCII?Q?Re=3A_master_b98fe25c2ee=3A_Enhance_=27icomple?=
+ =?US-ASCII?Q?te-vertical-mode=27_customization_options=2E?=
+User-Agent: Thunderbird for Android
+In-Reply-To: <8734et3q2j.fsf@gmail.com>
+References: <174326677824.17249.13427498734843100149@vcs2.savannah.gnu.org>
+ <20250329164618.B7393C5532B@vcs2.savannah.gnu.org>
+ <jwvh63bfw7r.fsf-monnier+emacs@gnu.org> <8734et3q2j.fsf@gmail.com>
+Message-ID: <E275EF26-66A6-4420-B15D-F84B82847D7A@disroot.org>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+Received-SPF: pass client-ip=178.21.23.139;
+ envelope-from=gabrielsantosdesouza@disroot.org; helo=layka.disroot.org
+X-Spam_score_int: -20
+X-Spam_score: -2.1
+X-Spam_bar: --
+X-Spam_report: (-2.1 / 5.0 requ) BAYES_00=-1.9, DKIM_SIGNED=0.1,
+ DKIM_VALID=-0.1, DKIM_VALID_AU=-0.1, DKIM_VALID_EF=-0.1,
+ RCVD_IN_MSPIKE_H2=0.001, RCVD_IN_VALIDITY_CERTIFIED_BLOCKED=0.001,
+ RCVD_IN_VALIDITY_RPBL_BLOCKED=0.001, SPF_HELO_NONE=0.001,
+ SPF_PASS=-0.001 autolearn=ham autolearn_force=no
+X-Spam_action: no action
+X-BeenThere: emacs-devel@gnu.org
+X-Mailman-Version: 2.1.29
+Precedence: list
+List-Id: "Emacs development discussions." <emacs-devel.gnu.org>
+List-Unsubscribe: <https://lists.gnu.org/mailman/options/emacs-devel>,
+ <mailto:emacs-devel-request@gnu.org?subject=unsubscribe>
+List-Archive: <https://lists.gnu.org/archive/html/emacs-devel>
+List-Post: <mailto:emacs-devel@gnu.org>
+List-Help: <mailto:emacs-devel-request@gnu.org?subject=help>
+List-Subscribe: <https://lists.gnu.org/mailman/listinfo/emacs-devel>,
+ <mailto:emacs-devel-request@gnu.org?subject=subscribe>
+X-List-Received-Date: Tue, 01 Apr 2025 02:38:00 -0000
+
+>What do you guys think?
+
+I personally prefer seeing variables like this separate,
+like how it is with the Flymake indicators, for example=2E
+
+--=20
+Gabriel Santos
+
