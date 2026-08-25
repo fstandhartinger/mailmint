@@ -80,6 +80,8 @@ async function authenticate(raw, envelope, opts = {}) {
     auth: {
       spf: spfRes.result,
       dkim: dkimRes.result,
+      dkimFailureType: dkimRes.failureType || null,
+      dkimBodyAltered: Boolean(dkimRes.bodyAltered),
       dmarc: dmarcRes.result,
       dmarcPolicy: dmarcRes.policy,
     },
@@ -105,10 +107,18 @@ async function authenticate(raw, envelope, opts = {}) {
       dkim: {
         result: dkimRes.result,
         reason: dkimRes.reason,
+        // 'body_hash' | 'signature' | 'key' | 'policy' | 'dns' | null
+        failure_type: dkimRes.failureType || null,
+        // true when the ONLY thing wrong is that the body no longer hashes to
+        // what was signed. That is what forwarding, mailing lists and security
+        // gateways do; it is not evidence of forgery.
+        body_altered: Boolean(dkimRes.bodyAltered),
         signatures: (dkimRes.signatures || []).map((s) => ({
           result: s.result, domain: s.domain, selector: s.selector,
           algorithm: s.algorithm, canonicalization: s.canonicalization,
           keyBits: s.keyBits, weak: s.weak, reason: s.reason,
+          failure_type: s.failureType || null,
+          body_hash_matched: s.bodyHashMatched,
         })),
       },
       dmarc: {

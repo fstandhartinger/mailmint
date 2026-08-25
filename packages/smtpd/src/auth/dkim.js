@@ -154,11 +154,11 @@ function stripSignatureValue(raw) {
 
 function publicKeyFromRecord(rec) {
   const p = stripB64Ws(rec.p);
-  if (!p) { const e = new Error('key revoked (empty p=)'); e.dkim = 'fail'; throw e; }
+  if (!p) { const e = new Error('key revoked (empty p=)'); e.dkim = 'fail'; e.type = 'key'; throw e; }
   const der = Buffer.from(p, 'base64');
   const k = (rec.k || 'rsa').toLowerCase();
   if (k === 'ed25519') {
-    if (der.length !== 32) { const e = new Error(`ed25519 key must be 32 bytes, got ${der.length}`); e.dkim = 'permerror'; throw e; }
+    if (der.length !== 32) { const e = new Error(`ed25519 key must be 32 bytes, got ${der.length}`); e.dkim = 'permerror'; e.type = 'key'; throw e; }
     return {
       key: crypto.createPublicKey({
         key: Buffer.concat([ED25519_SPKI_PREFIX, der]),
@@ -169,7 +169,7 @@ function publicKeyFromRecord(rec) {
       bits: 256,
     };
   }
-  if (k !== 'rsa') { const e = new Error(`unsupported key type k=${k}`); e.dkim = 'permerror'; throw e; }
+  if (k !== 'rsa') { const e = new Error(`unsupported key type k=${k}`); e.dkim = 'permerror'; e.type = 'key'; throw e; }
   let key;
   try {
     key = crypto.createPublicKey({ key: der, format: 'der', type: 'spki' });
@@ -177,7 +177,7 @@ function publicKeyFromRecord(rec) {
     try {
       key = crypto.createPublicKey({ key: der, format: 'der', type: 'pkcs1' });
     } catch (e2) {
-      const e = new Error(`unreadable RSA key: ${e2.message}`); e.dkim = 'permerror'; throw e;
+      const e = new Error(`unreadable RSA key: ${e2.message}`); e.dkim = 'permerror'; e.type = 'key'; throw e;
     }
   }
   const bits = key.asymmetricKeyDetails ? key.asymmetricKeyDetails.modulusLength : null;
@@ -192,6 +192,7 @@ async function fetchKeyRecords(dnsClient, selector, domain) {
   } catch (e) {
     const err = new Error(`key lookup ${name}: ${e.code}`);
     err.dkim = e.temporary ? 'temperror' : 'permerror';
+    err.type = 'dns';
     throw err;
   }
   const recs = txts
@@ -200,6 +201,7 @@ async function fetchKeyRecords(dnsClient, selector, domain) {
   if (!recs.length) {
     const err = new Error(`no DKIM key record at ${name}`);
     err.dkim = 'permerror';
+    err.type = 'key';
     throw err;
   }
   return recs;
@@ -222,6 +224,7 @@ async function verifySignature(sigHeader, parsed, opts) {
     headers: tags.h || null,
     keyBits: null,
     bodyHashMatched: null,
+    failureType: null,
     weak: false,
   };
 
@@ -252,7 +255,7 @@ async function verifySignature(sigHeader, parsed, opts) {
         if (tags.t && /^\d+$/.test(tags.t) && Number(tags.t) > Number(tags.x)) {
           throw permerror('x= is before t=');
         }
-        if (!opts.ignoreExpiry) throw fail(`signature expired at ${tags.x}`);
+        if (!opts.ignoreExpiry) throw fail(`signature expired at ${tags.x}`, 'policy');
       }
     }
     if (tags.t && /^\d+$/.test(tags.t) && Number(tags.t) > now + 3600 && !opts.ignoreExpiry) {
@@ -275,7 +278,10 @@ async function verifySignature(sigHeader, parsed, opts) {
     }
     const bh = crypto.createHash(hAlg).update(strToBytes(body)).digest('base64');
     out.bodyHashMatched = bh === stripB64Ws(tags.bh);
-    if (!out.bodyHashMatched) throw fail(`body hash mismatch (computed ${bh}, signed ${stripB64Ws(tags.bh)})`);
+    if (!out.bodyHashMatched) {
+      throw fail(`body altered after signing: body hash mismatch ` +
+        `(computed ${bh}, signed ${stripB64Ws(tags.bh)})`, 'body_hash');
+    }
 
     // ---- header hash input ----
     // For each name in h=, take occurrences from the BOTTOM of the header block up.
@@ -325,18 +331,27 @@ async function verifySignature(sigHeader, parsed, opts) {
         out.reason = null;
         return out;
       }
-      lastErr = fail('signature did not verify against the published key');
+      lastErr = fail('signature did not verify against the published key', 'signature');
     }
     throw lastErr || permerror('no usable key record');
   } catch (e) {
     out.result = e.dkim || 'permerror';
     out.reason = e.message;
+    out.failureType = e.type || 'policy';
     return out;
   }
 }
 
-function permerror(msg) { const e = new Error(msg); e.dkim = 'permerror'; return e; }
-function fail(msg) { const e = new Error(msg); e.dkim = 'fail'; return e; }
+// Why a signature failed matters as much as that it failed:
+//   body_hash  the body was altered after signing. Forwarders, mailing lists and
+//              corporate security gateways do this constantly, so on its own it
+//              says almost nothing about the sender's honesty.
+//   signature  the signed headers do not match the key. That IS suspicious.
+//   key        the key is revoked, unreadable, or absent.
+//   policy     the signature is malformed, expired, or breaks a DKIM rule.
+//   dns        we could not reach the key. Retry later.
+function permerror(msg, type = 'policy') { const e = new Error(msg); e.dkim = 'permerror'; e.type = type; return e; }
+function fail(msg, type = 'signature') { const e = new Error(msg); e.dkim = 'fail'; e.type = type; return e; }
 
 /**
  * Verify every DKIM-Signature in a message.
@@ -360,11 +375,18 @@ async function verify(raw, opts = {}) {
   const rank = { pass: 5, fail: 4, temperror: 3, permerror: 2, none: 1 };
   let best = results[0];
   for (const r of results) if (rank[r.result] > rank[best.result]) best = r;
+  const passed = results.filter((r) => r.result === 'pass');
+  // "The body was changed after signing" is a materially different statement
+  // from "this signature is forged", and downstream needs to be able to tell
+  // them apart: forwarding breaks the body hash as a matter of routine.
+  const bodyAltered = passed.length === 0 && results.some((r) => r.failureType === 'body_hash');
   return {
     result: best.result,
     reason: best.reason,
+    failureType: best.result === 'pass' ? null : best.failureType,
+    bodyAltered,
     signatures: results,
-    passed: results.filter((r) => r.result === 'pass'),
+    passed,
   };
 }
 

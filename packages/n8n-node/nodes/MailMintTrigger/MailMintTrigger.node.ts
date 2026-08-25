@@ -43,25 +43,33 @@ export class MailMintTrigger implements INodeType {
 		icon: { light: 'file:mailmint.svg', dark: 'file:mailmint.dark.svg' },
 		group: ['trigger'],
 		version: 1,
-		subtitle: '={{ $parameter["mode"] === "webhook" ? "webhook" : "polling" }}',
+		subtitle: '={{ $parameter["deliveryMode"] === "webhook" ? "webhook" : "polling" }}',
 		description: 'Starts the workflow when MailMint has parsed a new email',
 		defaults: { name: 'MailMint Trigger' },
 		inputs: [],
 		outputs: OUTPUTS_EXPRESSION,
 		credentials: [{ name: 'mailMintApi', required: true }],
 		polling: true,
+		// n8n resolves a webhook's `path` as an expression and drops the webhook
+		// when it comes back undefined. That is what lets one node hold both
+		// modes honestly: in Polling the node declares no webhook at all, so the
+		// editor's "Fetch Test Event" runs poll() instead of sitting on a
+		// webhook listener that MailMint was never told to call.
 		webhooks: [
 			{
 				name: 'default',
 				httpMethod: 'POST',
 				responseMode: 'onReceived',
-				path: 'webhook',
+				path: '={{ $parameter["deliveryMode"] === "poll" ? undefined : "webhook" }}',
 			},
 		],
 		properties: [
 			{
-				displayName: 'Mode',
-				name: 'mode',
+				// Not called "Mode": n8n injects its own Poll Times > Mode into
+				// every polling node, and two parameters with that label in one
+				// panel is a trap for the operator and for anything scripting it.
+				displayName: 'Delivery',
+				name: 'deliveryMode',
 				type: 'options',
 				noDataExpression: true,
 				default: 'webhook',
@@ -90,7 +98,7 @@ export class MailMintTrigger implements INodeType {
 				required: true,
 				description:
 					'The mailbox to receive from. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
-				displayOptions: { show: { mode: ['webhook'] } },
+				displayOptions: { show: { deliveryMode: ['webhook'] } },
 			},
 			{
 				displayName: 'Simplify',
@@ -227,7 +235,7 @@ export class MailMintTrigger implements INodeType {
 	webhookMethods = {
 		default: {
 			async checkExists(this: IHookFunctions): Promise<boolean> {
-				if ((this.getNodeParameter('mode', 0) as string) !== 'webhook') return true;
+				if ((this.getNodeParameter('deliveryMode', 0) as string) !== 'webhook') return true;
 
 				const staticData = this.getWorkflowStaticData('node') as TriggerStaticData;
 				const mailboxId = this.getNodeParameter('mailboxId', 0) as string;
@@ -244,7 +252,7 @@ export class MailMintTrigger implements INodeType {
 			},
 
 			async create(this: IHookFunctions): Promise<boolean> {
-				if ((this.getNodeParameter('mode', 0) as string) !== 'webhook') return true;
+				if ((this.getNodeParameter('deliveryMode', 0) as string) !== 'webhook') return true;
 
 				const staticData = this.getWorkflowStaticData('node') as TriggerStaticData;
 				const options = this.getNodeParameter('options', 0, {}) as IDataObject;
@@ -269,7 +277,7 @@ export class MailMintTrigger implements INodeType {
 			},
 
 			async delete(this: IHookFunctions): Promise<boolean> {
-				if ((this.getNodeParameter('mode', 0) as string) !== 'webhook') return true;
+				if ((this.getNodeParameter('deliveryMode', 0) as string) !== 'webhook') return true;
 
 				const staticData = this.getWorkflowStaticData('node') as TriggerStaticData;
 				const mailboxId = (this.getNodeParameter('mailboxId', 0) as string) || staticData.mailboxId;
@@ -333,7 +341,7 @@ export class MailMintTrigger implements INodeType {
 	}
 
 	async poll(this: IPollFunctions): Promise<INodeExecutionData[][] | null> {
-		if ((this.getNodeParameter('mode', 0) as string) !== 'poll') return null;
+		if ((this.getNodeParameter('deliveryMode', 0) as string) !== 'poll') return null;
 
 		const manual = this.getMode() === 'manual';
 		const filters = this.getNodeParameter('filters', {}) as IDataObject;

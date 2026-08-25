@@ -379,9 +379,9 @@ router.post('/test/deliver', withAuth, asyncRoute(async (req, res) => {
     raw,
   });
   // The same Message-ID twice is one message, here as everywhere else.
-  if (message.duplicate) {
+  if (message.duplicate && message.id) {
     const existing = await pipeline.loadMessage(message.id, req.account.id);
-    return res.status(200).json(messages.renderResult(existing, mb, { base: baseUrl(req) }));
+    if (existing) return res.status(200).json(messages.renderResult(existing, mb, { base: baseUrl(req) }));
   }
   const out = await pipeline.processMessage(message, {
     requestId: req.id,

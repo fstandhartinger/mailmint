@@ -375,7 +375,7 @@ test('a filtered delivery answers 200 but does not start the workflow', async ()
 test('registering the webhook sets webhook_url and a signing secret on the mailbox', async () => {
 	const mailbox = mock.state.mailboxes[0];
 	const staticData = {};
-	const params = { mode: 'webhook', mailboxId: mailbox.id, options: {} };
+	const params = { deliveryMode: 'webhook', mailboxId: mailbox.id, options: {} };
 
 	const before = createContext({ params, staticData });
 	assert.equal(await hooks.checkExists.call(before.context), false);
@@ -396,7 +396,7 @@ test('registering the webhook sets webhook_url and a signing secret on the mailb
 
 test('polling seeds its cursor on first activation and emits nothing', async () => {
 	const staticData = {};
-	const params = { mode: 'poll', simplify: true, filters: {}, options: {} };
+	const params = { deliveryMode: 'poll', simplify: true, filters: {}, options: {} };
 
 	const first = createContext({ params, staticData, mode: 'trigger' });
 	assert.equal(await MailMintTrigger.prototype.poll.call(first.context), null);
@@ -423,7 +423,7 @@ test('polling seeds its cursor on first activation and emits nothing', async () 
 test('Fetch Test Event returns the most recent real message and leaves the cursor alone', async () => {
 	const staticData = { cursor: '000000000001' };
 	const { context } = createContext({
-		params: { mode: 'poll', simplify: true, filters: {}, options: {} },
+		params: { deliveryMode: 'poll', simplify: true, filters: {}, options: {} },
 		staticData,
 		mode: 'manual',
 	});
@@ -435,13 +435,13 @@ test('Fetch Test Event returns the most recent real message and leaves the curso
 
 test('the webhook mode never polls, and the poll mode never registers a webhook', async () => {
 	const webhookMode = createContext({
-		params: { mode: 'webhook', simplify: true, filters: {}, options: {} },
+		params: { deliveryMode: 'webhook', simplify: true, filters: {}, options: {} },
 		staticData: {},
 		mode: 'trigger',
 	});
 	assert.equal(await MailMintTrigger.prototype.poll.call(webhookMode.context), null);
 
-	const pollMode = createContext({ params: { mode: 'poll' }, staticData: {} });
+	const pollMode = createContext({ params: { deliveryMode: 'poll' }, staticData: {} });
 	assert.equal(await hooks.create.call(pollMode.context), true);
 	assert.equal(pollMode.calls.length, 0, 'poll mode must not touch the mailbox');
 });

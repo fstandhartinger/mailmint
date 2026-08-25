@@ -12,7 +12,11 @@ node test/accuracy.js          # full pipeline (makes live model calls)
 ```
 
 Measured 2026-08-25, Node v20.19.4, model chain headed by
-`deepseek-ai/DeepSeek-V4-Flash-0731-TEE` via `shared/llm.js`.
+`deepseek-ai/DeepSeek-V4-Flash-0731-TEE` via `shared/llm.js`. The deterministic
+column is bit-for-bit reproducible; the full-pipeline column varies a little
+run to run (latency, and mean confidence, because part of it is the model's own
+self-report). Three consecutive runs all gave 100 % / 100 %; the ranges below are
+the observed spread.
 
 ## The corpus
 
@@ -54,9 +58,9 @@ this parser's own output frozen in place.
 | recall | **90.4 %** (85 / 94 present) | **100.0 %** (94 / 94 present) |
 | correct abstentions | 1 | 1 |
 | document type accuracy | 100.0 % (22/22) | 100.0 % (22/22) |
-| mean confidence | 0.911 | 0.942 |
-| mean latency / message | **12 ms** | 1,516 ms |
-| mean LLM latency | — | 2,522 ms over the 13 messages that needed one |
+| mean confidence | 0.911 | 0.942 – 0.948 |
+| mean latency / message | **12 ms** | 1,516 – 1,975 ms |
+| mean LLM latency | — | 2,522 – 3,312 ms over the 13 messages that needed one |
 | messages needing the LLM | 0 % | **59.1 %** (13/22) |
 | fields answered without a model | **91.6 %** (87/95) | 71.6 % (68/95) |
 

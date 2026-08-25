@@ -67,6 +67,11 @@ Every path (webhook body, `GET /v1/messages/:id`, n8n node output) returns exact
     }
   ],
   "auth": { "spf": "pass", "dkim": "pass", "dmarc": "pass", "spam_score": 0.4 },
+  //  spf  : pass|fail|softfail|neutral|none|temperror|permerror
+  //         "none" on the Cloudflare intake path — Email Routing gives the worker no
+  //         client IP, so SPF cannot be evaluated. We report none, never a guess.
+  //  dkim : pass|fail|body_altered|none|temperror|permerror      <- see §1c
+  //  dmarc: pass|fail|none|temperror|permerror
   "tables": [                                    // deterministic, from text/plain and html
     { "source": "html", "index": 0,
       "headers": ["Item","Qty","Amount"],
@@ -157,6 +162,35 @@ Ranked by how often they appear across the n8n, Make and Zapier forums:
    the recovered original `{from, to, date, subject}` and parsing runs against the INNER
    message. Flag `forwarded` so the user knows.
 
+## 1c. `dkim: "body_altered"` is not `dkim: "fail"`  (decided 2026-08-25 by the lead)
+
+A DKIM signature can fail for two completely different reasons and they must not share
+a code:
+
+- the **signature or key** is wrong — someone forged the message, or the selector is gone
+- the **body hash** does not match — the message was signed correctly and then *modified
+  after signing*
+
+The second is overwhelmingly benign and overwhelmingly common: forwarding, mailing
+lists, and corporate security gateways that rewrite links all break the body hash while
+leaving a perfectly legitimate message. **Half of our users will forward mail to us from
+Gmail**, so charging our own happy path as suspicious would be self-inflicted.
+
+Therefore `auth.dkim` carries `"body_altered"` as its own value. A user writing
+`if (auth.dkim === "fail")` gets forgeries and does not get their colleague's forward.
+Rules:
+- `body_altered` does **not** set the `auth_fail:dkim` flag and does **not** raise the
+  spam score. Measured: a forwarded body-altered message scores 2.4; a forged signature
+  over the same message scores 3.9.
+- It must be branchable **without** reading `auth_details`. The finer breakdown —
+  `auth_details.dkim.failure_type` ∈ `body_hash | signature | key | policy | dns`, plus
+  per-signature detail — stays available for anyone who wants it, but the top-level
+  value is the one people will actually use.
+
+This is the same lesson PDFMint learned twice: a quota you exhausted and a quota you
+never had are different events, and so are a caller's error and ours. Collapsing them
+into one code is always cheaper to write and always wrong to consume.
+
 ## 2. Field types in a schema
 
 ```jsonc
@@ -196,7 +230,7 @@ address, and it is what the n8n *regular* node calls when given mail from anothe
 
 `low_confidence:<field>` (<0.6) · `missing_required:<field>` · `type_error:<field>` ·
 `rule_llm_disagreement:<field>` · `arithmetic_mismatch` · `table_truncated` · `forwarded` ·
-`attachment_unreadable` · `ocr_used` ·
+`attachment_unreadable` · `ocr_used` · `dkim_body_altered` ·
 `hallucinated_evidence:<field>` · `enum_violation:<field>` · `no_schema` ·
 `llm_unavailable` · `attachment_too_large` · `truncated_body` · `spam_suspected` ·
 `auth_fail:spf|dkim|dmarc`

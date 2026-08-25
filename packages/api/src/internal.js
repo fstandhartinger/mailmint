@@ -51,9 +51,12 @@ async function resolveOne(address) {
   if (parsed.domain !== config.inboundDomain.toLowerCase()) {
     return { address, ok: false, reason: 'wrong_domain', expected: config.inboundDomain };
   }
+  // The whole mailbox row, not just the routing columns: /internal/deliver needs
+  // it a moment later, and asking twice would be a second round trip on the path
+  // an SMTP session is blocked on. The extra columns are stripped before this is
+  // serialised — the smtpd has no business knowing a webhook secret.
   const { rows } = await query(
-    `SELECT mb.id, mb.account_id, mb.token, mb.slug, mb.name, mb.paused, mb.forward_to,
-            a.plan, a.used_month, a.quota_month
+    `SELECT mb.*, a.plan, a.used_month, a.quota_month
        FROM mailboxes mb JOIN accounts a ON a.id = mb.account_id
       WHERE mb.token = $1 AND mb.deleted_at IS NULL`,
     [parsed.token],
@@ -61,9 +64,13 @@ async function resolveOne(address) {
   if (!rows.length) return { address, ok: false, reason: 'unknown_mailbox' };
   const mb = rows[0];
   return {
+    row: mb,
     address,
     ok: true,
     tag: parsed.tag,
+    // Carried out so /internal/deliver does not have to ask again on the path an
+    // SMTP session is waiting on; it decides how long the raw bytes are kept.
+    plan: mb.plan,
     mailbox: {
       id: mb.id, token: mb.token, slug: mb.slug, name: mb.name,
       account_id: Number(mb.account_id), paused: mb.paused, forward_to: mb.forward_to,
@@ -80,7 +87,9 @@ router.post('/resolve', asyncRoute(async (req, res) => {
   if (!list || !list.length) {
     throw bad('missing_recipient', 'Send {"to": "token@domain"} or {"to": ["a@…","b@…"]}.');
   }
-  const results = await Promise.all(list.slice(0, 50).map(resolveOne));
+  const resolved = await Promise.all(list.slice(0, 50).map(resolveOne));
+  // `row` is the internal handle; it never leaves this process.
+  const results = resolved.map(({ row, ...rest }) => rest);
   const accepted = results.filter((r) => r.ok);
   log.info('internal.resolve', {
     asked: results.length, accepted: accepted.length,
@@ -132,14 +141,14 @@ router.post('/deliver', asyncRoute(async (req, res) => {
     : null;
   if (!raw || !raw.length) throw bad('missing_raw_mime', 'Send raw_mime, base64-encoded (or encoding:"utf8" for plain text).');
 
-  const { rows: mbRows } = await query(`SELECT * FROM mailboxes WHERE id = $1`, [resolved.mailbox.id]);
-  const mailbox = mbRows[0];
+  const mailbox = resolved.row;
 
   const message = await messages.ingest({
     mailbox,
     envelope: { ...envelope, to: rcpts.length ? rcpts : [resolved.address], tag: resolved.tag },
     raw,
     receivedAt: body.received_at || null,
+    plan: resolved.plan,
     // The connector sends the original Message-ID on every call; the SMTP path
     // has it in the headers. Either way it is what makes this endpoint safe to
     // call twice with the same mail.

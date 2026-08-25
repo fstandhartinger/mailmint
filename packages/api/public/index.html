@@ -1,0 +1,892 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MailMint — an email address that returns structured JSON</title>
+<meta name="description" content="MailMint gives you an inbound email address. Mail sent to it comes back as the fields you asked for — every field with a confidence, its source, and the verbatim text it was read out of. Webhook, polling, or an n8n node.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta property="og:title" content="MailMint — an email address that returns structured JSON">
+<meta property="og:description" content="Per-field confidence and evidence on every value. Line items that return every row. Re-parse mail you already received. An n8n node with the schema editor inside n8n.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="/landing.css">
+</head>
+<body>
+
+<header class="l-top">
+  <div class="wrap">
+    <a class="logo" href="/">
+      <svg class="l-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <rect x="5" y="8" width="22" height="16" rx="3" stroke="currentColor" stroke-width="2.2"/>
+        <path d="M6 11.5 16 18l10-6.5" stroke="#2b6cb0" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Mail<span>Mint</span>
+    </a>
+    <nav class="l-nav">
+      <a href="#confidence" class="hide-sm">Confidence</a>
+      <a href="#compare" class="hide-sm">Compare</a>
+      <a href="/n8n">n8n</a>
+      <a href="/quickstart">Quickstart</a>
+      <a href="/docs">Docs</a>
+      <a href="/signup" class="l-btn l-btn-primary">Get an address</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<!-- ------------------------------------------------------------------ hero -->
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-grid">
+      <div>
+        <span class="pill">Every field carries a confidence and the text it was read from</span>
+        <h1 class="hero-title">An email address in.<br><em>Structured JSON out.</em></h1>
+        <p class="hero-sub">MailMint gives you an inbound address. Mail sent to it comes back as
+          <strong>the fields you asked for</strong> — each one with a confidence we computed, the layer it
+          came from, and the <strong>verbatim substring of the message</strong> the value was read out of.
+          Delivered by webhook, by polling, or into n8n.</p>
+        <div class="hero-cta">
+          <a class="l-btn l-btn-primary l-btn-lg" href="/quickstart">Parse an email in 60 seconds</a>
+          <a class="l-btn l-btn-ghost l-btn-lg" href="/docs">Read the API docs</a>
+        </div>
+        <p class="hero-note">You do not need an inbound address to start. <code>POST /v1/parse</code> takes
+          raw MIME — or just a subject and a body — and stores nothing.</p>
+      </div>
+
+      <div class="code-card">
+        <div class="code-tabs" role="tablist" aria-label="Example request and response">
+          <button role="tab" id="tab-curl" aria-controls="panel-curl" aria-selected="true">request</button>
+          <button role="tab" id="tab-json" aria-controls="panel-json" aria-selected="false">response</button>
+          <button role="tab" id="tab-hook" aria-controls="panel-hook" aria-selected="false">webhook</button>
+          <button class="code-copy" type="button" id="copyBtn">Copy</button>
+        </div>
+
+        <div class="code-panel" role="tabpanel" id="panel-curl" aria-labelledby="tab-curl"><pre><code><span class="tok-c"># Stateless. No address, no DNS, nothing stored.</span>
+curl -X POST <span class="tok-n">$MAILMINT_URL</span>/v1/parse \
+  -H <span class="tok-s">"Authorization: Bearer $MAILMINT_API_KEY"</span> \
+  -H <span class="tok-s">"Content-Type: application/json"</span> \
+  -d <span class="tok-s">'{
+    "subject": "Invoice INV-2291 from Acme Ltd",
+    "text": "Invoice INV-2291\n\nItem      Qty   Amount\nWidget      3   $27.00\nShipping    1    $4.50\n\nTotal: $31.50\nDue: Sep 8, 2026\n",
+    "schema": [
+      { "name": "invoice_number", "type": "string", "description": "the invoice or reference number" },
+      { "name": "total",          "type": "number", "description": "grand total including tax" },
+      { "name": "due_date",       "type": "date",   "description": "when payment is due" },
+      { "name": "line_items",     "type": "array",  "items": { "type": "object",
+          "fields": [ { "name": "description", "type": "string" },
+                      { "name": "qty",         "type": "integer" },
+                      { "name": "amount",      "type": "number" } ] } }
+    ]
+  }'</span></code></pre></div>
+
+        <div class="code-panel" role="tabpanel" id="panel-json" aria-labelledby="tab-json" hidden><pre><code>{
+  <span class="tok-n">"id"</span>: <span class="tok-k">null</span>, <span class="tok-c">// /v1/parse stores nothing, so there is no message id</span>
+  <span class="tok-n">"mailbox"</span>: <span class="tok-k">null</span>,
+  <span class="tok-n">"received_at"</span>: <span class="tok-s">"2026-08-25T09:14:03.221Z"</span>,
+  <span class="tok-n">"headers"</span>: { <span class="tok-n">"subject"</span>: <span class="tok-s">"Invoice INV-2291 from Acme Ltd"</span>, <span class="tok-n">"date"</span>: <span class="tok-k">null</span>, <span class="tok-c">/* … */</span> },
+  <span class="tok-n">"body"</span>: { <span class="tok-n">"text"</span>: <span class="tok-s">"Invoice INV-2291\n\nItem      Qty…"</span>, <span class="tok-n">"html"</span>: <span class="tok-k">null</span>,
+             <span class="tok-n">"stripped_text"</span>: <span class="tok-s">"…"</span>, <span class="tok-n">"language"</span>: <span class="tok-s">"en"</span> },
+  <span class="tok-n">"attachments"</span>: [],
+  <span class="tok-n">"auth"</span>: { <span class="tok-n">"spf"</span>: <span class="tok-k">null</span>, <span class="tok-n">"dkim"</span>: <span class="tok-k">null</span>, <span class="tok-n">"dmarc"</span>: <span class="tok-k">null</span>, <span class="tok-n">"spam_score"</span>: <span class="tok-k">null</span> },
+  <span class="tok-n">"tables"</span>: [
+    { <span class="tok-n">"source"</span>: <span class="tok-s">"text"</span>, <span class="tok-n">"index"</span>: 0,
+      <span class="tok-n">"headers"</span>: [<span class="tok-s">"Item"</span>, <span class="tok-s">"Qty"</span>, <span class="tok-s">"Amount"</span>],
+      <span class="tok-n">"rows"</span>: [[<span class="tok-s">"Widget"</span>, <span class="tok-s">"3"</span>, <span class="tok-s">"$27.00"</span>], [<span class="tok-s">"Shipping"</span>, <span class="tok-s">"1"</span>, <span class="tok-s">"$4.50"</span>]],
+      <span class="tok-n">"records"</span>: [{ <span class="tok-n">"Item"</span>: <span class="tok-s">"Widget"</span>, <span class="tok-n">"Qty"</span>: <span class="tok-s">"3"</span>, <span class="tok-n">"Amount"</span>: <span class="tok-s">"$27.00"</span> }, <span class="tok-c">/* … */</span>],
+      <span class="tok-n">"row_count"</span>: 2, <span class="tok-n">"truncated"</span>: <span class="tok-k">false</span> }
+  ],
+  <span class="tok-n">"detected"</span>: { <span class="tok-n">"type"</span>: <span class="tok-s">"invoice"</span>,
+    <span class="tok-n">"amounts"</span>: [{ <span class="tok-n">"value"</span>: 31.5, <span class="tok-n">"currency"</span>: <span class="tok-s">"USD"</span>, <span class="tok-n">"raw"</span>: <span class="tok-s">"$31.50"</span> }, <span class="tok-c">/* … */</span>],
+    <span class="tok-n">"dates"</span>: [{ <span class="tok-n">"value"</span>: <span class="tok-s">"2026-09-08"</span>, <span class="tok-n">"raw"</span>: <span class="tok-s">"Sep 8, 2026"</span> }],
+    <span class="tok-n">"ids"</span>: [{ <span class="tok-n">"kind"</span>: <span class="tok-s">"invoice_number"</span>, <span class="tok-n">"value"</span>: <span class="tok-s">"INV-2291"</span> }],
+    <span class="tok-n">"emails"</span>: [], <span class="tok-n">"urls"</span>: [], <span class="tok-n">"phones"</span>: [], <span class="tok-n">"addresses"</span>: [] },
+  <span class="tok-n">"fields"</span>: {
+    <span class="tok-n">"invoice_number"</span>: { <span class="tok-n">"value"</span>: <span class="tok-s">"INV-2291"</span>, <span class="tok-n">"confidence"</span>: 0.97,
+                        <span class="tok-n">"source"</span>: <span class="tok-s">"rule+llm"</span>, <span class="tok-n">"evidence"</span>: <span class="tok-s">"Invoice INV-2291"</span> },
+    <span class="tok-n">"total"</span>:          { <span class="tok-n">"value"</span>: 31.5, <span class="tok-n">"confidence"</span>: 0.97,
+                        <span class="tok-n">"source"</span>: <span class="tok-s">"rule"</span>, <span class="tok-n">"evidence"</span>: <span class="tok-s">"Total: $31.50"</span> },
+    <span class="tok-n">"due_date"</span>:       { <span class="tok-n">"value"</span>: <span class="tok-s">"2026-09-08"</span>, <span class="tok-n">"confidence"</span>: 0.97,
+                        <span class="tok-n">"source"</span>: <span class="tok-s">"rule"</span>, <span class="tok-n">"evidence"</span>: <span class="tok-s">"Due: Sep 8, 2026"</span> },
+    <span class="tok-n">"line_items"</span>:     { <span class="tok-n">"value"</span>: [{ <span class="tok-n">"description"</span>: <span class="tok-s">"Widget"</span>, <span class="tok-n">"qty"</span>: 3, <span class="tok-n">"amount"</span>: 27 },
+                                   { <span class="tok-n">"description"</span>: <span class="tok-s">"Shipping"</span>, <span class="tok-n">"qty"</span>: 1, <span class="tok-n">"amount"</span>: 4.5 }],
+                        <span class="tok-n">"confidence"</span>: 0.97, <span class="tok-n">"source"</span>: <span class="tok-s">"rule+llm"</span>, <span class="tok-n">"evidence"</span>: <span class="tok-k">null</span> }
+  },
+  <span class="tok-n">"flags"</span>: [],
+  <span class="tok-n">"needs_review"</span>: <span class="tok-k">false</span>,
+  <span class="tok-n">"parse"</span>: {
+    <span class="tok-n">"request_id"</span>: <span class="tok-s">"req_9f2c…"</span>,
+    <span class="tok-n">"schema_version"</span>: <span class="tok-k">null</span>,
+    <span class="tok-n">"model"</span>: <span class="tok-s">"deepseek-ai/DeepSeek-V4-Flash-0731-TEE"</span>,
+    <span class="tok-n">"llm_used"</span>: <span class="tok-k">true</span>,
+    <span class="tok-n">"timings_ms"</span>: { <span class="tok-n">"total"</span>: 4735, <span class="tok-n">"mime"</span>: 22, <span class="tok-n">"deterministic"</span>: 14,
+                     <span class="tok-n">"llm"</span>: 4611, <span class="tok-n">"persist"</span>: 0 },
+    <span class="tok-n">"warnings"</span>: []
+  },
+  <span class="tok-n">"raw_url"</span>: <span class="tok-k">null</span>
+}</code></pre></div>
+
+        <div class="code-panel" role="tabpanel" id="panel-hook" aria-labelledby="tab-hook" hidden><pre><code><span class="tok-c"># Mail sent to your address is POSTed to your webhook_url.</span>
+<span class="tok-c"># The body is exactly the object in the "response" tab, with</span>
+<span class="tok-c"># id, mailbox and raw_url filled in.</span>
+
+POST /your/endpoint HTTP/1.1
+content-type: application/json
+x-mailmint-event: message.parsed
+x-mailmint-delivery: dlv_01JQ8Z3K4M5N6P7Q8R9S
+x-mailmint-timestamp: 1787648043
+x-mailmint-signature: t=1787648043,v1=6a1f…c07b
+
+{
+  <span class="tok-n">"id"</span>: <span class="tok-s">"msg_01JQ8Z3K4M5N6P7Q8R9S"</span>,
+  <span class="tok-n">"mailbox"</span>: { <span class="tok-n">"id"</span>: <span class="tok-s">"mbx_01JQ8Y…"</span>,
+                <span class="tok-n">"address"</span>: <span class="tok-s">"k7m2xq4h9bwz@parse.mailmint.dev"</span>,
+                <span class="tok-n">"name"</span>: <span class="tok-s">"Invoices"</span> },
+  <span class="tok-n">"envelope"</span>: { <span class="tok-n">"from"</span>: <span class="tok-s">"billing@acme.example"</span>,
+                 <span class="tok-n">"to"</span>: [<span class="tok-s">"k7m2xq4h9bwz@parse.mailmint.dev"</span>],
+                 <span class="tok-n">"remote_ip"</span>: <span class="tok-s">"203.0.113.7"</span>, <span class="tok-n">"tls"</span>: <span class="tok-k">true</span> },
+  <span class="tok-n">"auth"</span>: { <span class="tok-n">"spf"</span>: <span class="tok-s">"pass"</span>, <span class="tok-n">"dkim"</span>: <span class="tok-s">"pass"</span>, <span class="tok-n">"dmarc"</span>: <span class="tok-s">"pass"</span>, <span class="tok-n">"spam_score"</span>: 0.4 },
+  <span class="tok-n">"fields"</span>: { <span class="tok-c">/* … as above … */</span> },
+  <span class="tok-n">"flags"</span>: [], <span class="tok-n">"needs_review"</span>: <span class="tok-k">false</span>, <span class="tok-n">"status"</span>: <span class="tok-s">"parsed"</span>,
+  <span class="tok-n">"raw_url"</span>: <span class="tok-s">"https://…/v1/messages/msg_01JQ8Z…/raw"</span>
+}
+
+<span class="tok-c"># Signature: t=&lt;unix&gt;,v1=hex hmac_sha256(secret, t + "." + rawBody)</span>
+<span class="tok-c"># Retries at 0s, 30s, 2m, 10m, 1h, 6h. Six attempts, 10s timeout.</span></code></pre></div>
+
+        <div class="code-foot">
+          <span>HTTP <b>200</b></span>
+          <span>model: <b>DeepSeek-V4-Flash</b></span>
+          <span>total: <b>4735 ms</b></span>
+          <span>needs_review: <b>false</b></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="measured">
+      <div>
+        <div class="n">4,735 ms</div>
+        <div class="t">End to end on a real invoice email: 22&nbsp;ms MIME, 14&nbsp;ms deterministic rules,
+          4,611&nbsp;ms model.</div>
+      </div>
+      <div>
+        <div class="n">12 / 12 &nbsp;·&nbsp; 3 / 3</div>
+        <div class="t">Scalar fields correct, and line-item arrays complete, across three real invoices —
+          USD, EUR with German descriptions, and GBP.</div>
+      </div>
+      <div>
+        <div class="n">0</div>
+        <div class="t">Competitors that return a per-field confidence, an evidence span, or any provenance —
+          checked across 363 vendor help articles and two published API schemas.</div>
+      </div>
+    </div>
+    <p class="measured-note">Measured on 25 August 2026 on <strong>real email</strong> — three Stripe
+      invoices that travelled the internet and arrived with valid DKIM, not fixtures. The model that
+      answered was <code>deepseek-ai/DeepSeek-V4-Flash-0731-TEE</code>. Three messages from one sender is a
+      small sample. It is real mail, which is why it is the number we quote, and it is not a broad accuracy
+      claim — the full method is in <code>docs/MODEL-BENCH.md</code> in the repository.</p>
+  </div>
+</section>
+
+<!-- ------------------------------------------------------- 1. CONFIDENCE -->
+<section class="sec tinted" id="confidence">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">The thing people actually ask for</p>
+      <h2 class="sec-title">&ldquo;How do I find out that it went wrong?&rdquo;</h2>
+      <p>Across the n8n, Make, Zapier and Reddit threads we read, almost nobody asks for better accuracy in
+        the abstract. They ask that one question. It has no answer in this category, because
+        <strong>not one competitor returns a per-field confidence, an evidence span, or a
+        &ldquo;where did this come from&rdquo; pointer.</strong></p>
+    </div>
+
+    <div class="split">
+      <div>
+        <h3 style="margin-top:0">Every value arrives with its receipt</h3>
+        <p class="lead">Four keys per field, always: <code>value</code>, <code>confidence</code>,
+          <code>source</code> and <code>evidence</code>. <code>evidence</code> is a verbatim substring of the
+          message the value was read out of, so you can point at it.</p>
+        <ul class="checks">
+          <li>
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span><b>Confidence is computed, never taken from the model.</b> A practitioner&rsquo;s warning we
+              took seriously: <em>&ldquo;a model will report 0.95 on a PO code it hallucinated.&rdquo;</em> So the
+              number is built from signals we can verify.</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span><b>The evidence check actually runs.</b> If the claimed span is not really in the message,
+              the score is cut and capped and the field is flagged
+              <code>hallucinated_evidence:&lt;field&gt;</code>. That is a deterministic test, not an opinion.</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span><b>Two extractors, independently.</b> A deterministic rules layer and the model both run.
+              Agreement earns <code>"source": "rule+llm"</code> and a high score. Disagreement keeps the
+              rule&rsquo;s value, drops the confidence and raises
+              <code>rule_llm_disagreement:&lt;field&gt;</code>. Nothing else in this market runs both, so
+              nothing else can detect the disagreement.</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span><b>The arithmetic has to reconcile.</b> Do the line items sum to the subtotal, and does
+              subtotal + tax + shipping &minus; discount equal the total? Failing sets
+              <code>arithmetic_mismatch</code>. This is what catches &ldquo;forty rows in the mail, one row in
+              the output&rdquo;.</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span><b>One boolean to route on.</b> <code>needs_review</code> is true when any field is
+              low-confidence, missing but required, uncoercible, or backed by evidence that is not in the
+              message. Filter the API by it, or let the n8n node send those messages down a second
+              output.</span>
+          </li>
+        </ul>
+        <p class="cmp-note">The model&rsquo;s own self-reported number is one input, and it is only ever
+          allowed to <em>lower</em> a score — never to raise one above what the verifiable signals justify.</p>
+      </div>
+
+      <div class="split-media">
+        <div class="fieldcard">
+          <div class="bar">
+            <span>fields
+            </span><span class="op">GET /v1/messages/msg_01JQ8Z…</span>
+          </div>
+          <div class="fld">
+            <div class="fld-top">
+              <span class="fld-name">invoice_number</span>
+              <span class="fld-val">"INV-2291"</span>
+              <span class="fld-src">rule+llm</span>
+            </div>
+            <div class="fld-meter"><span class="track"><i style="width:97%"></i></span><span class="num">0.97</span></div>
+            <p class="fld-ev">evidence <mark>Invoice INV-2291 from Acme Ltd</mark></p>
+          </div>
+          <div class="fld">
+            <div class="fld-top">
+              <span class="fld-name">total</span>
+              <span class="fld-val">31.5</span>
+              <span class="fld-src">rule</span>
+            </div>
+            <div class="fld-meter"><span class="track"><i style="width:97%"></i></span><span class="num">0.97</span></div>
+            <p class="fld-ev">evidence <mark>Total: $31.50</mark> &nbsp;·&nbsp; line items sum to the total</p>
+          </div>
+          <div class="fld">
+            <div class="fld-top">
+              <span class="fld-name">po_number</span>
+              <span class="fld-val null">null</span>
+              <span class="fld-src">none</span>
+            </div>
+            <div class="fld-meter"><span class="track"><i class="low" style="width:2%"></i></span><span class="num">0.00</span></div>
+            <p class="fld-ev">Not in the message. Returned as <code>null</code> — never invented, never
+              &ldquo;N/A&rdquo;.</p>
+          </div>
+          <div class="fld">
+            <div class="fld-top">
+              <span class="fld-name">vendor_vat_id</span>
+              <span class="fld-val">"GB 123 4567 89"</span>
+              <span class="fld-src">llm</span>
+            </div>
+            <div class="fld-meter"><span class="track"><i class="low" style="width:30%"></i></span><span class="num">0.30</span></div>
+            <p class="fld-ev">The model quoted evidence that is not in the message. Score capped, field
+              flagged.</p>
+          </div>
+          <div class="foot">
+            <span>flags</span>
+            <span class="flagchip">missing_required:po_number</span>
+            <span class="flagchip warn">hallucinated_evidence:vendor_vat_id</span>
+            <span class="flagchip warn">needs_review: true</span>
+          </div>
+        </div>
+        <p class="cmp-note">Illustrative values in the real response shape. What competitors do instead:
+          Mailparser&rsquo;s documented handling for a rule that returns nothing is a
+          <em>&ldquo;Set Default Value&rdquo;</em> filter that substitutes a value you chose — which destroys
+          the signal. Zapier&rsquo;s own community documents the worse failure:
+          <em>&ldquo;instead of leaving the cell empty, it starts pulling data from another random bit of the
+          email&rdquo;</em>, with Zapier&rsquo;s Community Manager confirming there is no way to mark a template
+          field optional. And every vendor alert in the category is transport-level — it fires when
+          <em>your</em> endpoint returns a 5xx, never when the parse was wrong.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ------------------------------------------------------- 2. LINE ITEMS -->
+<section class="sec" id="lineitems">
+  <div class="wrap">
+    <div class="split rev">
+      <div class="split-media">
+        <div class="code-card">
+          <div class="code-tabs"><button role="tab" aria-selected="true" style="pointer-events:none">line items, as an array</button></div>
+          <pre><code><span class="tok-c">// Any number of rows. One array. row_count and truncated</span>
+<span class="tok-c">// are published so a short array can never be silent.</span>
+<span class="tok-n">"tables"</span>: [{
+  <span class="tok-n">"source"</span>: <span class="tok-s">"html"</span>, <span class="tok-n">"index"</span>: 0,
+  <span class="tok-n">"headers"</span>: [<span class="tok-s">"Item"</span>, <span class="tok-s">"Qty"</span>, <span class="tok-s">"Unit"</span>, <span class="tok-s">"Amount"</span>],
+  <span class="tok-n">"records"</span>: [
+    { <span class="tok-n">"Item"</span>: <span class="tok-s">"Widget"</span>, <span class="tok-n">"Qty"</span>: <span class="tok-s">"3"</span>, <span class="tok-n">"Unit"</span>: <span class="tok-s">"$9.00"</span>, <span class="tok-n">"Amount"</span>: <span class="tok-s">"$27.00"</span> },
+    <span class="tok-c">/* … 38 more … */</span>
+  ],
+  <span class="tok-n">"row_count"</span>: <span class="tok-f">39</span>,
+  <span class="tok-n">"truncated"</span>: <span class="tok-k">false</span>
+}]
+
+<span class="tok-c">// Zapier's official answer to the same problem:</span>
+<span class="tok-c">//   {{shotnumberOne}} … {{shotnumberN}}, hand-written,</span>
+<span class="tok-c">//   against a hard cap of 15 templates.</span></code></pre>
+        </div>
+      </div>
+      <div>
+        <p class="eyebrow">The #1 complaint in this market</p>
+        <h2 class="sec-title">Forty rows in the mail, forty rows in the output</h2>
+        <p class="lead">&ldquo;I got one row instead of forty&rdquo; is the single most common unanswered
+          question across the n8n, Make and Zapier forums — roughly fourteen threads, and the one where the
+          honest answer from every incumbent is that no answer exists.</p>
+        <ul class="checks">
+          <li>
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span><b>A real typed array, not a cross-product.</b> Declare a field as
+              <code>"type": "array"</code> with <code>"items": {"type":"object"}</code> and you get a nested
+              array. Mailparser&rsquo;s equivalent is one parsing rule <em>per column</em>, then an
+              &ldquo;explode&rdquo; step, and its output repeats the order number on every row.</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span><b>A short table is loud, not silent.</b> <code>row_count</code> and
+              <code>truncated</code> ride on every table, and a table cut off at the cap raises
+              <code>table_truncated</code>.</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span><b>More than one extractor, then reconciled.</b> Real HTML invoices frequently do not
+              contain a real <code>&lt;table&gt;</code> grid at all — Outlook compatibility pushes every ESP
+              towards nested single-cell tables. So rows are found from the HTML grid, from repeated blocks
+              and from aligned text, and the candidates are reconciled. When two sources disagree the field
+              is flagged <code>array_source_disagreement</code>, not quietly resolved.</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span><b>In n8n, one row becomes one item.</b> Set <em>Output</em> to <em>One Item Per Line
+              Item</em> and the header fields repeat on each row, with <code>pairedItem</code> set so n8n can
+              still trace all forty items back to the one email.</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ------------------------------------------------------ 3. ATTACHMENTS -->
+<section class="sec tinted" id="attachments">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">The seam in the market leader</p>
+      <h2 class="sec-title">The message and its attachments, in one object</h2>
+      <p>The most common real workflow in the whole forum corpus — <em>an invoice arrives as a PDF attached
+        to an email, give me the fields</em> — is the one workflow the incumbents split down the middle.</p>
+    </div>
+    <div class="grid grid-3">
+      <div class="tile">
+        <span class="kicker">docparser.com, verbatim</span>
+        <h3>Cannot read an email body</h3>
+        <p>&ldquo;Docparser is not capable of extracting data stored in the body text or subject of an
+          email&hellip; If you are looking for a great email parser solution, our sister app Mailparser.io
+          is an industry-recognized leader&hellip;&rdquo;</p>
+      </div>
+      <div class="tile">
+        <span class="kicker">mailparser.io, verbatim</span>
+        <h3>Cannot read a PDF attachment</h3>
+        <p>On extracting table cells from PDF attachments: &ldquo;please check out Docparser and see which
+          is the best fit for your PDF conversion needs&rdquo;. <strong>Same company. Two products. Two
+          subscriptions. The pointer goes in a circle.</strong></p>
+      </div>
+      <div class="tile">
+        <span class="kicker">zapier email parser</span>
+        <h3>Zips them together</h3>
+        <p>All attachments arrive as one blob, so you cannot address a specific file — a standing,
+          acknowledged, unfixed feature request. In one documented case an Outlook signature logo,
+          <code>image001.png</code>, was fed to an LLM instead of the customer&rsquo;s invoice.</p>
+      </div>
+    </div>
+
+    <div class="split" style="margin-top:2.6rem">
+      <div>
+        <h3 style="margin-top:0">What MailMint returns today</h3>
+        <p class="lead">Every attachment is its own addressable object in the same response as the body.
+          Nothing is zipped, nothing is flattened into the same namespace as our own metadata.</p>
+        <ul class="checks">
+          <li>
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span><b><code>inline</code> and <code>content_id</code> are on every attachment.</b> That pair is
+              exactly what separates the invoice from the signature logo, and it is the failure that broke
+              the Zapier case above.</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span><b>The bytes, not just a link.</b> <code>GET /v1/attachments/:id</code> serves the file, and
+              <code>?include=attachments</code> inlines it as base64 in the message. Mailparser hands you a
+              URL that expires with retention and never the bytes.</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span><b>25&nbsp;MB inbound, 10&nbsp;MB per stored attachment.</b> A message over the cap is still
+              received and still parsed; what changes is what we keep, and you are told which with a flag,
+              never by silence.</span>
+          </li>
+        </ul>
+        <div class="provisional" style="margin-top:1.6rem">
+          <p class="tagline">Not shipped yet — said plainly</p>
+          <p><b>MailMint does not read text out of a PDF attachment yet.</b> The response shape has the slot
+            for it (<code>attachments[].extracted</code>) and the n8n node already knows how to fan out from
+            it, but nothing fills it today. A message whose data exists <em>only</em> inside the PDF yields
+            the file, its metadata and its checksum — not its contents. When that changes this paragraph
+            changes with it.</p>
+        </div>
+      </div>
+      <div class="split-media">
+        <div class="code-card">
+          <div class="code-tabs"><button role="tab" aria-selected="true" style="pointer-events:none">attachments[]</button></div>
+          <pre><code><span class="tok-n">"attachments"</span>: [
+  {
+    <span class="tok-n">"id"</span>: <span class="tok-s">"att_01JQ8Z3K4M5N6P7Q8R9S"</span>,
+    <span class="tok-n">"filename"</span>: <span class="tok-s">"invoice-2291.pdf"</span>,
+    <span class="tok-n">"content_type"</span>: <span class="tok-s">"application/pdf"</span>,
+    <span class="tok-n">"size"</span>: 48213,
+    <span class="tok-n">"sha256"</span>: <span class="tok-s">"9f2c8b…"</span>,
+    <span class="tok-n">"inline"</span>: <span class="tok-k">false</span>,
+    <span class="tok-n">"content_id"</span>: <span class="tok-k">null</span>,
+    <span class="tok-n">"url"</span>: <span class="tok-s">"https://…/v1/attachments/att_01JQ8Z…"</span>
+  },
+  {
+    <span class="tok-n">"filename"</span>: <span class="tok-s">"image001.png"</span>,
+    <span class="tok-n">"content_type"</span>: <span class="tok-s">"image/png"</span>,
+    <span class="tok-n">"size"</span>: 4102,
+    <span class="tok-n">"inline"</span>: <span class="tok-k">true</span>,        <span class="tok-c">// &lt;- the signature logo</span>
+    <span class="tok-n">"content_id"</span>: <span class="tok-s">"&lt;image001@acme&gt;"</span>
+  }
+]</code></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- --------------------------------------------------------- 4. REPARSE -->
+<section class="sec" id="reparse">
+  <div class="wrap">
+    <div class="split rev">
+      <div class="split-media">
+        <div class="code-card">
+          <div class="code-tabs"><button role="tab" aria-selected="true" style="pointer-events:none">the tuning loop</button></div>
+          <pre><code><span class="tok-c"># 1. The sender changed their layout a fortnight ago.</span>
+<span class="tok-c">#    Fix the schema over the API.</span>
+curl -X PATCH <span class="tok-n">$MAILMINT_URL</span>/v1/mailboxes/mbx_01JQ8Y… \
+  -H <span class="tok-s">"Authorization: Bearer $MAILMINT_API_KEY"</span> \
+  -d <span class="tok-s">'{"schema": [ … ]}'</span>
+
+<span class="tok-c"># 2. Dry-run it over everything you already received.</span>
+<span class="tok-c">#    Writes nothing. Shows you what would change.</span>
+curl -X POST <span class="tok-n">$MAILMINT_URL</span>/v1/mailboxes/mbx_01JQ8Y…/reparse \
+  -d <span class="tok-s">'{"dry_run": true, "since": "2026-08-01"}'</span>
+
+<span class="tok-c"># 3. Run it for real. Re-delivery is a SEPARATE switch,</span>
+<span class="tok-c">#    so tuning cannot fire a month of webhooks at you.</span>
+curl -X POST <span class="tok-n">$MAILMINT_URL</span>/v1/mailboxes/mbx_01JQ8Y…/reparse \
+  -d <span class="tok-s">'{"redeliver": false}'</span>
+
+<span class="tok-c"># Every result says which schema produced it:</span>
+<span class="tok-n">"parse"</span>: { <span class="tok-n">"schema_version"</span>: 4, … }</code></pre>
+        </div>
+      </div>
+      <div>
+        <p class="eyebrow">The hardest &ldquo;no&rdquo; in the category</p>
+        <h2 class="sec-title">Re-parse mail you already received</h2>
+        <p class="lead">Zapier staff, verbatim: <em>&ldquo;there is no way to replay them.&rdquo;</em>
+          Mailparser re-parses only the last <strong>300</strong> emails and does not keep the original bytes
+          at all — its own knowledge base calls them <em>&ldquo;of ephemeral nature to us&rdquo;</em>.</p>
+        <ul class="checks">
+          <li>
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span><b>We keep the original RFC822 bytes</b> and re-run against them, so a re-parse is the real
+              message and not a re-reading of our own earlier output. <code>GET /v1/messages/:id/raw</code>
+              hands the <code>.eml</code> back to you too.</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span><b>Any stored message, any schema.</b> <code>POST /v1/messages/:id/reparse</code> takes a
+              one-off schema in the body, so you can try a change against yesterday&rsquo;s real mail before
+              saving it.</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span><b>Re-parse and re-deliver are separate switches</b>, both defaulting to off. A tuning
+              session that quietly re-fires a month of webhooks is how you get duplicate rows in someone
+              else&rsquo;s database.</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span><b>Schema changes go over the API.</b> Parseur&rsquo;s own developer docs state you cannot
+              create or update templates programmatically — so the loop <em>change schema &rarr; re-parse
+              &rarr; compare</em> is not scriptable anywhere else in this market. Docparser sells
+              &ldquo;Parser Version Control&rdquo; as a $8.33&ndash;$9.95/month add-on; every MailMint result
+              carries <code>parse.schema_version</code> by default.</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ------------------------------------------------------------- 5. n8n -->
+<section class="sec tinted" id="n8n">
+  <div class="wrap">
+    <div class="split">
+      <div>
+        <p class="eyebrow">n8n community node</p>
+        <h2 class="sec-title">The schema editor lives inside n8n</h2>
+        <p class="lead">Every other email parser makes you leave your automation tool, open their web app,
+          upload a sample, click on the parts you want, and then go back to n8n and receive whatever they
+          decided to send. <strong>This node does the whole thing on the canvas</strong>: name a field, give
+          it a type and a sentence of description, hit <em>Execute step</em>, see the value.</p>
+        <ul class="checks">
+          <li>
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span><b>No MailMint address needed to start.</b> Put a <em>MailMint</em> node after n8n&rsquo;s own
+              <em>Email Trigger (IMAP)</em> or a Gmail node and it parses what arrives. <em>Input:
+              Automatic</em> takes the raw <code>.eml</code> when the trigger is set to RAW and the
+              subject/text/html fields when it is not — and it will not mistake an attached PDF for the
+              message.</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span><b>A second output for anything doubtful.</b> Turn on <em>Route Messages Needing Review
+              Separately</em> and the node grows a <em>Needs Review</em> branch. No IF node, no
+              expression.</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span><b>The trigger registers its own webhook.</b> On activation it sets the mailbox&rsquo;s
+              <code>webhook_url</code> to the workflow URL and installs a signing secret; every delivery has
+              its HMAC verified before the workflow runs. Polling mode is there for an n8n the internet
+              cannot reach.</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span><b>Eleven actions, zero runtime dependencies, MIT.</b> Parse, five message operations, five
+              mailbox operations — including <em>Reparse every message in a mailbox</em> — and the main node
+              is marked <code>usableAsTool</code>, so an n8n AI Agent can call it directly.</span>
+          </li>
+        </ul>
+        <div class="hero-cta" style="margin-top:1.6rem">
+          <a class="l-btn l-btn-primary" href="/n8n">The n8n guide</a>
+        </div>
+        <div class="provisional" style="margin-top:1.6rem">
+          <p class="tagline">Not published yet</p>
+          <p><b><code>n8n-nodes-mailmint</code> is not on npm.</b> The screenshots on this page are the node
+            running in a real n8n instance, installed from a local build. Until it is published you cannot
+            install it from <em>Settings &rarr; Community Nodes</em>, and n8n Cloud will not take it at all
+            until it also passes n8n&rsquo;s verification.</p>
+        </div>
+      </div>
+
+      <div class="split-media">
+        <figure class="shot">
+          <img src="/screens/05-schema-editor.png" alt="The MailMint node in n8n, showing the Fields editor with three fields: total (Number) with description &quot;grand total including tax&quot; and hint &quot;labelled Total&quot;, and due_date (Date) with description &quot;when payment is due&quot; and hint &quot;labelled Due&quot;." loading="lazy" width="1500" height="950">
+          <figcaption>Defining the schema on the canvas. Each field has a Name, a Type, a Description and a
+            Hint — the Description is the single biggest lever on accuracy.</figcaption>
+        </figure>
+        <figure class="shot">
+          <img src="/screens/06-parse-output.png" alt="The same node after Execute step, with an output table showing columns invoice_number INV-2292, total 132, due_date 2026-09-15, _needs_review false, and a _meta column." loading="lazy" width="1500" height="950">
+          <figcaption>One item out, with <code>_needs_review</code> at the top level and everything else
+            tucked under <code>_meta</code>. That is <em>Simplify</em>, which is on by default.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ------------------------------------------------------------- COMPARE -->
+<section class="sec" id="compare">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">How it compares</p>
+      <h2 class="sec-title">Against the four products people actually use</h2>
+      <p>Every cell below comes from the vendor&rsquo;s own pricing page, help centre or published API
+        schema, fetched on 25 August 2026. Where a vendor publishes no figure the cell is empty rather than
+        guessed.</p>
+    </div>
+    <div class="tablewrap">
+      <table class="cmp">
+        <thead>
+          <tr>
+            <th scope="col">&nbsp;</th>
+            <th scope="col" class="us">MailMint</th>
+            <th scope="col">Mailparser</th>
+            <th scope="col">Parseur</th>
+            <th scope="col">Docparser</th>
+            <th scope="col">Zapier Parser</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Per-field confidence</td>
+            <td class="us">Yes — computed, with the evidence span</td>
+            <td>None</td>
+            <td>None — outcome is <code>PARSEDOK</code> / <code>PARSEDKO</code></td>
+            <td>None, bar one arithmetic preset</td>
+            <td>None</td>
+          </tr>
+          <tr>
+            <td>Where a value came from</td>
+            <td class="us"><code>source</code> + verbatim <code>evidence</code></td>
+            <td>—</td><td>—</td><td>—</td><td>—</td>
+          </tr>
+          <tr>
+            <td>Variable-row line items</td>
+            <td class="us">Typed array, with <code>row_count</code> and <code>truncated</code></td>
+            <td>One parsing rule per column, then &ldquo;explode&rdquo;; output is a flat cross-product</td>
+            <td>Table Field — the best of the four; AI caps at 25 pages</td>
+            <td>Smart Tables: page 1 only, columns frozen at design time</td>
+            <td>Cannot. Staff answer is <code>{{shotnumberOne}}</code>…</td>
+          </tr>
+          <tr>
+            <td>Reads the email body</td>
+            <td class="us">Yes</td><td>Yes</td><td>Yes</td>
+            <td><strong>No</strong> — stated in their own help centre</td><td>Yes</td>
+          </tr>
+          <tr>
+            <td>Reads PDF attachment contents</td>
+            <td class="us">Not yet</td>
+            <td>No — points you at Docparser</td>
+            <td>Yes</td><td>Yes</td>
+            <td>No — attachments arrive zipped together</td>
+          </tr>
+          <tr>
+            <td>Re-parse mail already received</td>
+            <td class="us">Any stored message, any schema, from the original bytes</td>
+            <td>Last 300 only; original bytes not kept</td>
+            <td>Yes, within the retention window</td>
+            <td>Yes, bulk API</td>
+            <td><strong>No</strong> — &ldquo;there is no way to replay them&rdquo;</td>
+          </tr>
+          <tr>
+            <td>Change the schema over the API</td>
+            <td class="us"><code>PATCH /v1/mailboxes/:id</code></td>
+            <td>—</td>
+            <td>No — templates are not programmable</td>
+            <td>Yes</td><td>—</td>
+          </tr>
+          <tr>
+            <td>Entry price</td>
+            <td class="us">Not decided yet — see below</td>
+            <td>$29.95/mo for 250 emails — <strong>$0.1198 each</strong>, their own figure</td>
+            <td>€49/mo for 100 emails — <strong>€0.49 each</strong></td>
+            <td>$39/mo for 100 documents — <strong>$0.39 each</strong></td>
+            <td>Free</td>
+          </tr>
+          <tr>
+            <td>n8n node</td>
+            <td class="us">Yes — 11 actions + a trigger <em>(not yet on npm)</em></td>
+            <td>None</td>
+            <td>Official, published 21 Aug 2026 — upload + webhook only</td>
+            <td>None</td>
+            <td>Native to Zapier</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="scroll-hint">Scroll the table sideways to see every column.</p>
+    <p class="cmp-note">Sources: mailparser.io/pricing and 183 Mailparser help-centre articles;
+      docparser.com/pricing, docparser.com/api and 180 Docparser help-centre articles;
+      parseur.com&rsquo;s own pricing endpoint and its published OpenAPI 3.1 schema; Zapier&rsquo;s community
+      forum, including staff replies. Parseur&rsquo;s figures came back in EUR because their pricing endpoint
+      geolocates; a US visitor sees different absolute numbers. The &ldquo;no per-field confidence&rdquo;
+      finding is an absence we checked rather than a claim we read: 363 vendor help articles and two
+      published API schemas, grepped. <strong>These are good products.</strong> If your mail is
+      single-sender plain text with no attachments and you already pay for an LLM, n8n&rsquo;s own
+      Information Extractor node is genuinely sufficient and free, and we are not going to win you.</p>
+  </div>
+</section>
+
+<!-- ------------------------------------------------------------- PRICING -->
+<section class="sec tinted" id="pricing">
+  <div class="wrap">
+    <div class="sec-head center">
+      <p class="eyebrow">Pricing</p>
+      <h2 class="sec-title">Not decided yet</h2>
+    </div>
+    <div class="provisional" style="max-width:46rem;margin:0 auto">
+      <p class="tagline">Placeholder — do not plan against these numbers</p>
+      <p>There is <b>no pricing decision</b> for MailMint. Nothing on this page is an offer, and no tier
+        below is committed to.</p>
+      <p>What is decided is the <b>shape</b> of it. Inbound mail on the production path costs us
+        <b>$0.00 per message</b> — Cloudflare Email Routing is free at any volume we will plausibly reach —
+        and the only variable cost is one model call, on a chain headed by a model measured at a fraction of
+        a cent per invoice. Meanwhile Mailparser charges <b>$0.1198 per email</b> by its own arithmetic and
+        does no AI at all, and Postmark delivers parsed inbound JSON with base64 attachments at
+        <b>$0.00165 per email</b>. MIME handling is not a moat. Whatever we charge will be for the
+        extraction layer and its trust signals, and it will not look like $29.95 for 250 emails.</p>
+      <p>When there is a number, it will appear here and nowhere before.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ------------------------------------------------------------------ faq -->
+<section class="sec">
+  <div class="wrap">
+    <div class="sec-head center">
+      <p class="eyebrow">Questions</p>
+      <h2 class="sec-title">Before you wire anything up</h2>
+    </div>
+    <div class="faq">
+      <details open>
+        <summary>Do I need an inbound address to try it?</summary>
+        <p>No, and that matters, because the hosted address depends on a domain being configured.
+          <code>POST /v1/parse</code> takes raw MIME, or just a <code>subject</code>, <code>text</code> and
+          <code>html</code>, plus your schema — and stores nothing at all. It is the same parser, the same
+          response shape, and the same confidence numbers. <a href="/quickstart">The quickstart</a> starts
+          there.</p>
+      </details>
+      <details>
+        <summary>Where does the confidence number come from?</summary>
+        <p>Not from the model. It is computed from signals we can verify: whether the quoted evidence is
+          really a verbatim substring of the message; whether the deterministic rules layer and the model
+          independently agreed; whether the invoice arithmetic reconciles; and whether the value coerced
+          cleanly to its declared type. The model&rsquo;s own self-report is one input with the smallest
+          weight, and it may only lower a score. The full rule is in
+          <a href="/docs#confidence">the docs</a>.</p>
+      </details>
+      <details>
+        <summary>What happens to a message that fails to parse?</summary>
+        <p>It is still delivered. A message with any flag on it still arrives at your webhook with
+          <code>needs_review: true</code> and the flags naming what went wrong and in which field. Nothing is
+          ever silently dropped, and a field that could not be found is <code>null</code> — never invented,
+          never a placeholder string.</p>
+      </details>
+      <details>
+        <summary>Can I verify that a webhook really came from you?</summary>
+        <p>Yes. Every delivery carries
+          <code>x-mailmint-signature: t=&lt;unix&gt;,v1=&lt;hex&gt;</code>, where the hex is
+          <code>hmac_sha256(secret, t + "." + rawBody)</code>. The timestamp is inside the signed string, so a
+          captured request cannot be replayed. There are worked verification examples in
+          <a href="/docs#webhooks">Node and Python</a> — copy one, do not guess.</p>
+      </details>
+      <details>
+        <summary>Is any of this live?</summary>
+        <p>Not yet, and we would rather say so than imply otherwise. No domain has been bought, so no hosted
+          inbound address exists; the n8n node is not on npm; there is no uptime history, no customers and no
+          SLA. What does exist is the code, the parser, the node, and the measurements quoted on this page,
+          all of which you can reproduce from the repository.</p>
+      </details>
+      <details>
+        <summary>What about prompt injection from a hostile email?</summary>
+        <p>It is a real risk in any product that pipes attacker-controlled email bodies into a model, and we
+          will not pretend it is solved. What exists today is a partial, structural mitigation rather than a
+          control: a value is only accepted with a high confidence when its evidence is a verbatim substring
+          of the message, when the deterministic layer independently agrees, or when the arithmetic
+          reconciles — none of which an instruction embedded in a body can manufacture. Treat parsed output
+          as data, and check <code>needs_review</code> before acting on it.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ------------------------------------------------------------------ cta -->
+<section class="cta">
+  <div class="wrap">
+    <h2>Send one email and see what comes back</h2>
+    <p>The shortest true path from nothing to structured JSON is one curl against
+      <code>/v1/parse</code> — no address, no DNS, nothing stored.</p>
+    <div class="hero-cta">
+      <a class="l-btn l-btn-primary l-btn-lg" href="/quickstart">Start the quickstart</a>
+      <a class="l-btn l-btn-ghost l-btn-lg" href="/docs">Read the API docs</a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<section class="l-who">
+  <div class="wrap">
+    <h2>Who runs this, and what it is not</h2>
+    <p>MailMint is built and run by Florian Standhartinger. It is new, so there are no customer logos, no
+      testimonials and no uptime history on this page — and there will not be any invented ones. Every
+      number here is either measured on real email and named as such, or fetched from a competitor&rsquo;s
+      own page and attributed.</p>
+    <p><strong>What is not true yet, in one list.</strong> No domain has been bought, so the hosted inbound
+      address does not exist; the paths that work today are <code>POST /v1/parse</code>,
+      <code>POST /v1/test/deliver</code>, and putting the n8n node after a mailbox you already own.
+      <code>n8n-nodes-mailmint</code> is not published to npm. PDF attachment text is not extracted. The
+      parser does not verify DKIM itself — <code>auth.spf</code>, <code>auth.dkim</code> and
+      <code>auth.dmarc</code> are read from the <code>Authentication-Results</code> header the upstream MTA
+      wrote. There is no pricing, no SLA and no SOC&nbsp;2 report.</p>
+    <p>The measurement method behind the numbers in the hero is in <code>docs/MODEL-BENCH.md</code>, the
+      competitor research with every source URL is in <code>docs/COMPETITORS.md</code>, and the frozen
+      output contract is in <code>docs/CONTRACT.md</code>.</p>
+  </div>
+</section>
+
+<footer class="l-foot">
+  <div class="wrap">
+    <span>MailMint &mdash; inbound email to structured JSON.</span>
+    <nav>
+      <a href="/quickstart">Quickstart</a>
+      <a href="/docs">Docs</a>
+      <a href="/n8n">n8n</a>
+      <a href="#compare">Compare</a>
+      <a href="#pricing">Pricing</a>
+      <a href="/login">Sign in</a>
+      <a href="/signup">Create account</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.code-tabs [role="tab"][aria-controls]'));
+  var panels = tabs.map(function (t) { return document.getElementById(t.getAttribute('aria-controls')); });
+
+  function select(i) {
+    tabs.forEach(function (t, j) {
+      t.setAttribute('aria-selected', j === i ? 'true' : 'false');
+      panels[j].hidden = j !== i;
+    });
+  }
+  tabs.forEach(function (t, i) {
+    t.addEventListener('click', function () { select(i); });
+    t.addEventListener('keydown', function (e) {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      e.preventDefault();
+      var next = (i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length;
+      select(next);
+      tabs[next].focus();
+    });
+  });
+
+  var btn = document.getElementById('copyBtn');
+  if (!btn) return;
+  btn.addEventListener('click', function () {
+    var visible = panels.filter(function (p) { return !p.hidden; })[0];
+    if (!visible) return;
+    var text = visible.querySelector('code').innerText;
+    var done = function () {
+      btn.textContent = 'Copied';
+      setTimeout(function () { btn.textContent = 'Copy'; }, 1600);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { btn.textContent = 'Press Ctrl+C'; });
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done(); } catch (e) { btn.textContent = 'Press Ctrl+C'; }
+      document.body.removeChild(ta);
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

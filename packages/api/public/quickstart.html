@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MailMint quickstart — from nothing to structured JSON</title>
+<meta name="description" content="The shortest true path from nothing to parsed email: one curl against POST /v1/parse, then a mailbox with a webhook, then n8n. No DNS setup required for any of it.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="/docs.css">
+</head>
+<body class="docs">
+
+<header class="docs-top">
+  <a class="logo" href="/">Mail<span>Mint</span></a>
+  <nav>
+    <a href="/docs">API reference</a>
+    <a href="/n8n">n8n</a>
+    <a href="/dashboard">Dashboard</a>
+    <a class="cta" href="/signup">Get an API key</a>
+  </nav>
+</header>
+
+<div class="layout">
+
+  <aside class="toc">
+    <button class="toc-toggle" id="tocToggle" aria-expanded="false" aria-controls="tocBody">On this page</button>
+    <div class="toc-body" id="tocBody">
+      <h2>Before you start</h2>
+      <ul>
+        <li><a href="#key">Get an API key</a></li>
+        <li><a href="#base">The base URL</a></li>
+      </ul>
+      <h2>Three paths that work today</h2>
+      <ul>
+        <li><a href="#parse">1 · One curl, nothing stored</a></li>
+        <li><a href="#schema" class="sub">Adding fields</a></li>
+        <li><a href="#mailbox">2 · A mailbox and a webhook</a></li>
+        <li><a href="#inject" class="sub">Injecting a test message</a></li>
+        <li><a href="#n8n">3 · n8n after your own IMAP</a></li>
+      </ul>
+      <h2>The real inbound address</h2>
+      <ul>
+        <li><a href="#address">What it needs</a></li>
+        <li><a href="#imap">Self-hosted IMAP connector</a></li>
+      </ul>
+      <h2>Then</h2>
+      <ul>
+        <li><a href="#next">Where to go next</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <main class="content">
+
+<h1>Quickstart</h1>
+<p class="lede">The shortest true path from nothing to structured JSON. The first one takes a single
+<code>curl</code> and about sixty seconds, and it needs no email address, no DNS record and no waiting for
+mail to arrive.</p>
+
+<div class="note">
+<p><strong>Read this first, because it decides which path you want.</strong> MailMint&rsquo;s headline
+feature is a hosted inbound address — <code>k7m2xq4h9bwz@parse.&lt;domain&gt;</code> — and that address only
+exists once a domain has been pointed at the service. <strong>No domain has been configured yet, so no
+hosted address exists.</strong> Paths&nbsp;1, 2 and 3 below all work without one, and they use the same
+parser and return the same shape.</p>
+</div>
+
+<!-- ================================================================= KEY -->
+<section id="key">
+<h2>Get an API key <a class="anchor" href="#key">#</a></h2>
+
+<p>Create an account at <a href="/signup">/signup</a>. The key is shown once, on the dashboard, and starts
+with <code>mm_live_</code>. A key beginning <code>mm_test_</code> behaves identically but is never counted
+against your quota — use that one in CI.</p>
+
+<p>Keys cannot be read back after they are created. Put it in an environment variable now:</p>
+
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>export MAILMINT_API_KEY="mm_live_..."</code></pre>
+</div>
+
+<div class="note warn">
+<p>Never paste a real key into a page, a screenshot, an issue or a shared notebook. Every example on this
+site uses a placeholder, and every email address is a deliberately fake <code>.example</code> address.</p>
+</div>
+</section>
+
+<!-- ================================================================ BASE -->
+<section id="base">
+<h2>The base URL <a class="anchor" href="#base">#</a></h2>
+
+<p>There is no public hosted deployment yet, so there is no URL we can honestly print here as if it were
+live. Set <code>MAILMINT_URL</code> to whichever MailMint you are talking to:</p>
+
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code><span class="tok-c"># running it locally, from the repository</span>
+export MAILMINT_URL="http://127.0.0.1:3100"
+
+<span class="tok-c"># or your own deployment</span>
+export MAILMINT_URL="https://mailmint.your-company.example"</code></pre>
+</div>
+
+<p>Every path is under <code>/v1</code>, every call carries
+<code>Authorization: Bearer $MAILMINT_API_KEY</code>, and <code>GET /healthz</code> needs no auth and tells
+you whether the parser loaded and whether an inbound domain is configured.</p>
+</section>
+
+<!-- =============================================================== PARSE -->
+<section id="parse">
+<h2>1 &middot; One curl, nothing stored <a class="anchor" href="#parse">#</a></h2>
+
+<p><code>POST /v1/parse</code> is the stateless endpoint. Give it an email — raw MIME, or just a subject and
+a body — and a schema, and it returns the parsed result. It writes nothing to the database, so there is no
+message to fetch afterwards and nothing to delete.</p>
+
+<div class="code">
+<div class="cap">the whole quickstart, in one command</div>
+<button class="copy" type="button">Copy</button>
+<pre><code>curl -s -X POST "$MAILMINT_URL/v1/parse" \
+  -H "Authorization: Bearer $MAILMINT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "subject": "Invoice INV-2291 from Acme Ltd",
+    "text": "Invoice INV-2291\n\nTotal: $31.50\nDue: Sep 8, 2026\n",
+    "schema": [
+      { "name": "invoice_number", "type": "string", "description": "the invoice or reference number" },
+      { "name": "total",          "type": "number", "description": "grand total including tax" },
+      { "name": "due_date",       "type": "date",   "description": "when payment is due" }
+    ]
+  }'</code></pre>
+</div>
+
+<p>What comes back is the full result object. The part you came for:</p>
+
+<div class="code">
+<div class="cap">response · fields</div>
+<pre><code>"fields": {
+  "invoice_number": { "value": "INV-2291",   "confidence": 0.97, "source": "rule+llm",
+                      "evidence": "Invoice INV-2291" },
+  "total":          { "value": 31.5,         "confidence": 0.97, "source": "rule",
+                      "evidence": "Total: $31.50" },
+  "due_date":       { "value": "2026-09-08", "confidence": 0.97, "source": "rule",
+                      "evidence": "Due: Sep 8, 2026" }
+},
+"flags": [],
+"needs_review": false,
+"parse": {
+  "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
+  "llm_used": true,
+  "timings_ms": { "total": 4735, "mime": 22, "deterministic": 14, "llm": 4611, "persist": 0 }
+}</code></pre>
+</div>
+
+<p>Four things are worth noticing before you go any further, because they are the whole product:</p>
+
+<ul>
+  <li><code>evidence</code> is a <strong>verbatim substring of the input</strong>. If the model quotes
+    something that is not really in the message, the confidence is cut and capped and the field is flagged
+    <code>hallucinated_evidence:&lt;field&gt;</code>.</li>
+  <li><code>source</code> says which layer answered. <code>rule</code> means a deterministic rule found it
+    without a model at all; <code>rule+llm</code> means both layers agreed independently.</li>
+  <li><code>confidence</code> is <strong>computed by us</strong>, never taken from the model. See
+    <a href="/docs#confidence">how it is computed</a>.</li>
+  <li>A value that is not in the message is <code>null</code> with confidence <code>0</code> and
+    <code>"source": "none"</code>. It is never invented and never a placeholder string.</li>
+</ul>
+
+<div class="note">
+<p><strong>On latency.</strong> The <code>4,735 ms</code> above is a real end-to-end parse of a real invoice
+email. Almost all of it is the model call — MIME parsing took 22&nbsp;ms and the deterministic rules layer
+took 14&nbsp;ms. Fields the rules layer can resolve on its own never reach a model at all, which is why a
+tight schema is faster as well as more accurate.</p>
+</div>
+</section>
+
+<!-- ============================================================== SCHEMA -->
+<section id="schema">
+<h3>Adding fields <a class="anchor" href="#schema">#</a></h3>
+
+<p>A schema is a list of field definitions. The only required key is <code>name</code>; <code>type</code>
+defaults to <code>string</code>. <code>description</code> is the single biggest lever on accuracy — write it
+the way you would explain the field to a new colleague — and <code>hint</code> is where you put the label
+the mail actually uses.</p>
+
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>{ "name": "total", "type": "number", "description": "grand total incl. tax",
+  "required": true, "hint": "labelled Total or Amount Due" }</code></pre>
+</div>
+
+<p>There is also an object shorthand, which is what most people reach for first and which normalises to the
+same thing:</p>
+
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>"schema": { "invoice_number": "string", "total": "number", "due_date": "date" }</code></pre>
+</div>
+
+<p>Line items are an <code>array</code> of <code>object</code>:</p>
+
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>{ "name": "line_items", "type": "array",
+  "items": { "type": "object", "fields": [
+    { "name": "description", "type": "string" },
+    { "name": "qty",         "type": "integer" },
+    { "name": "amount",      "type": "number" }
+  ] } }</code></pre>
+</div>
+
+<p>All thirteen types and their coercion rules are in <a href="/docs#field-types">the reference</a>.</p>
+</section>
+
+<!-- ============================================================= MAILBOX -->
+<section id="mailbox">
+<h2>2 &middot; A mailbox and a webhook <a class="anchor" href="#mailbox">#</a></h2>
+
+<p>A mailbox is one inbound address plus the schema and webhook that belong to it. Creating one needs no DNS
+and no domain — the address it hands back simply will not receive external mail until a domain is
+configured. Everything else about it works now, including the webhook.</p>
+
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>curl -s -X POST "$MAILMINT_URL/v1/mailboxes" \
+  -H "Authorization: Bearer $MAILMINT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Invoices",
+    "webhook_url": "https://your-app.example/hooks/mailmint",
+    "schema": [
+      { "name": "invoice_number", "type": "string" },
+      { "name": "total",          "type": "number" },
+      { "name": "due_date",       "type": "date" }
+    ]
+  }'</code></pre>
+</div>
+
+<div class="code">
+<div class="cap">201 Created</div>
+<pre><code>{
+  "mailbox": {
+    "id": "mbx_01JQ8Y7X6W5V4U3T2S1R",
+    "name": "Invoices",
+    "address": "k7m2xq4h9bwz@parse.mailmint.dev",
+    "alias": "invoices.k7m2xq4h9bwz@parse.mailmint.dev",
+    "token": "k7m2xq4h9bwz",
+    "slug": "invoices",
+    "schema": [ … ],
+    "schema_version": 1,
+    "webhook_url": "https://your-app.example/hooks/mailmint",
+    "webhook_secret": "b3f1…",
+    "paused": false,
+    "created_at": "2026-08-25T09:10:00.000Z"
+  }
+}</code></pre>
+</div>
+
+<div class="note warn">
+<p><strong>Keep <code>webhook_secret</code>.</strong> It is returned when you create or fetch a mailbox, and
+it is the only thing that lets you prove a delivery really came from MailMint. Verifying it takes about six
+lines — <a href="/docs#webhooks">Node and Python examples are in the reference</a>. Do not skip it and do not
+improvise it.</p>
+</div>
+</section>
+
+<!-- ============================================================== INJECT -->
+<section id="inject">
+<h3>Injecting a test message <a class="anchor" href="#inject">#</a></h3>
+
+<p><code>POST /v1/test/deliver</code> puts a message through the mailbox exactly as if it had arrived from
+the internet: it is stored, parsed against the mailbox schema, given an id, added to the event feed and
+delivered to your webhook. This is how you test the whole pipeline end to end before any DNS exists.</p>
+
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>curl -s -X POST "$MAILMINT_URL/v1/test/deliver" \
+  -H "Authorization: Bearer $MAILMINT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "mailbox_id": "mbx_01JQ8Y7X6W5V4U3T2S1R",
+    "from": "billing@acme.example",
+    "subject": "Invoice INV-2291 from Acme Ltd",
+    "text": "Invoice INV-2291\n\nTotal: $31.50\nDue: Sep 8, 2026\n"
+  }'</code></pre>
+</div>
+
+<p>It answers <code>201</code> with the full parsed message, synchronously — because a person who just
+clicked &ldquo;send a test&rdquo; wants the JSON on the screen, not a promise about it. You can also send
+<code>"raw_mime"</code> instead, as plain RFC822 or base64, which is the honest way to test a message you
+already have on disk. Set <code>"deliver": false</code> to parse and store without firing the webhook.</p>
+
+<p>From here the rest of the API is available on a real message:
+<code>GET /v1/messages/:id</code>, <code>GET /v1/messages/:id/raw</code>,
+<code>POST /v1/messages/:id/reparse</code> and <code>GET /v1/events</code>.</p>
+</section>
+
+<!-- ================================================================= N8N -->
+<section id="n8n">
+<h2>3 &middot; n8n, after a mailbox you already own <a class="anchor" href="#n8n">#</a></h2>
+
+<p>If mail already reaches n8n — through the built-in <strong>Email Trigger (IMAP)</strong>, through Gmail,
+through anything — put a <strong>MailMint</strong> node after it and it parses what arrives. No MailMint
+address, no DNS, no forwarding rule.</p>
+
+<ol>
+  <li>Add an <strong>Email Trigger (IMAP)</strong> node and point it at your mailbox. Any <em>Format</em>
+    works.</li>
+  <li>Add a <strong>MailMint</strong> node after it. It opens on <strong>Parse &rarr; Parse Email</strong>
+    with <strong>Input: Automatic</strong>, which is already correct.</li>
+  <li>Under <strong>Fields</strong>, click <strong>Add Field</strong> and fill in a name, a type and a
+    sentence of description.</li>
+  <li><strong>Execute step.</strong></li>
+</ol>
+
+<div class="note warn">
+<p><strong><code>n8n-nodes-mailmint</code> is not published to npm yet</strong>, so it cannot be installed
+from <em>Settings &rarr; Community Nodes</em> today, and n8n Cloud will not accept it until it is also
+verified. Until then, an <strong>HTTP Request</strong> node pointed at <code>POST /v1/parse</code> does the
+same job from any n8n, Cloud included. The full walkthrough, with screenshots of the node running in a real
+n8n, is on <a href="/n8n">the n8n page</a>.</p>
+</div>
+</section>
+
+<!-- ============================================================= ADDRESS -->
+<section id="address">
+<h2>The hosted inbound address <a class="anchor" href="#address">#</a></h2>
+
+<p>This is the feature the product is named for, and it is the one thing on this page that is not available
+yet. Being precise about why:</p>
+
+<p>Inbound mail arrives through <strong>Cloudflare Email Routing</strong> into an Email Worker that streams
+the raw message to the API. That is free at any volume we will plausibly reach, accepts messages up to
+25&nbsp;MiB, and a single catch-all rule covers every customer address. But it requires a domain whose
+nameservers point at Cloudflare, and <strong>no domain has been bought</strong>. Until one is:</p>
+
+<ul>
+  <li><code>GET /healthz</code> reports the configured <code>inbound_domain</code>, and mailbox addresses are
+    built from it. The address in a <code>POST /v1/mailboxes</code> response is well-formed and reserved for
+    you; it just has no MX behind it yet.</li>
+  <li>Nothing else changes when it does. The message that arrives through the real MX is parsed by the same
+    code, returns the same object, and fires the same webhook as
+    <code>POST /v1/test/deliver</code> does today.</li>
+</ul>
+
+<p>MailMint also ships its own SMTP server (<code>packages/smtpd</code>) as the escape hatch for a
+self-hosting or air-gapped deployment, and adapters for Mailgun, CloudMailin and a generic webhook, so a
+customer already running one of those does not have to move. Neither is the default path.</p>
+</section>
+
+<!-- ================================================================ IMAP -->
+<section id="imap">
+<h2>The IMAP connector <a class="anchor" href="#imap">#</a></h2>
+
+<p><code>packages/intake</code> is a connector that logs into an existing IMAP mailbox, pulls new mail and
+hands it to the API — the intake path that needs no DNS change at all. It has zero dependencies and it can
+also detect a forwarding-confirmation code, which is what makes a Gmail auto-forward set-up survivable.</p>
+
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>IMAP_HOST=imap.example.com IMAP_USER=you@example.com IMAP_PASS=… \
+MAILBOX_TOKEN=k7m2xq4h9bwz \
+MAILMINT_API_URL="$MAILMINT_URL" INTERNAL_SECRET=… \
+  npx mailmint-intake watch</code></pre>
+</div>
+
+<div class="note warn">
+<p><strong>This is an operator tool today, not a self-serve feature.</strong> It delivers through
+<code>POST /internal/deliver</code>, which is guarded by the <code>INTERNAL_SECRET</code> shared with the
+service — so it is something you run next to your own MailMint, not something you configure from the
+dashboard. If you want IMAP mail parsed and you are not hosting MailMint yourself, use
+<a href="#n8n">path&nbsp;3</a> or call <code>POST /v1/parse</code> from your own poller.</p>
+</div>
+</section>
+
+<!-- ================================================================ NEXT -->
+<section id="next">
+<h2>Where to go next <a class="anchor" href="#next">#</a></h2>
+
+<div class="cards">
+  <div class="c"><strong><a href="/docs#field-types">Field types</a></strong><span>All thirteen types, and
+    exactly what each one coerces to.</span></div>
+  <div class="c"><strong><a href="/docs#confidence">Confidence</a></strong><span>What the number is built
+    from, and why it is not the model&rsquo;s opinion.</span></div>
+  <div class="c"><strong><a href="/docs#flags">Flags &amp; needs_review</a></strong><span>Every flag, what
+    raises it, and which ones set <code>needs_review</code>.</span></div>
+  <div class="c"><strong><a href="/docs#webhooks">Webhook signatures</a></strong><span>The exact HMAC
+    construction, verified in Node and Python.</span></div>
+  <div class="c"><strong><a href="/docs#events">Polling</a></strong><span>The cursor feed the n8n trigger
+    lives on.</span></div>
+  <div class="c"><strong><a href="/docs#reparse">Re-parsing</a></strong><span>Fix a schema, dry-run it over
+    last month, then run it for real.</span></div>
+</div>
+</section>
+
+  </main>
+</div>
+
+<footer style="border-top:1px solid var(--rule);padding:1.6rem 1.25rem;text-align:center;font-size:.86rem;color:var(--muted)">
+  <a href="/">MailMint</a> &middot;
+  <a href="/docs">API reference</a> &middot;
+  <a href="/n8n">n8n</a> &middot;
+  <a href="/dashboard">Dashboard</a>
+</footer>
+
+<script src="/docs.js"></script>
+</body>
+</html>

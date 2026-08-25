@@ -21,6 +21,31 @@ const FIX = path.join(__dirname, 'fixtures');
 const SNAPSHOT = JSON.parse(fs.readFileSync(path.join(FIX, 'dkim-dns-snapshot.json'), 'utf8'));
 const LIVE = process.env.MAILMINT_LIVE_DNS === '1';
 
+// RFC 6376 Appendix C prints this key pair in full; it exists to be used in
+// examples and is not a secret belonging to anybody.
+const RFC6376_PUBKEY =
+  'MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDwIRP/UC3SBsEmGqZ9ZJW3/DkM' +
+  'oGeLnQg1fWn7/zYtIxN2SnFCjxOCKG9v3b4jYfcTNh5ijSsq631uBItLa7od+v/R' +
+  'tdC2UzJ1lWT947qR+Rcac2gbto/NMqJ0fzfVjH4OuKhitdY9tf6mcwGjaNBcWToI' +
+  'MmPSPDdQPNUYckcQ2QIDAQAB';
+const RFC6376_PRIVKEY = [
+  '-----BEGIN RSA PRIVATE KEY-----',
+  'MIICXwIBAAKBgQDwIRP/UC3SBsEmGqZ9ZJW3/DkMoGeLnQg1fWn7/zYtIxN2SnFC',
+  'jxOCKG9v3b4jYfcTNh5ijSsq631uBItLa7od+v/RtdC2UzJ1lWT947qR+Rcac2gb',
+  'to/NMqJ0fzfVjH4OuKhitdY9tf6mcwGjaNBcWToIMmPSPDdQPNUYckcQ2QIDAQAB',
+  'AoGBALmn+XwWk7akvkUlqb+dOxyLB9i5VBVfje89Teolwc9YJT36BGN/l4e0l6QX',
+  '/1//6DWUTB3KI6wFcm7TWJcxbS0tcKZX7FsJvUz1SbQnkS54DJck1EZO/BLa5ckJ',
+  'gAYIaqlA9C0ZwM6i58lLlPadX/rtHb7pWzeNcZHjKrjM461ZAkEA+itss2nRlmyO',
+  'n1/5yDyCluST4dQfO8kAB3toSEVc7DeFeDhnC1mZdjASZNvdHS4gbLIA1hUGEF9m',
+  '3hKsGUMMPwJBAPW5v/U+AWTADFCS22t72NUurgzeAbzb1HWMqO4y4+9Hpjk5wvL/',
+  'eVYizyuce3/fGke7aRYw/ADKygMJdW8H/OcCQQDz5OQb4j2QDpPZc0Nc4QlbvMsj',
+  '7p7otWRO5xRa6SzXqqV3+F0VpqvDmshEBkoCydaYwc2o6WQ5EBmExeV8124XAkEA',
+  'qZzGsIxVP+sEVRWZmW6KNFSdVUpk3qzK0Tz/WjQMe5z0UunY9Ax9/4PVhp/j61bf',
+  'eAYXunajbBSOLlx4D+TunwJBANkPI5S9iylsbLs6NkaMHV6k5ioHBBmgCak95JGX',
+  'GMot/L2x0IYyMLAz6oLWh2hm7zwtb0CgOrPo1ke44hFYnfc=',
+  '-----END RSA PRIVATE KEY-----',
+].join('\n');
+
 function dnsFor(extra) {
   if (LIVE && !extra) return new DnsClient();
   return new DnsClient({ stub: { ...SNAPSHOT, ...(extra || {}) } });
@@ -150,28 +175,118 @@ test('ed25519-sha256 verifies with the RFC 8463 key pair when the signature is r
 
 // ------------------------------------------------- canonicalisation units ---
 
-test('RFC 6376 §3.4.5: relaxed header canonicalisation', () => {
-  const raw = 'A: X\r\nB : Y\t\r\n\tZ  \r\n';
-  const parsed = dkim.splitMessage(raw + '\r\nbody\r\n');
-  const out = parsed.headers.map((h) => dkim.canonHeaderRelaxed(h)).join('');
-  assert.strictEqual(out, 'a:X\r\nb:Y Z\r\n');
+// RFC 6376 §3.4.5 "Canonicalization Examples (INFORMATIVE)" prints the exact
+// expected output for one input in all three combinations. This is the check a
+// sign-then-verify round trip cannot make: a round trip only proves that our
+// canonicaliser agrees with itself, and a canonicaliser that is wrong in the
+// same way on both sides passes it happily. These bytes come from the RFC.
+//
+//   A: <SP> X <CRLF>
+//   B <SP> : <SP> Y <HTAB><CRLF>
+//   <HTAB> Z <SP><SP><CRLF>
+//   <CRLF>
+//   <SP> C <SP><CRLF>
+//   D <SP><HTAB><SP> E <CRLF>
+//   <CRLF>
+//   <CRLF>
+const RFC6376_INPUT =
+  'A: X\r\n' +
+  'B : Y\t\r\n' +
+  '\tZ  \r\n' +
+  '\r\n' +
+  ' C \r\n' +
+  'D \t E\r\n' +
+  '\r\n' +
+  '\r\n';
+
+test('RFC 6376 §3.4.5 example 1: relaxed header AND relaxed body', () => {
+  const p = dkim.splitMessage(RFC6376_INPUT);
+  assert.strictEqual(
+    p.headers.map((h) => dkim.canonHeaderRelaxed(h)).join(''),
+    'a:X\r\nb:Y Z\r\n');
+  assert.strictEqual(dkim.canonBodyRelaxed(p.body), ' C\r\nD E\r\n');
 });
 
-test('simple header canonicalisation is byte-exact, folding and all', () => {
-  const raw = 'B : Y\t\r\n\tZ  \r\n';
-  const parsed = dkim.splitMessage(raw + '\r\nbody\r\n');
-  assert.strictEqual(dkim.canonHeaderSimple(parsed.headers[0]), 'B : Y\t\r\n\tZ  \r\n');
+test('RFC 6376 §3.4.5 example 2: simple header AND simple body', () => {
+  const p = dkim.splitMessage(RFC6376_INPUT);
+  assert.strictEqual(
+    p.headers.map((h) => dkim.canonHeaderSimple(h)).join(''),
+    'A: X\r\nB : Y\t\r\n\tZ  \r\n');
+  assert.strictEqual(dkim.canonBodySimple(p.body), ' C \r\nD \t E\r\n');
 });
 
-test('RFC 6376 §3.4.5: relaxed body canonicalisation', () => {
-  assert.strictEqual(dkim.canonBodyRelaxed(' C \r\nD \t E\r\n\r\n\r\n'), ' C\r\nD E\r\n');
+test('RFC 6376 §3.4.5 example 3: relaxed header, simple body', () => {
+  const p = dkim.splitMessage(RFC6376_INPUT);
+  assert.strictEqual(
+    p.headers.map((h) => dkim.canonHeaderRelaxed(h)).join(''),
+    'a:X\r\nb:Y Z\r\n');
+  assert.strictEqual(dkim.canonBodySimple(p.body), ' C \r\nD \t E\r\n');
 });
 
-test('RFC 6376 §3.4.3: simple body canonicalisation', () => {
-  assert.strictEqual(dkim.canonBodySimple(' C \r\nD \t E\r\n\r\n\r\n'), ' C \r\nD \t E\r\n');
+test('RFC 6376 §3.4.3: the simple body edge cases the RFC spells out', () => {
   assert.strictEqual(dkim.canonBodySimple(''), '\r\n', 'an empty body is a single CRLF');
   assert.strictEqual(dkim.canonBodyRelaxed(''), '', 'relaxed canonicalises an empty body to nothing');
   assert.strictEqual(dkim.canonBodySimple('no trailing crlf'), 'no trailing crlf\r\n');
+});
+
+// ---- RFC 6376 Appendix A.2 -------------------------------------------------
+// The worked example. Its printed body hash is an authoritative external check
+// on our body canonicalisation — and it also catches a defect in the RFC.
+test('RFC 6376 A.2: our RELAXED body canonicalisation reproduces the printed bh exactly', () => {
+  const raw = fs.readFileSync(path.join(FIX, 'rfc6376-a2.eml'));
+  const p = dkim.splitMessage(raw);
+  const bh = crypto.createHash('sha256')
+    .update(dkim.strToBytes(dkim.canonBodyRelaxed(p.body))).digest('base64');
+  assert.strictEqual(bh, '2jUSOH9NhtVGCQWNr9BrIAPreKQjO6Sn7XIkfJVOzv8=',
+    'this value is printed in RFC 6376 A.2 and again in RFC 8463 A.3');
+});
+
+test('RFC 6376 A.2: the example declares c=simple/simple but publishes the RELAXED body hash', () => {
+  // Not our bug, and worth pinning so nobody "fixes" the canonicaliser to match
+  // a broken example. The body contains "game.<SP><SP>Are": simple keeps both
+  // spaces, relaxed collapses them, so the two hashes MUST differ — and the one
+  // the RFC prints under c=simple/simple is the relaxed one.
+  const raw = fs.readFileSync(path.join(FIX, 'rfc6376-a2.eml'));
+  const p = dkim.splitMessage(raw);
+  assert.ok(p.body.includes('game.  Are'), 'the double space is what makes the two forms differ');
+
+  const simple = crypto.createHash('sha256')
+    .update(dkim.strToBytes(dkim.canonBodySimple(p.body))).digest('base64');
+  const relaxed = crypto.createHash('sha256')
+    .update(dkim.strToBytes(dkim.canonBodyRelaxed(p.body))).digest('base64');
+  assert.notStrictEqual(simple, relaxed);
+  assert.strictEqual(relaxed, '2jUSOH9NhtVGCQWNr9BrIAPreKQjO6Sn7XIkfJVOzv8=');
+  assert.strictEqual(simple, '4bLNXImK9drULnmePzZNEBleUanJCX5PIsDIFoH4KTQ=');
+});
+
+test('RFC 6376 A.2: the published signature therefore cannot verify, and we say why precisely', async () => {
+  const raw = fs.readFileSync(path.join(FIX, 'rfc6376-a2.eml'));
+  // The key pair is printed in RFC 6376 Appendix C.
+  const r = await dkim.verify(raw, {
+    dns: new DnsClient({ stub: { 'TXT:brisbane._domainkey.example.com': [[`v=DKIM1; k=rsa; p=${RFC6376_PUBKEY}`]] } }),
+    ignoreExpiry: true,
+  });
+  assert.strictEqual(r.result, 'fail');
+  assert.strictEqual(r.failureType, 'body_hash');
+  assert.match(r.reason, /body altered after signing/);
+});
+
+test('RFC 6376 Appendix C: signing A.2 properly with the RFC key pair does verify', async () => {
+  // Proves the key material and our header canonicalisation are right; only the
+  // RFC's own b= is wrong.
+  const raw = fs.readFileSync(path.join(FIX, 'rfc6376-a2.eml')).toString('latin1');
+  const body = raw.slice(raw.indexOf('Received: from client1'));
+  const privateKey = crypto.createPrivateKey(RFC6376_PRIVKEY);
+  const signed = sign(Buffer.from(body, 'latin1'), {
+    privateKey, domain: 'example.com', selector: 'brisbane',
+    canonicalization: 'simple/simple',
+    headers: ['received', 'from', 'to', 'subject', 'date', 'message-id'],
+  });
+  const r = await dkim.verify(signed, {
+    dns: new DnsClient({ stub: { 'TXT:brisbane._domainkey.example.com': [[`v=DKIM1; k=rsa; p=${RFC6376_PUBKEY}`]] } }),
+  });
+  assert.strictEqual(r.result, 'pass', r.reason || '');
+  assert.strictEqual(r.signatures[0].keyBits, 1024);
 });
 
 test('stripSignatureValue empties b= and leaves every other tag alone', () => {
@@ -189,6 +304,15 @@ test('stripSignatureValue handles b= as the last tag with no trailing semicolon'
 });
 
 // ----------------------------------------------------- round-trip signing ---
+//
+// HONEST LIMIT OF WHAT FOLLOWS: signing with our own signer and verifying with
+// our own verifier proves only that the two agree with each other. A
+// canonicaliser that is wrong in the SAME way on both sides sails through every
+// test below. These exist to cover combinations that are rare in the wild
+// (simple/simple, ed25519, l=) and to prove that tampering is detected — not to
+// prove correctness. Correctness is established above, by the five real
+// signatures verified against the keys their senders publish, and by the
+// RFC 6376 §3.4.5 and RFC 8463 A.3 vectors, which come from outside this repo.
 
 const MSG =
   'From: Alice <alice@example.test>\r\n' +
@@ -349,4 +473,96 @@ test('splitMessage: folded headers stay one field, and CRLF-less input is tolera
 
 test('toCrlf normalises LF and CR endings without doubling existing CRLF', () => {
   assert.strictEqual(dkim.toCrlf('a\nb\r\nc\rd').toString(), 'a\r\nb\r\nc\r\nd');
+});
+
+// --------------------------------------------------- why a signature failed ---
+//
+// "The body changed after signing" and "this signature is forged" are different
+// statements about the world. Mailing lists, forwarders and corporate security
+// gateways rewrite bodies constantly, so the first one is routine; the second
+// one is somebody claiming a domain they cannot sign for.
+
+test('a body-hash failure is reported as body_altered, not as a bad signature', async () => {
+  const key = makeKey('rsa', 2048);
+  const signed = sign(Buffer.from(MSG, 'latin1'), {
+    privateKey: key.privateKey, domain: 'example.test', selector: 'sel',
+    canonicalization: 'relaxed/simple',
+  });
+  // what a mailing list does: append a footer
+  const listed = Buffer.concat([signed, Buffer.from('--\r\nSent via example-list\r\n', 'latin1')]);
+  const r = await dkim.verify(listed, {
+    dns: new DnsClient({ stub: { 'TXT:sel._domainkey.example.test': [[key.txt]] } }),
+  });
+  assert.strictEqual(r.result, 'fail');
+  assert.strictEqual(r.failureType, 'body_hash');
+  assert.strictEqual(r.bodyAltered, true);
+  assert.strictEqual(r.signatures[0].bodyHashMatched, false);
+  assert.match(r.reason, /body altered after signing/);
+});
+
+test('a forged signature is reported as a signature failure, NOT as body_altered', async () => {
+  const real = makeKey('rsa', 2048);
+  const other = makeKey('rsa', 2048);
+  const signed = sign(Buffer.from(MSG, 'latin1'), {
+    privateKey: other.privateKey, domain: 'example.test', selector: 'sel',
+  });
+  const r = await dkim.verify(signed, {
+    // the domain publishes a DIFFERENT key from the one that signed
+    dns: new DnsClient({ stub: { 'TXT:sel._domainkey.example.test': [[real.txt]] } }),
+  });
+  assert.strictEqual(r.result, 'fail');
+  assert.strictEqual(r.failureType, 'signature');
+  assert.strictEqual(r.bodyAltered, false, 'the body was fine; the signature was not');
+  assert.strictEqual(r.signatures[0].bodyHashMatched, true);
+});
+
+test('a revoked key is a key failure, and a dead resolver is a dns failure', async () => {
+  const raw = fs.readFileSync(path.join(FIX, 'real-gmail-relaxed-relaxed.eml'));
+  const revoked = await dkim.verify(raw, {
+    dns: new DnsClient({ stub: { 'TXT:20251104._domainkey.gmail.com': [['v=DKIM1; k=rsa; p=']] } }),
+    ignoreExpiry: true,
+  });
+  assert.strictEqual(revoked.failureType, 'key');
+  assert.strictEqual(revoked.bodyAltered, false);
+
+  const broken = await dkim.verify(raw, {
+    dns: new DnsClient({ stub: { 'TXT:20251104._domainkey.gmail.com': 'ESERVFAIL' } }),
+    ignoreExpiry: true,
+  });
+  assert.strictEqual(broken.result, 'temperror');
+  assert.strictEqual(broken.failureType, 'dns');
+});
+
+test('when one of two signers still verifies, body_altered stays false', async () => {
+  const good = makeKey('rsa', 2048);
+  const bad = makeKey('rsa', 2048);
+  let signed = sign(Buffer.from(MSG, 'latin1'), {
+    privateKey: good.privateKey, domain: 'example.test', selector: 'good',
+    canonicalization: 'relaxed/relaxed',
+  });
+  signed = sign(signed, {
+    privateKey: bad.privateKey, domain: 'other.test', selector: 'bad',
+    canonicalization: 'relaxed/simple',
+  });
+  const r = await dkim.verify(signed, {
+    dns: new DnsClient({
+      stub: {
+        'TXT:good._domainkey.example.test': [[good.txt]],
+        'TXT:bad._domainkey.other.test': [[good.txt]],   // wrong key for the 2nd signer
+      },
+    }),
+  });
+  assert.strictEqual(r.result, 'pass');
+  assert.strictEqual(r.bodyAltered, false);
+});
+
+test('spam scoring does not charge for a body-hash failure, but does for a forged one', () => {
+  const { score } = require('../src/auth/spam');
+  const base = { headers: [], body: '', envelope: { tls: true, helo: 'mail.acme.com', from: 'a@acme.com' } };
+  const forwarded = score({ ...base, auth: { spf: 'pass', dkim: 'fail', dkimBodyAltered: true, dmarc: 'pass' } });
+  const forged = score({ ...base, auth: { spf: 'pass', dkim: 'fail', dkimFailureType: 'signature', dmarc: 'pass' } });
+  assert.ok(forged.score > forwarded.score,
+    'a forged signature must cost more than a forwarded message');
+  assert.ok(!forwarded.reasons.some((r) => r.rule === 'dkim=fail'),
+    'forwarding must not be charged as spam');
 });

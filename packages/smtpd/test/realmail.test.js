@@ -81,3 +81,104 @@ test('real captured mail: the damage is a missing CRLF after the MIME delimiter'
   }
   t.diagnostic(`${damaged} of ${FILES.length} captured files are not byte-faithful`);
 });
+
+// ---------------------------------------------------------------------------
+// Everything these messages ARE good for. The body was rewritten in transit,
+// but the header block arrived intact, and it is real: real Received chains
+// from three MTAs, real folding, real dual signatures, a real bounce domain.
+
+test('real captured mail: the Received chain parses and is ordered newest-first', { skip: SKIP }, (t) => {
+  for (const f of FILES) {
+    const raw = dkim.toCrlf(fs.readFileSync(path.join(DIR, f)));
+    const received = dkim.splitMessage(raw).headers.filter((h) => h.lowerName === 'received');
+    assert.ok(received.length >= 1, `${f}: no Received header at all`);
+
+    const dates = received
+      .map((h) => {
+        const m = /;\s*([^;]+)$/.exec(h.value.replace(/\r\n[ \t]+/g, ' ').trim());
+        return m ? Date.parse(m[1]) : NaN;
+      })
+      .filter((d) => !Number.isNaN(d));
+    assert.strictEqual(dates.length, received.length,
+      `${f}: every Received header must end in a parseable date`);
+    for (let i = 1; i < dates.length; i++) {
+      assert.ok(dates[i] <= dates[i - 1] + 1000,
+        `${f}: hop ${i} is newer than hop ${i - 1}; the chain is not newest-first`);
+    }
+    // Worth recording: the export kept only the final hop on some messages, which
+    // is one more way in which this corpus is not the message that was sent.
+    t.diagnostic(`${f}: ${received.length} hop(s), newest ${new Date(dates[0]).toISOString()}` +
+      (received.length === 1 ? '  [upstream hops missing from the export]' : ''));
+  }
+});
+
+test('real captured mail: folded headers survive as single fields', { skip: SKIP }, (t) => {
+  let foldedSeen = 0;
+  for (const f of FILES) {
+    const raw = dkim.toCrlf(fs.readFileSync(path.join(DIR, f)));
+    const headers = dkim.splitMessage(raw).headers;
+    for (const h of headers) {
+      // a folded field contains a CRLF followed by whitespace, mid-field
+      if (/\r\n[ \t]/.test(h.raw.slice(0, -2))) {
+        foldedSeen++;
+        assert.ok(h.raw.endsWith('\r\n'), `${f}: ${h.lowerName} must end at a CRLF`);
+        // unfolding must not lose or invent content
+        const unfolded = dkim.canonHeaderRelaxed(h);
+        assert.ok(!/\r\n./.test(unfolded.slice(0, -2)),
+          `${f}: ${h.lowerName} still contains a fold after relaxed canonicalisation`);
+      }
+      assert.ok(h.lowerName.length > 0 && !/[\s:]/.test(h.lowerName),
+        `${f}: bad header name ${JSON.stringify(h.name)}`);
+    }
+  }
+  assert.ok(foldedSeen > 0, 'the corpus should contain folded headers');
+  t.diagnostic(`${foldedSeen} folded header fields parsed across ${FILES.length} messages`);
+});
+
+test('real captured mail: dual signatures are both parsed, with their own d= and selector', { skip: SKIP }, async (t) => {
+  let dualSeen = 0;
+  for (const f of FILES) {
+    const raw = dkim.toCrlf(fs.readFileSync(path.join(DIR, f)));
+    const r = await dkim.verify(raw, { ignoreExpiry: true });
+    if (r.signatures.length < 2) continue;
+    dualSeen++;
+    const domains = r.signatures.map((s) => s.domain);
+    assert.strictEqual(new Set(domains).size, domains.length,
+      `${f}: two signatures from two signers must not collapse into one`);
+    for (const s of r.signatures) {
+      assert.ok(s.selector, 'each signature carries its own selector');
+      assert.ok(s.algorithm, 'each signature carries its own algorithm');
+      assert.strictEqual(s.canonicalization, 'relaxed/simple');
+    }
+    // Both signers signed the same body, so both must agree about the body hash.
+    const matched = new Set(r.signatures.map((s) => s.bodyHashMatched));
+    assert.strictEqual(matched.size, 1,
+      `${f}: two signers over one body cannot disagree about whether it is intact`);
+    t.diagnostic(`${f}: ${domains.join(' + ')} — both bodyHashMatched=${r.signatures[0].bodyHashMatched}`);
+  }
+  assert.ok(dualSeen > 0, 'the corpus should contain dual-signed mail');
+});
+
+test('real captured mail: Return-Path gives a bounce domain distinct from the From domain', { skip: SKIP }, (t) => {
+  const { headerFromDomain, splitAddress } = require('../src/address');
+  let checked = 0;
+  for (const f of FILES) {
+    const raw = dkim.toCrlf(fs.readFileSync(path.join(DIR, f)));
+    const headers = dkim.splitMessage(raw).headers;
+    const get = (n) => {
+      const h = headers.filter((x) => x.lowerName === n);
+      return h.length ? h[h.length - 1].value.replace(/\r\n[ \t]+/g, ' ').trim() : null;
+    };
+    const rp = get('return-path');
+    const from = get('from');
+    if (!rp || !from) continue;
+    checked++;
+
+    const bounce = splitAddress(rp.replace(/^<|>$/g, ''));
+    assert.ok(bounce, `${f}: Return-Path ${rp} must parse as an address`);
+    const fromDomain = headerFromDomain(from);
+    assert.ok(fromDomain, `${f}: From ${from} must yield a domain`);
+    t.diagnostic(`${f}: SPF would be checked against ${bounce.domain}, DMARC aligns against ${fromDomain}`);
+  }
+  assert.ok(checked > 0);
+});

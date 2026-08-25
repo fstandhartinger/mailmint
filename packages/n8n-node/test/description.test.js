@@ -90,7 +90,7 @@ test('the trigger offers both modes and defaults to webhook', () => {
 	assert.equal(description.webhooks[0].httpMethod, 'POST');
 	assert.deepEqual(description.inputs, []);
 
-	const mode = description.properties.find((p) => p.name === 'mode');
+	const mode = description.properties.find((p) => p.name === 'deliveryMode');
 	assert.equal(mode.default, 'webhook');
 	assert.deepEqual(mode.options.map((o) => o.value).sort(), ['poll', 'webhook']);
 

@@ -63,7 +63,19 @@ function score(o) {
     default: break;
   }
   switch (auth.dkim) {
-    case 'fail': add(1.5, 'dkim=fail'); break;
+    case 'fail':
+      // A body-hash failure means an intermediary rewrote the body. Every
+      // forwarded message, every mailing list and every corporate security
+      // gateway does that, and half our users will forward mail to us from
+      // Gmail. Charging it as spam would punish our own happy path. A failure
+      // of the SIGNATURE, on the other hand, is somebody claiming a domain
+      // they cannot sign for, and that stays expensive.
+      if (auth.dkimBodyAltered || auth.dkimFailureType === 'body_hash') {
+        add(0, 'dkim=fail (body altered in transit, not charged)');
+      } else {
+        add(1.5, 'dkim=fail');
+      }
+      break;
     case 'none': add(0.8, 'dkim=none'); break;
     case 'permerror': add(0.5, 'dkim=permerror'); break;
     case 'pass': add(-0.5, 'dkim=pass'); break;

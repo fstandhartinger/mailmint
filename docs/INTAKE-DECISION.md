@@ -92,9 +92,60 @@ try the product in two minutes.
 
 Exact commands are in `packages/smtpd/ops/cloudflare-setup.md`.
 
+## The asymmetry nobody mentions until it bites
+
+The two intake paths do not observe the same things, and it is worth being explicit
+because it affects what `auth` in CONTRACT §1 can honestly contain:
+
+| | our SMTP server | Cloudflare Email Worker |
+|---|---|---|
+| sending IP visible | yes | **no** |
+| SPF | evaluated for real | **cannot be evaluated — reported as `none`, never guessed** |
+| DKIM | verified | verified |
+| DMARC | evaluated (SPF or DKIM alignment) | evaluated (DKIM alignment only) |
+
+Cloudflare hands the worker `message.from`, `message.to`, `message.headers` and
+`message.raw` — and no client IP. So on the recommended path we can prove *who signed*
+a message but not *where it came from*. DMARC still works, because DKIM alignment alone
+satisfies it. The adapter reports `spf: "none"` rather than inferring something it
+cannot know, which is the only defensible choice.
+
+If a customer needs SPF, they run our SMTP server. That is a real reason for the
+self-host path to exist beyond ideology.
+
+## What the DKIM verifier is actually worth
+
+This is the one auth claim that is fully proven, and it was proven the hard way. The
+verifier was checked against **69 real third-party signatures pulled from public
+mailing-list archives and validated against live DNS** — gmail.com, fastmail, pobox,
+gmx.de, pks.im, peff.net and 80x24.org — of which **33 use `relaxed/simple`**, the
+canonicalisation combination that most home-grown verifiers get wrong. All 69 pass.
+Flipping a single body byte, or rewriting `Subject`, turns a pass into a fail. Five
+messages plus a DNS snapshot are committed as offline fixtures; `MAILMINT_LIVE_DNS=1`
+re-checks against live DNS.
+
+Two things fell out of that work worth recording:
+- **RFC 8463's published ed25519 example signature does not verify.** It is an erratum
+  in the RFC, not a bug in us — demonstrated by re-signing the identical message with
+  the RFC's own ed25519 private key (the RFC 8032 §7.1 test vector) and verifying
+  successfully against the published `p=`.
+- **The real emails we captured for testing are not byte-faithful.** The messages we
+  pulled back through a webmail HTTP API lost the CRLF after every MIME boundary
+  delimiter, so their body hashes cannot match. That is a property of the export, not
+  of the mail and not of the verifier. It is also a useful lesson for the product: mail
+  that reaches a customer through a forward, a mailing list or a security gateway will
+  routinely fail `bh=` while being perfectly legitimate, so a body-hash failure is
+  reported distinctly and does not on its own raise the spam score.
+
 ## Honest gaps
 
 - I have not run a message through Cloudflare Email Routing, because that requires the
   domain from step 1. The Worker is written against the documented `ForwardableEmailMessage`
   API and tested against a faithful replay of that object, which is not the same thing.
+- **Our SMTP server has never accepted mail from the public internet.** Everything
+  measured about it — 182 passing tests, 117 msg/sec durable, 39 KB RSS per idle
+  session, a 20 MB message accepted in 618 ms — comes from real TCP against a real
+  listener on loopback, driven by a hand-written client. That is real engineering
+  evidence and it is not evidence of working in production. Until a stranger's mail
+  server delivers to it, nobody should call the SMTP path production-proven.
 - The per-message cost of $0.00 is Cloudflare's published position today, not a contract.

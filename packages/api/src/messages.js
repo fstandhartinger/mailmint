@@ -86,7 +86,7 @@ async function findDuplicate(mailboxId, sourceMessageId) {
   return rows[0] || null;
 }
 
-async function ingest({ mailbox, envelope = {}, raw, receivedAt, idempotencyKey }) {
+async function ingest({ mailbox, envelope = {}, raw, receivedAt, idempotencyKey, plan }) {
   const messageId = ids.messageId();
   // The caller's explicit key wins; otherwise the message's own Message-ID.
   const sourceMessageId = (idempotencyKey ? String(idempotencyKey).trim().slice(0, 255) : null)
@@ -103,48 +103,87 @@ async function ingest({ mailbox, envelope = {}, raw, receivedAt, idempotencyKey 
     if (v && v !== 'pass' && v !== 'none') flags.push(`auth_fail:${mech}`);
   }
 
-  // The plan decides how long the bytes live, so it is read once here rather
-  // than being guessed at reap time.
-  const { rows: planRows } = await query(`SELECT plan FROM accounts WHERE id = $1`, [mailbox.account_id]);
-  const plan = (planRows[0] && planRows[0].plan) || 'free';
+  // The plan decides how long the bytes live. The caller usually already knows
+  // it — /internal/resolve reads it when it resolves the mailbox — and asking
+  // again would be a round trip on the path an SMTP session is waiting on.
+  let effectivePlan = plan;
+  if (!effectivePlan) {
+    const { rows } = await query(`SELECT plan FROM accounts WHERE id = $1`, [mailbox.account_id]);
+    effectivePlan = (rows[0] && rows[0].plan) || 'free';
+  }
 
-  const row = await tx(async (client) => {
-    const rawRef = raw && !oversize ? await storeBlob(client, mailbox.account_id, 'raw', raw, 'message/rfc822', plan) : null;
-    const { rows } = await client.query(
-      `INSERT INTO messages (id, mailbox_id, account_id, received_at, from_email, subject, size,
-                             status, flags, raw_ref, spam_score, envelope, source_message_id)
-       VALUES ($1,$2,$3,COALESCE($4, now()),$5,$6,$7,'received',$8,$9,$10,$11,$12)
-       -- The unique index is the real guard: two deliveries of the same message
-       -- can race, and only the database can decide which one wins.
-       ON CONFLICT (mailbox_id, source_message_id) WHERE source_message_id IS NOT NULL
-       DO NOTHING
-       RETURNING *`,
-      [messageId, mailbox.id, mailbox.account_id, receivedAt || null,
-        (envelope.from || '').slice(0, 320) || null, null, size,
-        flags, rawRef, spamScore, JSON.stringify(envelope), sourceMessageId],
-    );
-    if (!rows.length) {
-      // Lost the race. The bytes just written are orphaned; drop them rather
-      // than leaving a blob nothing points at until the reaper notices.
-      if (rawRef) await client.query(`DELETE FROM blobs WHERE ref = $1`, [rawRef]);
-      return null;
-    }
-    return rows[0];
-  });
+  /**
+   * Blob and message in ONE statement, not a transaction.
+   *
+   * This runs while an SMTP session — or the IMAP connector — is blocked on the
+   * response, and the database is a managed Postgres that may be on another
+   * continent. Written the obvious way this was BEGIN, INSERT, INSERT, COMMIT:
+   * four round trips plus a plan lookup, measured at a 1.2 s p50 from Europe to
+   * a us-west-2 branch. As a single data-modifying CTE it is one round trip and
+   * still atomic, because a statement is its own transaction.
+   *
+   * The blob's INSERT ... SELECT ... WHERE is how "store the bytes only if there
+   * are bytes to store" is expressed without a second statement.
+   */
+  const { rows } = await query(
+    `WITH new_blob AS (
+       INSERT INTO blobs (ref, account_id, kind, content_type, bytes, size, expires_at)
+       SELECT $1, $2, 'raw', 'message/rfc822', $3::bytea, octet_length($3::bytea),
+              now() + ($4 || ' days')::interval
+        WHERE $3::bytea IS NOT NULL
+       RETURNING ref
+     )
+     INSERT INTO messages (id, mailbox_id, account_id, received_at, from_email, subject, size,
+                           status, flags, raw_ref, spam_score, envelope, source_message_id)
+     VALUES ($5, $6, $7, COALESCE($8::timestamptz, now()), $9, NULL, $10,
+             'received', $11, (SELECT ref FROM new_blob), $12, $13, $14)
+     -- The unique index is the real guard: two deliveries of the same message can
+     -- race, and only the database can decide which one wins.
+     ON CONFLICT (mailbox_id, source_message_id) WHERE source_message_id IS NOT NULL
+     DO NOTHING
+     RETURNING *`,
+    [ids.blobRef(), mailbox.account_id, raw && !oversize ? raw : null, String(retentionFor(effectivePlan, 'raw')),
+      messageId, mailbox.id, mailbox.account_id, receivedAt || null,
+      (envelope.from || '').slice(0, 320) || null, size, flags, spamScore,
+      JSON.stringify(envelope), sourceMessageId],
+  );
 
-  if (!row) {
+  if (!rows.length) {
     const existing = await findDuplicate(mailbox.id, sourceMessageId);
+    // The CTE's blob was written even though the message was not — a data
+    // modifying CTE runs whatever the main statement decides. It carries an
+    // expiry so the reaper would get it eventually, but a duplicate should not
+    // cost thirty days of storage.
+    await query(
+      `DELETE FROM blobs WHERE kind = 'raw' AND account_id = $1
+        AND ref NOT IN (SELECT raw_ref FROM messages WHERE account_id = $1 AND raw_ref IS NOT NULL)
+        AND created_at > now() - interval '1 minute'`,
+      [mailbox.account_id],
+    ).catch(() => {});
     log.info('mail.duplicate', {
       message_id: existing && existing.id, mailbox_id: mailbox.id,
       source_message_id: sourceMessageId, note: 'already accepted; not stored again',
     });
     return { ...(existing || {}), duplicate: true };
   }
+
+  const row = rows[0];
   log.info('mail.received', {
     message_id: messageId, mailbox_id: mailbox.id, account_id: Number(mailbox.account_id),
     from: envelope.from || null, size, raw_stored: !oversize, spam_score: spamScore,
     source: envelope.source || 'smtp', source_message_id: sourceMessageId,
+    // Visible on purpose. A message with neither an explicit idempotency key nor
+    // a Message-ID header cannot be deduplicated, so a retry of it WILL produce
+    // a second row. Rare — RFC 5322 says every message should carry one — but
+    // when it bites, this line is how anyone finds out why.
+    deduplicable: Boolean(sourceMessageId),
   });
+  if (!sourceMessageId) {
+    log.warn('mail.not_deduplicable', {
+      message_id: messageId, mailbox_id: mailbox.id,
+      note: 'no Message-ID header and no idempotency_key; a redelivery of this message would be stored twice',
+    });
+  }
   return row;
 }
 
