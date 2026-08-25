@@ -46,3 +46,26 @@ mail from the public internet. Shipping it while a quarter of its own suite is
 red would make that gap worse, not better. Whoever picks this up should start
 with the `adapters` divergence, because it questions the contract the whole
 intake design rests on.
+
+## `packages/api`
+
+Measured 2026-08-25. **These suites need `DATABASE_URL`** — run them with
+`set -a; . .env; set +a` first, or every suite fails at the hook with
+"DATABASE_URL is not set; these tests need a real Postgres." That is a missing
+environment, not a broken test, and it cost me a wrong conclusion once already.
+
+| Suite | Result |
+| --- | --- |
+| `sender-auth` | 5/5 |
+| `logging` | 7/7 |
+| `auth` | 12/13 — `rejects mail for a domain it does not host` |
+
+The `auth` failure is **pre-existing**: reverting `src/api.js` to the commit
+before the DKIM change reproduces 12 pass / 1 fail exactly. It lives in the
+internal API's domain resolution and has nothing to do with sender
+authentication.
+
+The remaining suites (`e2e`, `endpoints`, `intake`, `latency`, `mailboxes`,
+`quota`, `reparse`, `webhooks`) run against the remote Neon database and did not
+finish inside 15 minutes. **Their state is unknown**, and this file says so
+rather than implying they pass.
