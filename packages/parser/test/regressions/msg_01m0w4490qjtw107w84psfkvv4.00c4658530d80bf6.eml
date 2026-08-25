@@ -1,0 +1,10 @@
+From: Acme Billing <billing@acme.com>
+To: 29snb9667qes@parse.mailmint.test
+Subject: Invoice INV-902 from Acme Ltd
+Message-Id: <28f0829fa56ef9e8@acme.com>
+Date: Tue, 25 Aug 2026 09:30:53 GMT
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+
+Invoice INV-902
+Total: $31.50

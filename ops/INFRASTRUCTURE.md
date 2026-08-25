@@ -87,3 +87,20 @@ ops/reap.sh --destroy   # delete the Render services, the Neon project and the S
 `--destroy` prints what it will remove and requires typing `DESTROY`. It deliberately
 does **not** delete the GitHub repos and does **not** unpublish from npm: unpublishing
 breaks anyone who installed the package, and after 72 hours npm refuses anyway.
+
+## Parked parse failures
+
+`packages/api/src/messages.js` copies anything that throws during parsing into
+`ops/failures/` (CONTRACT.md §parse.failed). On 2026-08-25 that directory held 21
+messages, all recorded with the same error — `Invalid or unexpected token` — on
+plain-text invoices.
+
+Every one of them was replayed through the current parser and **all 21 parse
+cleanly**. Whatever broke had been fixed, and nobody had gone back to check.
+
+They now live in `packages/parser/test/regressions/` and run on every
+`npm test` in that package, so the fix is held in place. `ops/failures/` is empty
+again, which is what it should look like.
+
+**If this directory fills up, replay it before assuming it is stale.** A parked
+failure nobody replays is litter with a timestamp.
