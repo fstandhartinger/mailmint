@@ -160,7 +160,7 @@ the real API were not in the loop. Two separate claims, one of them still open:
 | Claim | Status |
 | --- | --- |
 | The intake connector handles real internet mail | **proven** as above |
-| The parser handles that message end to end into the real API | not yet run |
+| The parser handles that message end to end into the real API | **proven** — see below |
 | **The SMTP server has accepted mail from the public internet** | **still never** |
 
 ## Honest gaps
@@ -176,3 +176,29 @@ the real API were not in the loop. Two separate claims, one of them still open:
   evidence and it is not evidence of working in production. Until a stranger's mail
   server delivers to it, nobody should call the SMTP path production-proven.
 - The per-message cost of $0.00 is Cloudflare's published position today, not a contract.
+
+### Parser end to end, 2026-08-25
+
+The same real Gmail message — fetched as raw RFC822, complete with its `Received:`
+chain from `mail-pg1-x529.google.com` — was posted to a locally running instance
+of the real API at `POST /v1/parse` with a real `mm_live_` key. HTTP 200, and it
+came back correct:
+
+    headers.message_id  <CAH9Y4-ifw78_G=J0vNmt_Lxnkxcg2-5m1ue3yY_Lq4oT0H6r8Q@mail.gmail.com>
+    headers.subject     MailMint intake proof - real internet mail
+    body.text           the message body, extracted
+    parse.timings_ms    total 15 (mime 6), llm_used false
+
+**A gap this exposed.** The response carried `auth: {spf: null, dkim: null,
+dmarc: null}` even though the message carries **two valid Gmail DKIM
+signatures**, and DKIM is verifiable from raw MIME plus DNS with no envelope at
+all. The reason is structural: SPF, DKIM and DMARC verification live in
+`packages/smtpd/src/auth/`, so `/v1/parse` never runs them — it can only relay
+what a receiving edge already reported.
+
+That is defensible for SPF, which genuinely needs the connecting IP. It is not
+defensible for DKIM, and `/docs#auth` describes `auth` as part of the parse
+output without saying it is always null on this endpoint. Either wire the DKIM
+verifier into the parse path or say plainly in the docs that `/v1/parse` does not
+authenticate senders. Right now a customer pasting raw MIME would reasonably
+expect a `dkim` verdict and silently get nothing.
