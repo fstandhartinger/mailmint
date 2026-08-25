@@ -7,6 +7,7 @@ const { log } = require('./log');
 const ids = require('./ids');
 const { ApiError, bad, notFound } = require('./errors');
 const { authenticate, requireQuota } = require('./auth');
+const senderAuth = require('./sender-auth');
 const { validateSchema } = require('./schema');
 const mailboxes = require('./mailboxes');
 const reparse = require('./reparse');
@@ -321,6 +322,17 @@ router.post('/parse', withAuth, asyncRoute(async (req, res) => {
       hint: 'If this is a real message that another service handles fine, send it to support with this request id.',
     });
   }
+  // DKIM is computable from the raw message alone, so a stateless parse can and
+  // should answer it. SPF and DMARC cannot be: they need the envelope and the
+  // connecting IP. Reporting all three as null made the honest gap look like a
+  // finding of "nothing wrong".
+  if (Buffer.isBuffer(input)) {
+    result.auth = { ...(result.auth || {}), ...(await senderAuth.verifyRaw(input, { requestId })) };
+    if (result.auth.dkim === 'body_altered' && !(result.flags || []).includes('dkim_body_altered')) {
+      result.flags = [...(result.flags || []), 'dkim_body_altered'];
+    }
+  }
+
   result.id = null;
   result.mailbox = null;
   result.raw_url = null;
