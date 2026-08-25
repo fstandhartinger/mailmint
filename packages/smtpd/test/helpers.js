@@ -28,14 +28,26 @@ function startFakeApi({ mailboxes = [], onDeliver = null, failWith = null } = {}
     const url = new URL(req.url, 'http://x');
     if (url.pathname === '/internal/resolve') {
       calls.resolve++;
-      const address = (url.searchParams.get('address') || '').toLowerCase();
       if (failWith) { res.writeHead(failWith); return res.end('nope'); }
-      if (known.has(address)) {
-        res.writeHead(200, { 'content-type': 'application/json' });
-        return res.end(JSON.stringify({ mailbox: { id: 'mbx_' + address.split('@')[0], address, name: 'Test' } }));
-      }
-      res.writeHead(404);
-      return res.end('{}');
+      // CONTRACT §3a: POST {"to": "<full address>"}, header x-mailmint-internal.
+      // This double used to answer the old GET ?address= form, so every resolve
+      // came back 404 and the stack rejected valid recipients — 550 over SMTP,
+      // 404 over the webhook intake. src/resolver.js and packages/api both
+      // implement §3a; only this stub had drifted.
+      const chunks = [];
+      req.on('data', (c) => chunks.push(c));
+      return req.on('end', () => {
+        let to = '';
+        try { to = String((JSON.parse(Buffer.concat(chunks).toString() || '{}') || {}).to || ''); }
+        catch { to = ''; }
+        const address = to.toLowerCase();
+        if (address && known.has(address)) {
+          res.writeHead(200, { 'content-type': 'application/json' });
+          return res.end(JSON.stringify({ mailbox: { id: 'mbx_' + address.split('@')[0], address, name: 'Test' } }));
+        }
+        res.writeHead(404);
+        return res.end('{}');
+      });
     }
     if (url.pathname === '/internal/deliver') {
       calls.deliver++;

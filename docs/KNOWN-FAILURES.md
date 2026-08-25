@@ -1,71 +1,47 @@
-# Pre-existing test failures in `packages/smtpd`
+# Test failures in `packages/smtpd` — resolved 2026-08-25
 
-Measured 2026-08-25 with `npm test` in `packages/smtpd`:
+**All 25 failures were one stale test double.** `npm test` in `packages/smtpd` is
+now:
 
-    # tests 199   # pass 172   # fail 25   # skipped 2
+    # tests 199   # pass 197   # fail 0   # skipped 2
 
-**None of these are caused by the `body_altered` fix.** Verified by stashing that
-change and re-running: the same tests fail, identically, with and without it.
+## What was actually wrong
 
-## What passes
+`test/helpers.js` `startFakeApi()` answered the **old** internal-resolve form:
 
-    dkim      43/43        dmarc     15/15
-    spf       27/27        realmail   6/6
-    spam      11/11        address   19/19
-    auth-body-altered 2/2
+    GET /internal/resolve?address=...   header x-mailmint-secret
 
-The authentication layer — the part most recently changed — is entirely green.
+while `src/resolver.js` and the real `packages/api` both implement CONTRACT §3a:
 
-## What fails, and how far I traced it
+    POST /internal/resolve  {"to": "<full address>"}   header x-mailmint-internal
 
-| Suite | Result | Symptom |
+So every recipient lookup came back 404 and the stack rejected valid mailboxes —
+**550 over SMTP, 404 over the webhook intake**. The production code was correct
+throughout; only the stub had drifted.
+
+That one mismatch accounted for all of it:
+
+| Suite | Before | After |
 | --- | --- | --- |
-| `adapters` | 15/16 | `webhook intake produces exactly what the SMTP path produces` → **404 unknown mailbox** |
-| `spool` | 7/9 | SMTP answers **550** where the test expects 250, after a ~20 s wait |
-| `starttls` | 3/4 | a message over STARTTLS does not arrive as expected |
-| `protocol` | terminated | the suite does not finish inside 240 s on its own |
+| `adapters` | 15/16 — "webhook intake produces exactly what the SMTP path produces" | **16/16** |
+| `spool` | 7/9 — API-outage paths answered 550 | **9/9** |
+| `starttls` | 3/4 | **4/4** |
+| `protocol` | never finished inside 240 s | **41/41** |
 
-The `adapters` failure is the informative one. Its 404 comes from
-`intake-http.js` → `ingest()` → `unknown mailbox`: the recipient the test
-registered via `startStack({ mailboxes: [MBX] })` is not found by the resolver
-the intake server was handed. The test exists precisely to assert that the
-webhook intake and the SMTP path agree, so it is either catching a real
-divergence between those two paths or a harness that wires the resolver
-differently for each. **I did not determine which.**
+The protocol suite was not slow. It was waiting on recipient lookups that could
+never succeed.
 
-The `spool` 550 is likely the same root cause seen from the SMTP side — a
-recipient that will not resolve — but that is inference, not something I ran down.
+## The lesson worth keeping
 
-Starting the real API on :3100 does **not** fix any of them; these suites use
-their own in-process stack, not the deployed service.
+The failing test was named *"webhook intake produces exactly what the SMTP path
+produces"*, and it was right to fail — both paths were being told the mailbox did
+not exist. What it caught was not a divergence between the two intakes but a
+divergence between the **test double and the contract it stands in for**.
 
-## Why this file exists
+`src/resolver.js` carries a comment saying exactly this: *"This is the seam that
+was wrong; do not 'improve' it without changing §3a first."* The seam was fixed
+in the production code and the stub was left behind.
 
-`packages/smtpd` is the component whose honest gap is that it has never accepted
-mail from the public internet. Shipping it while a quarter of its own suite is
-red would make that gap worse, not better. Whoever picks this up should start
-with the `adapters` divergence, because it questions the contract the whole
-intake design rests on.
-
-## `packages/api`
-
-Measured 2026-08-25. **These suites need `DATABASE_URL`** — run them with
-`set -a; . .env; set +a` first, or every suite fails at the hook with
-"DATABASE_URL is not set; these tests need a real Postgres." That is a missing
-environment, not a broken test, and it cost me a wrong conclusion once already.
-
-| Suite | Result |
-| --- | --- |
-| `sender-auth` | 5/5 |
-| `logging` | 7/7 |
-| `auth` | 12/13 — `rejects mail for a domain it does not host` |
-
-The `auth` failure is **pre-existing**: reverting `src/api.js` to the commit
-before the DKIM change reproduces 12 pass / 1 fail exactly. It lives in the
-internal API's domain resolution and has nothing to do with sender
-authentication.
-
-The remaining suites (`e2e`, `endpoints`, `intake`, `latency`, `mailboxes`,
-`quota`, `reparse`, `webhooks`) run against the remote Neon database and did not
-finish inside 15 minutes. **Their state is unknown**, and this file says so
-rather than implying they pass.
+**A fake that drifts from its contract does not fail loudly — it fails as the
+thing it is faking.** When a whole suite goes red at once, suspect the double
+before the code.
