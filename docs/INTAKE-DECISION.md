@@ -137,12 +137,39 @@ Two things fell out of that work worth recording:
   routinely fail `bh=` while being perfectly legitimate, so a body-hash failure is
   reported distinctly and does not on its own raise the spam score.
 
+## What is now proven, 2026-08-25
+
+**The intake path has handled real mail from the public internet.** A message was
+sent from a Gmail account to a live disposable mailbox on `emalupe.com` — a
+different provider, across the public internet — and `packages/intake` pulled it
+and handed it to `/internal/deliver`:
+
+    event: connector.delivered
+    from: florian.standhartinger@gmail.com
+    message_id: <CAH9Y4-ifw78_G=J0vNmt_Lxnkxcg2-5m1ue3yY_Lq4oT0H6r8Q@mail.gmail.com>
+    bytes: 5057   deliver_ms: 2   status: received
+
+That Message-ID is Gmail's own, so the message genuinely traversed the internet
+rather than being replayed from a fixture. `npm run test:live` passes 3/3,
+including the Rebex third-party IMAP server.
+
+**Be precise about what this does not prove.** It says nothing about the SMTP
+server, and the delivery target in the live test is `FakeApi`, so the parser and
+the real API were not in the loop. Two separate claims, one of them still open:
+
+| Claim | Status |
+| --- | --- |
+| The intake connector handles real internet mail | **proven** as above |
+| The parser handles that message end to end into the real API | not yet run |
+| **The SMTP server has accepted mail from the public internet** | **still never** |
+
 ## Honest gaps
 
 - I have not run a message through Cloudflare Email Routing, because that requires the
   domain from step 1. The Worker is written against the documented `ForwardableEmailMessage`
   API and tested against a faithful replay of that object, which is not the same thing.
-- **Our SMTP server has never accepted mail from the public internet.** Everything
+- **Our SMTP server has never accepted mail from the public internet** (still true
+  as of 2026-08-25; the intake path above is a different component). Everything
   measured about it — 182 passing tests, 117 msg/sec durable, 39 KB RSS per idle
   session, a 20 MB message accepted in 618 ms — comes from real TCP against a real
   listener on loopback, driven by a hand-written client. That is real engineering

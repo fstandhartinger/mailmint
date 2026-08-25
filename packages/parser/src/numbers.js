@@ -54,8 +54,13 @@ function parseNumber(raw, hint) {
   if (/^\(.*\)$/.test(s)) { negative = true; s = s.slice(1, -1).trim(); }   // (31.50) accounting negative
   if (/^-/.test(s)) { negative = true; s = s.slice(1).trim(); }
   if (/-$/.test(s)) { negative = true; s = s.slice(0, -1).trim(); }
-  s = s.replace(/[   ]/g, ' ');
-  s = s.replace(/^[^\d]+/, '').replace(/[^\d.,'\s]+$/, '');
+  // Every space-like thousands separator in the wild: NBSP, narrow NBSP,
+  // thin space, figure space, word joiner. French and Swiss invoices use them.
+  s = s.replace(/[\u00a0\u202f\u2007\u2009\u2060]/g, ' ');
+  // Trim to the numeric core. Trailing junk is not merely cosmetic: a stray
+  // space after "3 150,00 \u20ac" made the decimal group look three digits long,
+  // which read it as a thousands separator and returned 315000 for 3150.00.
+  s = s.replace(/^[^\d]+/, '').replace(/[^\d]+$/, '');
   s = s.replace(/[''\u2019\u2018\s](?=\d{3}\b)/g, '');                                   // 1'234 and 1 234
   if (!/\d/.test(s)) return null;
 

@@ -16,9 +16,12 @@ const { findDates } = require('./dates');
 const SYNONYMS = {
   total: ['total', 'total due', 'amount due', 'total amount', 'grand total', 'balance due',
     'amount', 'total paid', 'order total', 'gesamtbetrag', 'gesamtsumme', 'summe', 'betrag',
-    'rechnungsbetrag', 'zu zahlen', 'endbetrag', 'montant total', 'importe total', 'total a pagar'],
-  subtotal: ['subtotal', 'sub total', 'net amount', 'net total', 'zwischensumme', 'nettobetrag', 'netto'],
-  tax: ['tax', 'vat', 'sales tax', 'gst', 'mwst', 'mehrwertsteuer', 'umsatzsteuer', 'ust', 'tva', 'iva'],
+    'rechnungsbetrag', 'zu zahlen', 'endbetrag', 'montant total', 'importe total', 'total a pagar',
+    'total ttc', 'montant ttc', 'net a payer', 'net à payer', 'you paid', 'paid'],
+  subtotal: ['subtotal', 'sub total', 'net amount', 'net total', 'zwischensumme', 'nettobetrag', 'netto',
+    'total ht', 'montant ht', 'base imponible'],
+  tax: ['tax', 'vat', 'sales tax', 'gst', 'mwst', 'mehrwertsteuer', 'umsatzsteuer', 'ust', 'tva', 'iva',
+    'total tva', 'montant tva', 'steuer'],
   shipping: ['shipping', 'delivery', 'postage', 'versand', 'versandkosten', 'frais de port'],
   discount: ['discount', 'rabatt', 'nachlass', 'coupon', 'promotion'],
   amount_paid: ['amount paid', 'paid', 'payment', 'gezahlt', 'bezahlt'],
@@ -128,7 +131,8 @@ function esc(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 function valuePattern(type) {
   switch (type) {
     case 'number': case 'integer': case 'currency':
-      return '([-(]?[^\\S\\n]*(?:[A-Z]{3}[^\\S\\n]*)?[$\\u20ac\\u00a3\\u00a5\\u20b9]?[^\\S\\n]*-?\\d[\\d.,\'\\u00a0\\u2019 ]*(?:[.,]\\d{1,4})?[^\\S\\n]*(?:[A-Z]{3}|[$\\u20ac\\u00a3\\u00a5\\u20b9])?[^\\S\\n]*[-)]?)';
+      return '(?![^\\S\\n]*[-(]?[^\\S\\n]*[$\\u20ac\\u00a3\\u00a5\\u20b9]?[^\\S\\n]*[\\d][\\d.,\\u00a0\\u2019 ]*[^\\S\\n]*%)'   // a RATE, not an amount: "Tax (8.5%)"
+        + '([-(]?[^\\S\\n]*(?:[A-Z]{3}[^\\S\\n]*)?[$\\u20ac\\u00a3\\u00a5\\u20b9]?[^\\S\\n]*-?\\d[\\d.,\'\\u00a0\\u2019 ]*(?:[.,]\\d{1,4})?[^\\S\\n]*(?:[A-Z]{3}|[$\\u20ac\\u00a3\\u00a5\\u20b9])?[^\\S\\n]*[-)]?)';
     case 'date': case 'datetime':
       return '([^\\n\\t]{4,60})';
     case 'email':
@@ -151,6 +155,10 @@ function labelSearch(text, labels, type) {
     const L = esc(label);
     const variants = [
       { re: new RegExp('(?:^|\\n|\\t|\\u2022|\\|)[^\\S\\n]{0,8}' + L + '\\s*[:\\uff1a]\\s*' + vp, 'i'), conf: 0.95 },
+      // "Tax (8.5%): $59.50" / "TVA 20 % : 672,48 EUR" / "Umsatzsteuer 19%: 243,20"
+      // The rate sits between the label and its colon and is not the amount.
+      { re: new RegExp('(?:^|\\n|\\t|\\u2022|\\|)[^\\S\\n]{0,8}' + L
+          + '[^\\S\\n]*(?:\\([^)]{0,14}\\)|[^\\S\\n]*[\\d.,]{1,6}[^\\S\\n]*%)?[^\\S\\n]*[:\\uff1a][^\\S\\n]*' + vp, 'i'), conf: 0.93 },
       { re: new RegExp('(?:^|\\n|\\t)[^\\S\\n]{0,8}' + L + '[ \\t]{2,}' + vp, 'i'), conf: 0.92 },
       { re: new RegExp('(?:^|\\n|\\t)[^\\S\\n]{0,8}' + L + '\\s*[#\\u2116]\\s*' + vp, 'i'), conf: 0.93 },
       { re: new RegExp('\\b' + L + '\\s*[:\\uff1a]\\s*' + vp, 'i'), conf: 0.9 },
@@ -227,7 +235,13 @@ function ruleExtract(field, ctx) {
     }
   }
 
-  // 2. Header-derived fields.
+  // 2. The attachment itself answers some fields without any text at all.
+  if (/^(attachment_?file_?name|attachment|filename|file_name|dateiname|anhang)$/.test(key)) {
+    const att = (ctx.attachments || []).find((a) => a.filename && !a.inline);
+    if (att) return { value: att.filename, confidence: 0.95, source: 'attachment', evidence: att.filename };
+  }
+
+  // 3. Header-derived fields.
   if (ctx.headers) {
     if (/^(from_email|sender_email|sender|from)$/.test(key) && type === 'email' && ctx.headers.from) {
       return { value: ctx.headers.from.email, confidence: 0.98, source: 'header', evidence: ctx.headers.from.email };

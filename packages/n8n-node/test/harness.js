@@ -112,6 +112,7 @@ function createContext({
 		continueOnFail: () => continueOnFail,
 		getMode: () => mode,
 		getWorkflowStaticData: () => staticData,
+		getWorkflow: () => ({ id: 'wf_test', name: 'Test workflow', active: false }),
 		getCredentials: async () => ({ apiKey: 'mm_live_test', baseUrl: BASE_URL }),
 		getHeaderData: () => headers,
 		getBodyData: () => body,

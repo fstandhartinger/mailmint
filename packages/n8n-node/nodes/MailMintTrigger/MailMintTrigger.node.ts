@@ -15,6 +15,7 @@ import {
 	getMailboxes,
 	mailMintRequest,
 	needsReview,
+	rethrow,
 	shapeItems,
 	unwrapMessage,
 	type OutputShape,
@@ -34,6 +35,8 @@ interface TriggerStaticData {
 	webhookUrl?: string;
 	webhookSecret?: string;
 	mailboxId?: string;
+	/** The webhook endpoint this node owns on the mailbox. */
+	endpointId?: string;
 }
 
 export class MailMintTrigger implements INodeType {
@@ -46,6 +49,10 @@ export class MailMintTrigger implements INodeType {
 		subtitle: '={{ $parameter["deliveryMode"] === "webhook" ? "webhook" : "polling" }}',
 		description: 'Starts the workflow when MailMint has parsed a new email',
 		defaults: { name: 'MailMint Trigger' },
+		eventTriggerDescription:
+			'Send an email to this mailbox\u2019s address and it will arrive here. To see a sample without sending anything, switch Delivery to Polling and press Fetch Test Event.',
+		activationMessage:
+			'MailMint will now call this workflow the moment it parses a message for this mailbox.',
 		inputs: [],
 		outputs: OUTPUTS_EXPRESSION,
 		credentials: [{ name: 'mailMintApi', required: true }],
@@ -238,17 +245,38 @@ export class MailMintTrigger implements INodeType {
 				if ((this.getNodeParameter('deliveryMode', 0) as string) !== 'webhook') return true;
 
 				const staticData = this.getWorkflowStaticData('node') as TriggerStaticData;
-				const mailboxId = this.getNodeParameter('mailboxId', 0) as string;
 				const webhookUrl = this.getNodeWebhookUrl('default') as string;
 				if (!staticData.webhookSecret) return false;
 
+				// A mailbox holds many webhook endpoints, and this node owns
+				// exactly one of them, so nothing here can see another workflow's.
+				if (staticData.endpointId) {
+					try {
+						const response = await mailMintRequest.call(
+							this,
+							'GET',
+							`/v1/webhooks/${encodeURIComponent(staticData.endpointId)}`,
+						);
+						const endpoint = unwrapEndpoint(response.body);
+						return endpoint.url === webhookUrl && endpoint.active !== false;
+					} catch (error) {
+						// Deleted on the MailMint side, or an API without endpoints.
+						// Either way the webhook has to be created again; say why.
+						this.logger.debug(
+							`MailMint Trigger could not read webhook endpoint ${staticData.endpointId}, treating it as missing: ${(error as Error).message}`,
+						);
+						return false;
+					}
+				}
+
+				// An older API, where a mailbox carries a single webhook_url.
+				const mailboxId = this.getNodeParameter('mailboxId', 0) as string;
 				const response = await mailMintRequest.call(
 					this,
 					'GET',
 					`/v1/mailboxes/${encodeURIComponent(mailboxId)}`,
 				);
-				const mailbox = unwrapMessage(response.body);
-				return mailbox.webhook_url === webhookUrl;
+				return unwrapMessage(response.body).webhook_url === webhookUrl;
 			},
 
 			async create(this: IHookFunctions): Promise<boolean> {
@@ -258,6 +286,7 @@ export class MailMintTrigger implements INodeType {
 				const options = this.getNodeParameter('options', 0, {}) as IDataObject;
 				const mailboxId = this.getNodeParameter('mailboxId', 0) as string;
 				const webhookUrl = this.getNodeWebhookUrl('default') as string;
+				const description = `n8n: ${this.getWorkflow().name ?? 'workflow'} / ${this.getNode().name}`;
 
 				// A secret the operator never has to think about. Kept on the node
 				// so the same one survives a deactivate/activate cycle.
@@ -266,10 +295,49 @@ export class MailMintTrigger implements INodeType {
 					staticData.webhookSecret ||
 					randomBytes(32).toString('hex');
 
+				try {
+					const response = await mailMintRequest.call(
+						this,
+						'POST',
+						`/v1/mailboxes/${encodeURIComponent(mailboxId)}/webhooks`,
+						{ body: { url: webhookUrl, secret, description } },
+					);
+					const endpoint = unwrapEndpoint(response.body);
+					staticData.endpointId = String(endpoint.id ?? '');
+					staticData.webhookSecret = (endpoint.secret as string) || secret;
+					staticData.webhookUrl = webhookUrl;
+					staticData.mailboxId = mailboxId;
+					return true;
+				} catch (error) {
+					if (!isNotFound(error)) throw rethrow(this, error, 0);
+				}
+
+				// An older API, where a mailbox carries a single webhook_url. Take
+				// it only if it is free: silently stealing delivery from whatever
+				// is listening there would break that workflow without a word.
+				const current = unwrapMessage(
+					(
+						await mailMintRequest.call(
+							this,
+							'GET',
+							`/v1/mailboxes/${encodeURIComponent(mailboxId)}`,
+						)
+					).body,
+				);
+				const existing = (current.webhook_url as string) || '';
+				if (existing && existing !== webhookUrl) {
+					throw new NodeOperationError(
+						this.getNode(),
+						`Mailbox "${String(current.name ?? mailboxId)}" already delivers to another webhook`,
+						{
+							description: `It is set to ${existing}, and this MailMint does not support more than one webhook per mailbox. Point this trigger at a different mailbox, clear the webhook with MailMint > Mailbox > Update, or use Delivery: Polling, which several workflows can share.`,
+						},
+					);
+				}
+
 				await mailMintRequest.call(this, 'PATCH', `/v1/mailboxes/${encodeURIComponent(mailboxId)}`, {
 					body: { webhook_url: webhookUrl, webhook_secret: secret },
 				});
-
 				staticData.webhookSecret = secret;
 				staticData.webhookUrl = webhookUrl;
 				staticData.mailboxId = mailboxId;
@@ -280,14 +348,46 @@ export class MailMintTrigger implements INodeType {
 				if ((this.getNodeParameter('deliveryMode', 0) as string) !== 'webhook') return true;
 
 				const staticData = this.getWorkflowStaticData('node') as TriggerStaticData;
+
+				if (staticData.endpointId) {
+					try {
+						await mailMintRequest.call(
+							this,
+							'DELETE',
+							`/v1/webhooks/${encodeURIComponent(staticData.endpointId)}`,
+						);
+					} catch (error) {
+						// Already gone is the state we wanted.
+						if (!isNotFound(error)) throw rethrow(this, error, 0);
+					}
+					delete staticData.endpointId;
+					delete staticData.webhookUrl;
+					delete staticData.mailboxId;
+					return true;
+				}
+
 				const mailboxId = (this.getNodeParameter('mailboxId', 0) as string) || staticData.mailboxId;
 				if (mailboxId) {
-					await mailMintRequest.call(
-						this,
-						'PATCH',
-						`/v1/mailboxes/${encodeURIComponent(mailboxId)}`,
-						{ body: { webhook_url: null } },
+					// Only clear a webhook that is still ours, so deactivating this
+					// workflow cannot switch off somebody else's.
+					const current = unwrapMessage(
+						(
+							await mailMintRequest.call(
+								this,
+								'GET',
+								`/v1/mailboxes/${encodeURIComponent(mailboxId)}`,
+							)
+						).body,
 					);
+					const ours = staticData.webhookUrl ?? this.getNodeWebhookUrl('default');
+					if (!current.webhook_url || current.webhook_url === ours) {
+						await mailMintRequest.call(
+							this,
+							'PATCH',
+							`/v1/mailboxes/${encodeURIComponent(mailboxId)}`,
+							{ body: { webhook_url: null } },
+						);
+					}
 				}
 				delete staticData.webhookUrl;
 				delete staticData.mailboxId;
@@ -341,9 +441,10 @@ export class MailMintTrigger implements INodeType {
 	}
 
 	async poll(this: IPollFunctions): Promise<INodeExecutionData[][] | null> {
-		if ((this.getNodeParameter('deliveryMode', 0) as string) !== 'poll') return null;
-
 		const manual = this.getMode() === 'manual';
+		// Fetch Test Event has to return a real sample whatever the Delivery is
+		// set to. Only the scheduled poll is gated on the mode.
+		if (!manual && (this.getNodeParameter('deliveryMode', 0) as string) !== 'poll') return null;
 		const filters = this.getNodeParameter('filters', {}) as IDataObject;
 		const shape = outputShape.call(this);
 		const split = this.getNodeParameter('splitNeedsReview', false) as boolean;
@@ -415,6 +516,19 @@ export class MailMintTrigger implements INodeType {
 }
 
 /* ------------------------------------------------------------------- helpers */
+
+/** `POST /v1/mailboxes/:id/webhooks` answers `{webhook: {...}}`. */
+function unwrapEndpoint(payload: unknown): IDataObject {
+	const object = (payload ?? {}) as IDataObject;
+	const webhook = object.webhook;
+	if (webhook && typeof webhook === 'object') return webhook as IDataObject;
+	return unwrapMessage(object);
+}
+
+function isNotFound(error: unknown): boolean {
+	const code = (error as { httpCode?: string; context?: { data?: unknown } })?.httpCode;
+	return code === '404' || code === '405' || code === '501';
+}
 
 function outputShape(this: IPollFunctions | IWebhookFunctions): OutputShape {
 	const options = this.getNodeParameter('options', {}) as IDataObject;

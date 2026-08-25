@@ -8,38 +8,47 @@ sample, and click on the parts of it you want. Then you go back to n8n and recei
 they decided to send. This node does the whole thing in the node: name a field, give it a
 type and a sentence of description, execute, see the value.
 
-[MailMint](https://mailmint.dev) is the API behind it.
+MailMint is the API behind it.
+
+> ### Status: not released yet
+>
+> **This package has not been published to npm**, so `npm install n8n-nodes-mailmint` and
+> n8n's *Settings → Community Nodes → Install* will not find it. **MailMint is not a hosted
+> service yet either** — there is no public API URL and no signup page, which is why the
+> credential's Base URL has no default. Everything below describes a node that is built and
+> tested against a MailMint API you point it at yourself.
 
 ---
 
 ## Install
 
-**Self-hosted, from the n8n UI**
-
-Settings → Community Nodes → Install → `n8n-nodes-mailmint`
-
-**Self-hosted, from the CLI**
+Until the package is published, build it and install the tarball:
 
 ```bash
+npm install --ignore-scripts
+npm run build
+npm pack                       # -> n8n-nodes-mailmint-<version>.tgz
+
 cd ~/.n8n/nodes
-npm install n8n-nodes-mailmint
+npm install /path/to/n8n-nodes-mailmint-<version>.tgz
 ```
 
 Then restart n8n.
 
 The package has **zero runtime dependencies** — it uses n8n's own HTTP helper and nothing
-else — and it is published from
+else. When it is published it will go out from
 [this repository's GitHub Actions workflow](.github/workflows/publish.yml) with an npm
-provenance attestation, so `npm audit signatures` can verify which commit built it.
+provenance attestation, so `npm audit signatures` will be able to verify which commit built
+it.
 
 ## Credential
 
-1. Create an account at <https://mailmint.dev>. The API key is on your dashboard and starts
-   with `mm_live_`.
-2. In n8n, add a **MailMint API** credential and paste it.
-3. It tests itself against `GET /v1/usage`, so you get a green tick before you build anything.
-
-Leave **Base URL** alone unless you run your own MailMint.
+1. In n8n, add a **MailMint API** credential.
+2. **API Key** — the key for your MailMint account. It starts with `mm_live_`.
+3. **Base URL** — the root URL of the MailMint API you are talking to, with no trailing
+   slash. There is no default, because there is no hosted MailMint to default to.
+4. Save. The credential tests itself against `GET /v1/usage`, so you get a green tick before
+   you build anything.
 
 ---
 
@@ -140,7 +149,14 @@ From** if you want a particular table.
 
 `_row_count` travels on every row and `_line_items_truncated` says so out loud when the
 table came back short. A message with no rows still produces exactly one item, with
-`_row_count: 0` — nothing is ever silently dropped.
+`_row_count: 0` — nothing is ever silently dropped. (With Simplify off the same item also
+carries `line_item: null` and `line_item_count: 0`.)
+
+It picks the rows carefully: an array **of objects** first, so a `tags` or `skus` field of
+plain strings is not mistaken for the line items; then tables; and a list of plain strings
+only when there is genuinely nothing else. If a row has a column with the same name as one
+of your header fields — a per-line `total` alongside the invoice `total` — the row's value
+wins for that row and the message-level one is kept, named, under `_shadowed`.
 
 `pairedItem` is set on every row, so n8n can still trace all forty items back to the one
 email they came from.
@@ -206,6 +222,21 @@ schedule and remembers the cursor on the node. On first activation it seeds that
 emits nothing, so switching a workflow on never floods it with a week of old mail. **Fetch
 Test Event** in the editor returns your most recent real message without moving the cursor.
 
+Each trigger registers **its own webhook endpoint** on the mailbox, with its own signing
+secret, so two workflows can watch the same mailbox and neither can switch the other one
+off: deactivating one deletes only the endpoint it created. Against an older MailMint that
+carries a single `webhook_url` per mailbox, the node falls back to that field — and refuses
+to activate if it is already pointing somewhere else, rather than quietly taking delivery
+away from whatever is listening there.
+
+n8n adds its own **Poll Times** section to any node that can poll, so it appears in both
+modes. In Webhook mode it does nothing — ignore it. It cannot be hidden from inside a node.
+
+**Fetch Test Event** in Polling mode returns your most recent real message without touching
+the cursor, so you can see the output shape before any mail has arrived. In Webhook mode the
+same button registers the editor's test URL with MailMint and waits for a real delivery —
+send a mail to the address and it lands in the editor, signature checked.
+
 Both modes take the same **Filters** — only messages needing review, only from a given
 sender or domain, only for one mailbox — and the same **Output**, **Simplify** and
 **Route Messages Needing Review Separately** settings as the main node.
@@ -244,6 +275,15 @@ item index that failed. With **Settings → Continue On Fail** on, the failing i
 ```
 
 so an IF node can branch on `{{ $json.error.code }}` instead of matching on a sentence.
+
+## A note on `auth.dkim`
+
+`_meta.dkim` passes the API's value straight through, and it has **three** meaningful states,
+not two: `pass`, `fail`, and `body_altered`. `body_altered` means the message was signed
+correctly and then modified afterwards — which is what forwarding, mailing lists and
+corporate link-rewriting gateways all do to perfectly legitimate mail. Branch on
+`_meta.dkim === 'fail'` when you want forgeries; that will not catch your colleague's
+forward.
 
 ## Licence
 

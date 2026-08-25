@@ -59,27 +59,33 @@ class MailboxResolver {
 
   async _lookup(address, requestId) {
     this.stats.miss++;
-    const url = `${this.apiUrl}/internal/resolve?address=${encodeURIComponent(address)}`;
+    // CONTRACT §3a, byte for byte: POST {"to": "<full address>"}, header
+    // `x-mailmint-internal`. No query string, no `address` key, no
+    // `-secret` suffix. This is the seam that was wrong; do not "improve" it
+    // without changing §3a first.
+    const url = `${this.apiUrl}/internal/resolve`;
     const started = Date.now();
     try {
       const res = await this._fetch(url, {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
-          'x-mailmint-internal-secret': this.secret || '',
+          'x-mailmint-internal': this.secret || '',
           'x-mailmint-request-id': requestId || '',
         },
-        body: JSON.stringify({ address }),
+        body: JSON.stringify({ to: address }),
         signal: AbortSignal.timeout(this.timeoutMs),
       });
       const ms = Date.now() - started;
-      if (res.status === 200) {
+      // §3a: "A 200 means the mailbox exists. There is no {ok:false} form."
+      // Any 2xx is existence; an unknown mailbox is 404.
+      if (res.status >= 200 && res.status < 300) {
         let body = null;
         try { body = await res.json(); } catch { body = null; }
         const mailbox = (body && (body.mailbox || body)) || null;
         const value = { exists: true, mailbox };
         this._set(address, value);
-        log.debug('smtp.resolve', { request_id: requestId, address, status: 200, ms, exists: true });
+        log.debug('smtp.resolve', { request_id: requestId, address, status: res.status, ms, exists: true });
         return value;
       }
       if (res.status === 404 || res.status === 410) {

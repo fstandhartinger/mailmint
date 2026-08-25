@@ -81,21 +81,54 @@ async function resolveOne(address) {
   };
 }
 
+/**
+ * CONTRACT §3a, frozen:
+ *
+ *     -> { "to": "k7m2xq4h9bwz+tag@parse.example.com" }
+ *     200 { "mailbox_id", "token", "account_id", "paused" }
+ *     404 { "error": { "code": "unknown_mailbox" } }
+ *
+ * The status code IS the answer. This used to return 200 with `{ok:false}` for
+ * an address that does not exist, and the smtpd — correctly — reads any 2xx as
+ * "the mailbox is there". That combination makes every address on the domain
+ * resolve: MAX_UNKNOWN_RCPT_PER_SESSION never trips, a dictionary probe is
+ * free, and the refusal moves from RCPT TO to after DATA, which is backscatter.
+ * So: unknown is 404, and there is no falsy 200.
+ *
+ * One address per call. A batch form that answers 200 with a per-entry `ok` is
+ * exactly the ambiguity this section exists to remove.
+ */
 router.post('/resolve', asyncRoute(async (req, res) => {
-  const list = req.body && (Array.isArray(req.body.to) ? req.body.to
-    : req.body.to ? [req.body.to] : (req.body.rcpt ? [req.body.rcpt] : []));
-  if (!list || !list.length) {
-    throw bad('missing_recipient', 'Send {"to": "token@domain"} or {"to": ["a@…","b@…"]}.');
+  const to = req.body && req.body.to;
+  if (Array.isArray(to)) {
+    throw bad('missing_recipient',
+      'Send one address: {"to": "token@domain"}. The batch form is gone — see CONTRACT §3a.');
   }
-  const resolved = await Promise.all(list.slice(0, 50).map(resolveOne));
-  // `row` is the internal handle; it never leaves this process.
-  const results = resolved.map(({ row, ...rest }) => rest);
-  const accepted = results.filter((r) => r.ok);
-  log.info('internal.resolve', {
-    asked: results.length, accepted: accepted.length,
-    reasons: results.filter((r) => !r.ok).map((r) => r.reason),
+  if (!to || typeof to !== 'string' || !to.trim()) {
+    throw bad('missing_recipient', 'Send {"to": "token@domain"}.');
+  }
+  const r = await resolveOne(to.trim());
+  if (!r.ok) {
+    log.info('internal.resolve', { to: to.trim(), found: false, reason: r.reason });
+    throw new ApiError(404, 'unknown_mailbox', `No mailbox answers to "${to.trim()}".`, {
+      hint: 'The local part is a 12-character token, optionally prefixed with a slug and a dot, optionally suffixed with +tag.',
+      details: { reason: r.reason, ...(r.expected ? { expected: r.expected } : {}) },
+    });
+  }
+  log.info('internal.resolve', { to: r.address, found: true, mailbox_id: r.mailbox.id });
+  // `row` is the internal handle and never leaves this process.
+  res.json({
+    mailbox_id: r.mailbox.id,
+    token: r.mailbox.token,
+    account_id: r.mailbox.account_id,
+    paused: Boolean(r.mailbox.paused),
+    // Additive, not part of the frozen four: the intake paths carry this into
+    // the spool record so a drained message still knows where it was going.
+    mailbox: r.mailbox,
+    tag: r.tag,
+    over_quota: r.over_quota,
+    domain: config.inboundDomain,
   });
-  res.json({ ok: accepted.length > 0, results, domain: config.inboundDomain });
 }));
 
 /**
@@ -143,9 +176,29 @@ router.post('/deliver', asyncRoute(async (req, res) => {
 
   const mailbox = resolved.row;
 
+  /**
+   * CONTRACT §3a puts `auth` and `auth_details` at the TOP level of the body,
+   * next to raw_mime — that is where the smtpd computes them and that is where
+   * it sends them. Internally they belong to the envelope, because that is what
+   * ingest() reads and what the stored `envelope` column carries. Fold them in
+   * here rather than making every caller nest them, but never let a top-level
+   * value silently overwrite one a caller deliberately nested.
+   */
+  const foldedEnvelope = {
+    ...envelope,
+    to: rcpts.length ? rcpts : [resolved.address],
+    tag: resolved.tag,
+    ...(envelope.auth === undefined && body.auth !== undefined ? { auth: body.auth } : {}),
+    ...(envelope.auth_details === undefined && body.auth_details !== undefined
+      ? { auth_details: body.auth_details } : {}),
+    ...(envelope.spam_score === undefined && body.auth && body.auth.spam_score !== undefined
+      ? { spam_score: body.auth.spam_score } : {}),
+    ...(envelope.source === undefined && body.source !== undefined ? { source: body.source } : {}),
+  };
+
   const message = await messages.ingest({
     mailbox,
-    envelope: { ...envelope, to: rcpts.length ? rcpts : [resolved.address], tag: resolved.tag },
+    envelope: foldedEnvelope,
     raw,
     receivedAt: body.received_at || null,
     plan: resolved.plan,

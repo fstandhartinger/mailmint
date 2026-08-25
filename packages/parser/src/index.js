@@ -10,8 +10,9 @@ const { ruleExtract } = require('./rules');
 const { coerce } = require('./coerce');
 const { llmExtract } = require('./extract-llm');
 const { normaliseLogger, makeLogger } = require('./log');
-const { computeConfidence, corroborates, sameValue, reconcile, deriveArrayFromTables } = require('./confidence');
-const { pickLineItems } = require('./lineitems');
+const { computeConfidence, corroborates, sameValue, reconcile, deriveArrayFromTables, toAmount } = require('./confidence');
+const { pickLineItems, rowsEqual } = require('./lineitems');
+const { verify, surfacesOf: evidenceSurfaces, spanFor } = require('./evidence');
 const { localeHint } = require('./dates');
 
 /**
@@ -36,8 +37,8 @@ function sharedComplete() {
   throw new Error('no LLM client available: pass options.complete');
 }
 
-const RULE_ACCEPT = 0.9;      // a rule this confident means the field never reaches the model
-const LOW_CONFIDENCE = 0.6;   // §4
+const VERIFIED = 0.9;         // above this, two independent extractors must have agreed
+const LOW_CONFIDENCE = 0.6;   // §4 — inclusive: 0.60 exactly is low, not fine
 
 /** Deterministic-only parse. No network, no clock-dependent behaviour. */
 function parseMime(input) {
@@ -55,7 +56,7 @@ function parseMime(input) {
     // nested-single-cell-table HTML every ESP actually sends.
     for (const t of extractRepeatTables(html, tables.length)) tables.push({ ...t, index: tables.length });
   }
-  for (const t of extractTextTables(st.text || '')) tables.push({ ...t, index: tables.length });
+  for (const t of textTablesIncludingQuoted(st.text || '')) tables.push({ ...t, index: tables.length });
 
   return {
     headers,
@@ -72,6 +73,29 @@ function parseMime(input) {
     _strip: strip,
     _links: html ? extractLinks(html) : [],
   };
+}
+
+/**
+ * Text tables, including any that live inside the quoted reply.
+ *
+ * A quoted table is still a table in this message, and it is sometimes the only
+ * complete one: `ho-hard-08` splits a six-row invoice across two mails, three
+ * rows visible and three behind `> `. Stripping the quote — which is right for
+ * nearly everything else — loses half the invoice.
+ */
+function textTablesIncludingQuoted(text) {
+  const out = extractTextTables(text);
+  const seen = new Set(out.map((t) => JSON.stringify([t.headers, t.rows])));
+  const dequoted = String(text || '').split('\n').map((l) => l.replace(/^\s*(?:>\s?)+/, '')).join('\n');
+  if (dequoted !== text) {
+    for (const t of extractTextTables(dequoted)) {
+      const sig = JSON.stringify([t.headers, t.rows]);
+      if (seen.has(sig)) continue;
+      seen.add(sig);
+      out.push({ ...t, quoted: true });
+    }
+  }
+  return out;
 }
 
 /** SPF/DKIM/DMARC and spam score, as far as the headers reveal them. */
@@ -97,12 +121,22 @@ function normaliseWhitespace(s) {
   return String(s == null ? '' : s).replace(/\s+/g, ' ').trim().toLowerCase();
 }
 
-/** The anti-hallucination check of §1. It must actually run, so it lives here. */
-function evidenceIsReal(evidence, haystack) {
-  if (evidence == null || evidence === '') return true;   // no claim made
+/**
+ * The anti-hallucination check of §1 / §1a.1, kept as a named export because
+ * callers and tests reach for it. The real work is in src/evidence.js; this is
+ * the simple "is it verbatim in any one surface" question.
+ */
+function evidenceIsReal(evidence, surfacesOrHaystack) {
+  if (evidence == null || evidence === '') return false;   // no claim is not a pass
   const e = normaliseWhitespace(evidence);
-  if (e.length < 3) return true;
-  return haystack.includes(e);
+  if (e.length < 4) return false;
+  if (typeof surfacesOrHaystack === 'string') return normaliseWhitespace(surfacesOrHaystack).includes(e);
+  return (surfacesOrHaystack || []).some((x) => (typeof x === 'string' ? normaliseWhitespace(x) : x.text).includes(e));
+}
+
+/** Full check: verbatim in one surface AND actually supporting the value. */
+function verifyEvidence(evidence, rawValue, coercedValue, field, surfaces) {
+  return verify(evidence, rawValue, coercedValue, field, surfaces);
 }
 
 function emptyField() { return { value: null, confidence: 0, source: 'none', evidence: null }; }
@@ -179,14 +213,6 @@ async function parseMessage(input, options) {
     const fields = {};
     let llmUsed = false, model = null;
 
-    const haystack = normaliseWhitespace([
-      mime.headers.subject || '',
-      mime.body.text || '',
-      mime.body.text_from_html || '',
-      mime.body.html || '',
-      mime.tables.map((t) => [t.headers.join(' '), ...t.rows.map((r) => r.join(' '))].join(' ')).join(' '),
-    ].join(' \n '));
-
     if (!schema.length) {
       pushFlag(flags, 'no_schema');
     } else {
@@ -199,32 +225,32 @@ async function parseMessage(input, options) {
         subject: mime.headers.subject,
         tables: mime.tables,
         headers: mime.headers,
+        attachments: mime.attachments,
         senderDomain, referenceYear, localeHint: hint === 'dmy' ? 'eu' : null,
         defaultCurrency: (detected.amounts[0] || {}).currency || null,
       };
 
       // -- phase 1: candidates from layer (a) ---------------------------------
       const cand = {};            // field name -> candidate record
-      const unresolved = [];
       for (const f of schema) {
         const rec = { field: f, rule: null, derived: null, llm: null };
         try { rec.rule = ruleExtract(f, ruleCtx); } catch (e) { warnings.push(`rule failed for ${f.name}: ${e.message}`); }
         if ((f.type || '') === 'array') {
-          // Reconcile every deterministic source. A verified row set beats
-          // anything a model can be asked to transcribe: it carries every row,
-          // at any row count, for free.
           const d = pickLineItems(f, ruleCtx, deriveArrayFromTables);
           if (d) rec.derived = d;
         }
         cand[f.name] = rec;
-        const ruleStrong = rec.rule && rec.rule.confidence >= RULE_ACCEPT;
-        if (!ruleStrong && !rec.derived) unresolved.push(f);
       }
 
-      // -- phase 2: one LLM call for the rest ---------------------------------
-      if (unresolved.length && opts.llm !== false) {
+      // -- phase 2: one LLM call, for EVERY field ------------------------------
+      // §1a.2 says both layers run, and it has to be literally true. A rule that
+      // is certain of itself is still one extractor: the two 0.97 errors the
+      // hold-out found were both a confident label match on the wrong number
+      // ("...against invoice INV-9921" when the document is credit note CN-3390).
+      // Agreement is what earns a score above 0.9 — never a rule's own certainty.
+      if (schema.length && opts.llm !== false) {
         const complete = opts.complete || sharedComplete();
-        const res = await llmExtract(unresolved, {
+        const res = await llmExtract(schema, {
           subject: mime.headers.subject,
           from: mime.headers.from ? (mime.headers.from.name ? `${mime.headers.from.name} <${mime.headers.from.email}>` : mime.headers.from.email) : null,
           date: mime.headers.date,
@@ -232,12 +258,14 @@ async function parseMessage(input, options) {
           tables: mime.tables,
           stripped: mime.body.stripped_text,
           text: mime.body.text,
+          forwardedFrom: mime.body.forwarded_from,
+          attachments: mime.attachments,
         }, { log, complete, chain: opts.chain });
         timings.llm = res.ms;
         model = res.model;
         llmUsed = res.ok;
         if (!res.ok) { pushFlag(flags, 'llm_unavailable'); warnings.push(`llm: ${res.error}`); }
-        for (const f of unresolved) {
+        for (const f of schema) {
           const got = res.fields[f.name];
           if (got && typeof got === 'object' && !Array.isArray(got) && 'value' in got) cand[f.name].llm = got;
           else if (got !== undefined) cand[f.name].llm = { value: got, confidence: undefined, evidence: null };
@@ -245,9 +273,12 @@ async function parseMessage(input, options) {
       }
 
       // -- phase 3: pick a value per field, then coerce ------------------------
+      const surfaces = evidenceSurfaces(mime);
       const picked = {};
       for (const f of schema) {
-        picked[f.name] = pick(cand[f.name], ruleCtx, mime.tables, flags);
+        picked[f.name] = (f.type || '') === 'array'
+          ? pickArray(cand[f.name], ruleCtx, surfaces, flags)
+          : pick(cand[f.name], ruleCtx, flags);
       }
       const coerced = {};
       const typeOk = {};
@@ -262,7 +293,7 @@ async function parseMessage(input, options) {
         } else { coerced[f.name] = c.value; typeOk[f.name] = true; }
       }
 
-      // -- phase 4: verify arithmetic, then compute confidence -----------------
+      // -- phase 4: verify arithmetic and structure, then compute confidence ----
       const arith = reconcile(coerced, schema);
       if (arith.checked && !arith.ok) { pushFlag(flags, 'arithmetic_mismatch'); warnings.push(`arithmetic: ${arith.detail}`); }
 
@@ -273,21 +304,28 @@ async function parseMessage(input, options) {
           fields[f.name] = { value: null, confidence: 0, source: typeOk[f.name] ? 'none' : p.source, evidence: typeOk[f.name] ? null : p.evidence };
           continue;
         }
-        const evidenceGiven = p.evidence != null && String(p.evidence) !== '';
-        const evidenceOk = evidenceGiven ? evidenceIsReal(p.evidence, haystack) : false;
+        const ev = verifyEvidence(p.evidence, p.value, value, f, surfaces);
         const inCluster = arith.checked && (arith.roles || []).length > 0 && isClusterField(f.name);
+        const structural = Array.isArray(value) ? rowSanity(value, f) : null;
+        if (structural && !structural.ok) warnings.push(`${f.name}: ${structural.reason}`);
         const sig = {
           source: p.source,
           ruleConfidence: p.ruleConfidence,
           modelConfidence: p.modelConfidence,
-          evidenceGiven, evidenceOk,
+          evidenceGiven: ev.given,
+          evidenceOk: ev.ok,
           corroborated: corroborates(value, ruleCtx),
           disagreement: p.disagreement,
           arithmetic: inCluster ? arith.ok : undefined,
+          structural: structural ? structural.ok : undefined,
         };
         const out = computeConfidence(sig);
-        for (const fl of out.flags) pushFlag(flags, `${fl}:${f.name}`.replace('arithmetic_mismatch:' + f.name, 'arithmetic_mismatch'));
-        fields[f.name] = { value, confidence: out.confidence, source: out.source, evidence: p.evidence == null ? null : String(p.evidence) };
+        for (const fl of out.flags) {
+          pushFlag(flags, fl === 'arithmetic_mismatch' ? 'arithmetic_mismatch' : `${fl}:${f.name}`);
+        }
+        // An unverifiable citation is worse than none: do not publish it.
+        const evidence = ev.given && !ev.ok ? null : (p.evidence == null ? null : String(p.evidence));
+        fields[f.name] = { value, confidence: out.confidence, source: out.source, evidence };
       }
 
       for (const t of mime.tables) if (t.truncated) pushFlag(flags, 'table_truncated');
@@ -296,7 +334,7 @@ async function parseMessage(input, options) {
         const v = fields[f.name] || emptyField();
         fields[f.name] = v;
         if (f.required && (v.value === null || v.value === undefined)) pushFlag(flags, `missing_required:${f.name}`);
-        if (v.value !== null && v.confidence < LOW_CONFIDENCE) pushFlag(flags, `low_confidence:${f.name}`);
+        if (v.value !== null && v.confidence <= LOW_CONFIDENCE) pushFlag(flags, `low_confidence:${f.name}`);
       }
     }
 
@@ -372,41 +410,19 @@ function isClusterField(name) {
 }
 
 /**
- * Choose between the rule value, the table-derived value and the model value.
+ * Choose between the rule value and the model value for a scalar field.
  *
- * Agreement between two independent extractors is the strongest positive
- * signal available to us, and disagreement is a genuine warning that nobody
- * running only one extractor can even detect — so both are surfaced rather
- * than quietly resolved.
+ * Agreement between two independent extractors is the only thing that buys a
+ * score above 0.9. Disagreement is a genuine warning that nobody running a
+ * single extractor can even detect, so it is surfaced rather than resolved.
  */
-function pick(rec, ctx, tables, flags) {
+function pick(rec, ctx, flags) {
   const f = rec.field;
   const rule = rec.rule;
-  const derived = rec.derived;
   const llm = rec.llm;
   const llmValue = llm && llm.value !== undefined ? llm.value : undefined;
   const modelConfidence = llm && typeof llm.confidence === 'number' ? llm.confidence : undefined;
   const llmEvidence = llm && llm.evidence != null ? String(llm.evidence) : null;
-
-  // Array fields backed by a real table: the table is authoritative on length.
-  if (derived) {
-    const derivedLen = derived.rows.length;
-    const llmLen = Array.isArray(llmValue) ? llmValue.length : -1;
-    if (llmLen >= 0 && llmLen < derivedLen) pushFlag(flags, `array_incomplete:${f.name}`);
-    if (derived.disagree) pushFlag(flags, `array_source_disagreement:${f.name}`);
-    const agreeWithLlm = llmLen === derivedLen;
-    // Two independent deterministic sources agreeing, or a row set that adds up
-    // to the stated total, is a completeness proof the model cannot give us.
-    const base = derived.agree || derived.anchored ? 0.97 : derived.disagree ? 0.75 : 0.95;
-    return {
-      value: derived.rows,
-      source: agreeWithLlm ? 'rule+llm' : 'rule',
-      evidence: derived.evidence,
-      ruleConfidence: base,
-      modelConfidence: agreeWithLlm ? modelConfidence : undefined,
-      disagreement: false,
-    };
-  }
 
   const hasRule = rule && rule.value !== null && rule.value !== undefined;
   const hasLlm = llmValue !== undefined && llmValue !== null && llmValue !== '';
@@ -416,16 +432,15 @@ function pick(rec, ctx, tables, flags) {
   // does, and it never counts as a disagreement — treating a guess as a second
   // opinion is how a correct model answer gets overruled by a mailbox name.
   if (hasRule && hasLlm && rule.fallback) {
-    return { value: llmValue, source: 'llm', evidence: llmEvidence,
-      ruleConfidence: undefined, modelConfidence, disagreement: false };
+    return { value: llmValue, source: 'llm', evidence: llmEvidence, modelConfidence, disagreement: false };
   }
 
   if (hasRule && hasLlm) {
     // Compare AFTER coercion. Before it, the rule's normalised "2026-09-08" is
     // string-compared against the model's "September 8, 2026" and every date
-    // field in every invoice reports a disagreement it does not have. A false
-    // needs_review is worse for us than a missing one: it teaches users to
-    // ignore the one signal no competitor offers.
+    // field reports a disagreement it does not have. A false needs_review is
+    // worse for us than a missing one: it teaches users to ignore the one
+    // signal no competitor offers.
     if (sameValue(coerceForCompare(rule.value, f, ctx), coerceForCompare(llmValue, f, ctx))) {
       return { value: rule.value, source: 'rule+llm', evidence: rule.evidence || llmEvidence,
         ruleConfidence: rule.confidence, modelConfidence, disagreement: false };
@@ -435,14 +450,146 @@ function pick(rec, ctx, tables, flags) {
       ruleConfidence: rule.confidence, modelConfidence, disagreement: true };
   }
   if (hasRule) {
+    // Unconfirmed by the second extractor. Capped below 0.9 by computeConfidence.
     return { value: rule.value, source: rule.source, evidence: rule.evidence,
       ruleConfidence: rule.confidence, modelConfidence: undefined, disagreement: false };
   }
   if (hasLlm) {
-    return { value: llmValue, source: 'llm', evidence: llmEvidence,
-      ruleConfidence: undefined, modelConfidence, disagreement: false };
+    return { value: llmValue, source: 'llm', evidence: llmEvidence, modelConfidence, disagreement: false };
   }
-  return { value: null, source: 'none', evidence: null, ruleConfidence: undefined, modelConfidence: undefined, disagreement: false };
+  return { value: null, source: 'none', evidence: null, disagreement: false };
+}
+
+/**
+ * Choose a row set for an array field.
+ *
+ * Candidates come from up to four independent extractors: a real <table> grid,
+ * repeating HTML structure, the text/plain run, and the model. They are ranked
+ * by PROOF, not by preference:
+ *
+ *   1. the amounts sum to a total stated elsewhere in the document — this is a
+ *      completeness proof, and it is the only defence against the category's
+ *      loudest failure ("40 rows in the mail, 1 row in the output");
+ *   2. structural sanity (no null descriptions, no quantity copied from the
+ *      amount, no summary or footer lines masquerading as items);
+ *   3. source precision;
+ *   4. length.
+ *
+ * The hold-out corpus is why (1) outranks source precision: in
+ * `ho-hard-08` three of six line items exist only inside the quoted reply, so
+ * the deterministic reading of the visible body is confidently and completely
+ * wrong, and only the sum gives it away.
+ */
+function pickArray(rec, ctx, surfaces, flags) {
+  const f = rec.field;
+  const derived = rec.derived;
+  const llm = rec.llm;
+  const llmValue = llm && Array.isArray(llm.value) ? llm.value : null;
+  const modelConfidence = llm && typeof llm.confidence === 'number' ? llm.confidence : undefined;
+
+  const targets = arithmeticTargets(ctx);
+  const candidates = [];
+  if (derived) {
+    candidates.push({ name: derived.winner || 'rule', kind: 'rule', rows: derived.rows,
+      precision: 3, evidence: derived.evidence, anchored: derived.anchored });
+    for (const alt of derived.alternates || []) {
+      candidates.push({ name: alt.name, kind: 'rule', rows: alt.rows, precision: alt.precision, evidence: alt.evidence, anchored: alt.anchored });
+    }
+  }
+  if (llmValue) candidates.push({ name: 'llm', kind: 'llm', rows: llmValue, precision: 2, evidence: llm.evidence || null, anchored: false });
+  if (!candidates.length) return { value: null, source: 'none', evidence: null, disagreement: false };
+
+  for (const c of candidates) {
+    c.sane = rowSanity(c.rows, f).ok;
+    c.sums = sumsTo(c.rows, targets);
+    c.score = (c.sums ? 1000 : 0) + (c.sane ? 100 : 0) + c.precision * 10 + Math.min(c.rows.length, 9);
+  }
+  candidates.sort((a, b) => b.score - a.score);
+  const win = candidates[0];
+
+  const agreeing = candidates.filter((c) => c !== win && rowsEqual(c.rows, win.rows));
+  const agreedAcrossKinds = agreeing.some((c) => c.kind !== win.kind);
+  const shorter = candidates.filter((c) => c !== win && c.rows.length < win.rows.length);
+  if (shorter.length && !win.sums) pushFlag(flags, `array_incomplete:${f.name}`);
+  if (candidates.length > 1 && !agreeing.length) pushFlag(flags, `array_source_disagreement:${f.name}`);
+
+  // Evidence must be a real span of a real surface, never a rendering of our
+  // own data model. spanFor() goes and finds one.
+  const first = win.rows[0];
+  const needles = first && typeof first === 'object'
+    ? Object.values(first).filter((v) => v !== null && v !== undefined && String(v).length >= 2).slice(0, 2)
+    : [first];
+  const evidence = spanFor(needles.map(String), surfaces) || null;
+
+  // Two independent extractors agreeing, or a row set that provably adds up,
+  // is a completeness claim we have earned. Anything else stays under 0.9.
+  const base = (agreedAcrossKinds || win.sums) ? 0.97 : 0.88;
+  return {
+    value: win.rows,
+    source: agreedAcrossKinds ? 'rule+llm' : (win.kind === 'llm' ? 'llm' : 'rule'),
+    evidence,
+    ruleConfidence: base,
+    modelConfidence: win.kind === 'llm' || agreedAcrossKinds ? modelConfidence : undefined,
+    disagreement: false,
+  };
+}
+
+/** Amounts stated elsewhere that a complete row set ought to reproduce. */
+function arithmeticTargets(ctx) {
+  const out = [];
+  for (const a of (ctx.detected && ctx.detected.amounts) || []) {
+    if (typeof a.value === 'number' && a.value !== 0) out.push(a.value);
+  }
+  return out;
+}
+
+function sumsTo(rows, targets) {
+  if (!rows || !rows.length || !targets.length) return false;
+  const sum = rows.reduce((n, r) => {
+    const a = r && typeof r === 'object' ? toAmount(r.amount !== undefined ? r.amount : r.total) : toAmount(r);
+    return n + (a === null || a === undefined ? 0 : a);
+  }, 0);
+  if (!isFinite(sum) || sum === 0) return false;
+  return targets.some((t) => Math.abs(sum - t) <= Math.max(0.02, Math.abs(t) * 0.005));
+}
+
+const SUMMARY_DESC = /^\s*(?:grand\s+)?(?:total|sub-?total|amount\s+(?:due|paid|charged|remaining|before\s+tax)|balance|tax|vat|mwst|ust|sales\s+tax|estimated\s+tax|shipping|versand|delivery|discount|rabatt|gesamt|zwischensumme|summe|tva|iva|free\s+delivery|you\s+saved|order\s+total|item\s+subtotal)\b/i;
+
+/**
+ * Structural sanity of a row set. These are cheap checks that turn a confident
+ * wrong answer into a flagged one, which is the whole product.
+ * @returns {{ok:boolean, reason:string|null}}
+ */
+function rowSanity(rows, field) {
+  if (!Array.isArray(rows) || !rows.length) return { ok: true, reason: null };
+  const objects = rows.filter((r) => r && typeof r === 'object' && !Array.isArray(r));
+  if (!objects.length) return { ok: true, reason: null };
+  const keys = Object.keys(objects[0]);
+  const descKey = keys.find((k) => /^(description|item|product|name|beschreibung|bezeichnung|artikel)$/i.test(k));
+  const amtKey = keys.find((k) => /^(amount|total|price|betrag|preis|value)$/i.test(k));
+  const qtyKey = keys.find((k) => /^(qty|quantity|menge|anzahl)$/i.test(k));
+
+  let nullDesc = 0, qtyIsAmount = 0, summary = 0;
+  for (const r of objects) {
+    if (descKey) {
+      const d = r[descKey];
+      if (d === null || d === undefined || String(d).trim() === '') nullDesc++;
+      else if (SUMMARY_DESC.test(String(d))) summary++;
+    }
+    if (qtyKey && amtKey) {
+      const q = r[qtyKey], a = r[amtKey];
+      if (q !== null && a !== null && q !== undefined && a !== undefined
+          && Math.abs(Number(q) - Number(a)) < 0.005 && Math.abs(Number(a)) > 4) qtyIsAmount++;
+    }
+  }
+  if (descKey && nullDesc >= Math.max(1, objects.length * 0.5)) {
+    return { ok: false, reason: `${nullDesc}/${objects.length} rows have no description` };
+  }
+  if (qtyIsAmount >= Math.max(1, objects.length * 0.5)) {
+    return { ok: false, reason: `${qtyIsAmount}/${objects.length} rows have quantity equal to amount` };
+  }
+  if (summary) return { ok: false, reason: `${summary} summary/footer row(s) extracted as line items` };
+  return { ok: true, reason: null };
 }
 
 /** Normalise a value through the schema's own type so two extractors can be
@@ -474,7 +621,7 @@ function fromParts(parts) {
     for (const t of extractHtmlTables(html)) tables.push({ ...t, index: tables.length });
     for (const t of extractRepeatTables(html, tables.length)) tables.push({ ...t, index: tables.length });
   }
-  for (const t of extractTextTables(parts.text || '')) tables.push({ ...t, index: tables.length });
+  for (const t of textTablesIncludingQuoted(parts.text || '')) tables.push({ ...t, index: tables.length });
   const headers = emptyHeaders();
   headers.subject = parts.subject == null ? null : String(parts.subject);
   if (parts.from) {

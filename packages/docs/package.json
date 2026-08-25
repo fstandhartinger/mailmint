@@ -4,11 +4,18 @@
   "description": "MailMint attachment content extraction: PDF text+tables, OCR fallback, CSV/XLSX/text/HTML.",
   "license": "MIT",
   "main": "src/index.js",
-  "engines": { "node": ">=20" },
-  "files": ["src", "README.md", "BENCH.md"],
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "BENCH.md"
+  ],
   "scripts": {
     "test": "node --test test/*.test.js",
-    "accuracy": "node test/accuracy.js"
+    "accuracy": "node test/accuracy.js",
+    "corpus:fetch": "node test/fetch-corpus.js"
   },
   "dependencies": {
     "pdfjs-dist": "^5.4.296"

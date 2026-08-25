@@ -296,6 +296,50 @@ const MIGRATIONS = [
          ON forwarding_confirmations(mailbox_id, created_at DESC)`,
     ],
   },
+  {
+    id: 7,
+    name: 'many webhook endpoints per mailbox, dkim body_altered',
+    statements: [
+      // One webhook_url column on the mailbox is a shared mutable global. Two
+      // n8n MailMintTrigger nodes pointed at the same mailbox would overwrite
+      // each other's URL, and disabling one workflow's trigger would delete the
+      // other's delivery — silent cross-workflow breakage, which is the exact
+      // failure class this product argues against. An endpoint is its own row
+      // with its own secret, so registrations cannot collide.
+      `CREATE TABLE IF NOT EXISTS webhook_endpoints (
+         id                   TEXT PRIMARY KEY,
+         mailbox_id           TEXT NOT NULL REFERENCES mailboxes(id) ON DELETE CASCADE,
+         account_id           BIGINT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+         url                  TEXT NOT NULL,
+         secret               TEXT NOT NULL,
+         description          TEXT,
+         active               BOOLEAN NOT NULL DEFAULT true,
+         created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+         last_status          INTEGER,
+         last_delivered_at    TIMESTAMPTZ,
+         last_error           TEXT,
+         consecutive_failures INTEGER NOT NULL DEFAULT 0,
+         disabled_at          TIMESTAMPTZ,
+         disabled_reason      TEXT
+       )`,
+      `CREATE INDEX IF NOT EXISTS webhook_endpoints_mailbox_idx ON webhook_endpoints(mailbox_id, created_at)`,
+      `ALTER TABLE webhook_deliveries ADD COLUMN IF NOT EXISTS endpoint_id TEXT
+         REFERENCES webhook_endpoints(id) ON DELETE CASCADE`,
+      // Everything already configured through mailbox.webhook_url becomes
+      // endpoint number one, keeping its existing secret so receivers verifying
+      // signatures today do not start failing at deploy time.
+      `INSERT INTO webhook_endpoints (id, mailbox_id, account_id, url, secret, description)
+       SELECT 'whe_' || encode(gen_random_bytes(16), 'hex'), id, account_id, webhook_url, webhook_secret,
+              'migrated from mailbox.webhook_url'
+         FROM mailboxes
+        WHERE webhook_url IS NOT NULL AND webhook_url <> '' AND deleted_at IS NULL
+          AND NOT EXISTS (SELECT 1 FROM webhook_endpoints e WHERE e.mailbox_id = mailboxes.id)`,
+      // §1c: the finer-grained authentication result from the smtpd. The
+      // top-level auth.* values stay branchable on their own; this is the detail
+      // behind them (dkim failure_type, per-mechanism reasons).
+      `ALTER TABLE messages ADD COLUMN IF NOT EXISTS auth_details JSONB`,
+    ],
+  },
 ];
 
 async function migrate() {

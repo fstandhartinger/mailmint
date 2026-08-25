@@ -221,9 +221,11 @@ async function runJob(job) {
           changed += 1;
           if (diffs.length < MAX_DIFFS) diffs.push({ message_id: message.id, subject: message.subject, ...diff });
         }
-        if (job.redeliver && out.mailbox.webhook_url && !out.mailbox.paused) {
+        if (job.redeliver && !out.mailbox.paused) {
           // eslint-disable-next-line no-await-in-loop
-          await webhooks.enqueue({ messageId: message.id, accountId: job.account_id, url: out.mailbox.webhook_url });
+          await webhooks.enqueueForMailbox({
+            messageId: message.id, accountId: job.account_id, mailboxId: message.mailbox_id,
+          });
         }
       }
     }

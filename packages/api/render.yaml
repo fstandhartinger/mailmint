@@ -5,6 +5,9 @@ services:
     name: mailmint-api
     runtime: docker
     plan: starter
+    # Frankfurt, and the Neon project is aws-eu-central-1. Keep them together:
+    # this API makes several queries per request and a transatlantic split cost
+    # ~275 ms on the p50 of /internal/deliver when it was measured.
     region: frankfurt
     dockerfilePath: ./packages/api/Dockerfile
     dockerContext: .

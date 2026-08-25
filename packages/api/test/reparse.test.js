@@ -228,7 +228,7 @@ describe('retention', () => {
 
   test('the docs quote the retention the code actually enforces', async () => {
     const { PLANS } = require('../src/config');
-    const docs = await H.req('/docs');
+    const docs = await H.req('/docs/reference');
     for (const p of Object.values(PLANS)) {
       assert.match(docs.text, new RegExp(`${p.rawDays} days`), `docs never mention ${p.id}'s ${p.rawDays} day window`);
     }

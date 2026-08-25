@@ -244,14 +244,16 @@ configured. Everything else about it works now, including the webhook.</p>
   "mailbox": {
     "id": "mbx_01JQ8Y7X6W5V4U3T2S1R",
     "name": "Invoices",
-    "address": "k7m2xq4h9bwz@parse.mailmint.dev",
-    "alias": "invoices.k7m2xq4h9bwz@parse.mailmint.dev",
+    "address": "k7m2xq4h9bwz@parse.example.com",
+    "alias": "invoices.k7m2xq4h9bwz@parse.example.com",
     "token": "k7m2xq4h9bwz",
     "slug": "invoices",
     "schema": [ … ],
     "schema_version": 1,
     "webhook_url": "https://your-app.example/hooks/mailmint",
     "webhook_secret": "b3f1…",
+    "webhooks": [ { "id": "whe_4f1c…", "url": "https://your-app.example/hooks/mailmint",
+                    "active": true, "secret": "b3f1…" } ],
     "paused": false,
     "created_at": "2026-08-25T09:10:00.000Z"
   }
@@ -260,7 +262,9 @@ configured. Everything else about it works now, including the webhook.</p>
 
 <div class="note warn">
 <p><strong>Keep <code>webhook_secret</code>.</strong> It is returned when you create or fetch a mailbox, and
-it is the only thing that lets you prove a delivery really came from MailMint. Verifying it takes about six
+it is the only thing that lets you prove a delivery really came from MailMint. (A mailbox can carry
+<a href="/docs#webhook-endpoints">several endpoints</a>, each with its own secret;
+<code>webhook_url</code> and <code>webhook_secret</code> are the first one.) Verifying it takes about six
 lines — <a href="/docs#webhooks">Node and Python examples are in the reference</a>. Do not skip it and do not
 improvise it.</p>
 </div>

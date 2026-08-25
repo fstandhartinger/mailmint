@@ -1,5 +1,20 @@
 'use strict';
 
+/**
+ * The benchmark measures how long an endpoint takes, not what the rate limiter
+ * policy is, so the bucket is opened before helpers.js loads the config.
+ *
+ * This was not academic: against the US database each request took ~345 ms, so
+ * 40 polls spread over 14 seconds and the default bucket (burst 40, refilling
+ * 240/min) refilled faster than the benchmark drained it. Moving the database to
+ * eu-central-1 cut the request to ~68 ms, the same 40 polls now land in under
+ * three seconds, and the benchmark started getting 429s. Worth writing down: the
+ * default limit is fine for the n8n trigger's polling, but a customer paging
+ * through their history at full speed from a nearby region WILL hit it.
+ */
+process.env.RATE_LIMIT_BURST = process.env.RATE_LIMIT_BURST || '10000';
+process.env.RATE_LIMIT_PER_MINUTE = process.env.RATE_LIMIT_PER_MINUTE || '60000';
+
 const { test, describe, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const H = require('./helpers');

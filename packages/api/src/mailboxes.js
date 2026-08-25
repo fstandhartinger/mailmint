@@ -26,21 +26,53 @@ function assertWebhookUrl(url) {
   return parsed.toString();
 }
 
-const publicMailbox = (mb, { includeSecret = false } = {}) => ({
-  id: mb.id,
-  name: mb.name,
-  address: addressFor(mb, config.inboundDomain),
-  alias: aliasFor(mb, config.inboundDomain),
-  token: mb.token,
-  slug: mb.slug,
-  schema: mb.schema || [],
-  schema_version: mb.schema_version,
-  webhook_url: mb.webhook_url,
-  ...(includeSecret ? { webhook_secret: mb.webhook_secret } : {}),
-  forward_to: mb.forward_to,
-  paused: mb.paused,
-  created_at: new Date(mb.created_at).toISOString(),
-});
+/**
+ * `webhook_url` and `webhook_secret` are now views onto the FIRST endpoint, not
+ * columns. Everything already written against them keeps working; the
+ * `webhooks` array is the real model, and a mailbox can have several.
+ */
+const publicMailbox = (mb, { includeSecret = false } = {}) => {
+  const endpoints = mb.endpoints || [];
+  const first = endpoints[0] || null;
+  return {
+    id: mb.id,
+    name: mb.name,
+    address: addressFor(mb, config.inboundDomain),
+    alias: aliasFor(mb, config.inboundDomain),
+    token: mb.token,
+    slug: mb.slug,
+    schema: mb.schema || [],
+    schema_version: mb.schema_version,
+    webhook_url: first ? first.url : null,
+    ...(includeSecret ? { webhook_secret: first ? first.secret : null } : {}),
+    webhooks: endpoints.map((e) => ({
+      id: e.id,
+      url: e.url,
+      description: e.description,
+      active: e.active,
+      last_status: e.last_status,
+      last_delivered_at: e.last_delivered_at ? new Date(e.last_delivered_at).toISOString() : null,
+      consecutive_failures: e.consecutive_failures,
+      disabled_reason: e.disabled_reason,
+      ...(includeSecret ? { secret: e.secret } : {}),
+    })),
+    forward_to: mb.forward_to,
+    paused: mb.paused,
+    created_at: new Date(mb.created_at).toISOString(),
+  };
+};
+
+/** Attaches the mailbox's endpoints, in creation order. */
+async function withEndpoints(mailboxes) {
+  const list = Array.isArray(mailboxes) ? mailboxes : [mailboxes];
+  if (!list.length) return mailboxes;
+  const { rows } = await query(
+    `SELECT * FROM webhook_endpoints WHERE mailbox_id = ANY($1) ORDER BY created_at, id`,
+    [list.map((m) => m.id)],
+  );
+  for (const m of list) m.endpoints = rows.filter((e) => e.mailbox_id === m.id);
+  return mailboxes;
+}
 
 async function create(accountId, { name, schema, webhook_url: webhookUrl, forward_to: forwardTo, slug } = {}) {
   const { rows: count } = await query(
@@ -80,18 +112,22 @@ async function create(accountId, { name, schema, webhook_url: webhookUrl, forwar
     );
     return rows[0];
   });
+  if (url) {
+    // eslint-disable-next-line global-require
+    await require('./webhook-endpoints').create(mb, { url, description: 'default' });
+  }
   log.info('mailbox.created', {
     mailbox_id: id, account_id: Number(accountId), address: addressFor(mb, config.inboundDomain),
     schema_fields: cleanSchema.length, has_webhook: Boolean(url),
   });
-  return mb;
+  return withEndpoints(mb);
 }
 
 async function list(accountId) {
   const { rows } = await query(
     `SELECT * FROM mailboxes WHERE account_id = $1 AND deleted_at IS NULL ORDER BY created_at`, [accountId],
   );
-  return rows;
+  return withEndpoints(rows);
 }
 
 async function get(accountId, id) {
@@ -104,7 +140,7 @@ async function get(accountId, id) {
       docs: '/docs#mailboxes',
     });
   }
-  return rows[0];
+  return withEndpoints(rows[0]);
 }
 
 /**
@@ -135,20 +171,20 @@ async function update(accountId, id, patch = {}) {
     params.push(version);
     sets.push(`schema_version = $${params.length}`);
   }
-  if (patch.webhook_url !== undefined) {
-    params.push(assertWebhookUrl(patch.webhook_url));
-    sets.push(`webhook_url = $${params.length}`);
-  }
+  // webhook_url / webhook_secret are the alias for endpoint number one. They are
+  // applied after the mailbox UPDATE, below, because they live in another table.
+  let aliasUrl;
+  let aliasSecret;
+  if (patch.webhook_url !== undefined) aliasUrl = patch.webhook_url ? assertWebhookUrl(patch.webhook_url) : null;
   if (patch.webhook_secret !== undefined) {
     const secret = String(patch.webhook_secret || '');
     if (secret && secret.length < 16) {
       throw bad('weak_webhook_secret', 'A webhook secret must be at least 16 characters.', {
-        hint: 'Send an empty string to have a fresh 48-character one generated.',
+        hint: 'Send an empty string to have a fresh one generated.',
         docs: '/docs#webhooks',
       });
     }
-    params.push(secret || crypto.randomBytes(24).toString('hex'));
-    sets.push(`webhook_secret = $${params.length}`);
+    aliasSecret = secret || crypto.randomBytes(24).toString('hex');
   }
   if (patch.forward_to !== undefined) {
     params.push(patch.forward_to ? String(patch.forward_to).slice(0, 320) : null);
@@ -162,7 +198,14 @@ async function update(accountId, id, patch = {}) {
     params.push(slugify(patch.slug));
     sets.push(`slug = $${params.length}`);
   }
-  if (!sets.length) return mb;
+  if (!sets.length && aliasUrl === undefined && aliasSecret === undefined) return mb;
+  if (!sets.length) {
+    // eslint-disable-next-line global-require
+    const endpoints = require('./webhook-endpoints');
+    if (aliasUrl !== undefined) await endpoints.setAliasUrl(mb, aliasUrl);
+    if (aliasSecret !== undefined) await endpoints.setAliasSecret(mb, aliasSecret);
+    return get(accountId, id);
+  }
 
   const updated = await tx(async (client) => {
     const { rows } = await client.query(
@@ -177,11 +220,15 @@ async function update(accountId, id, patch = {}) {
     }
     return rows[0];
   });
+  // eslint-disable-next-line global-require
+  const endpoints = require('./webhook-endpoints');
+  if (aliasUrl !== undefined) await endpoints.setAliasUrl(updated, aliasUrl);
+  if (aliasSecret !== undefined) await endpoints.setAliasSecret(updated, aliasSecret);
   log.info('mailbox.updated', {
     mailbox_id: id, account_id: Number(accountId), changed: Object.keys(patch),
     schema_version: updated.schema_version,
   });
-  return updated;
+  return withEndpoints(updated);
 }
 
 /** Rolls the live schema back to an earlier version, as a new version. */
@@ -215,4 +262,4 @@ async function remove(accountId, id) {
   return { id: mb.id, deleted: true };
 }
 
-module.exports = { create, list, get, update, remove, rollback, versions, publicMailbox, assertWebhookUrl, MAX_MAILBOXES };
+module.exports = { create, list, get, update, remove, rollback, versions, publicMailbox, withEndpoints, assertWebhookUrl, MAX_MAILBOXES };

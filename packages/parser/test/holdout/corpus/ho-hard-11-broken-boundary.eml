@@ -1,0 +1,21 @@
+From: Nightjar Hosting <billing@nightjar.example>
+To: k7m2xq4h9bwz@parse.example.com
+Subject: Receipt #RC-40217 - $19.00
+Date: Sun, 2 Aug 2026 03:11:00 +0000
+Message-ID: <rc-40217@nightjar.example>
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="----=_Part_991_1783.1"
+
+------=_Part_991_1783.2
+Content-Type: text/plain; charset=utf-8
+
+Receipt #RC-40217
+Charged: $19.00 on August 2, 2026
+Card ending 4242
+
+------=_Part_991_1783.2
+Content-Type: text/html; charset=utf-8
+
+<html><body><p>Receipt #RC-40217</p><p>Charged: $19.00 on August 2, 2026</p></body></html>
+
+------=_Part_991_1783.2--

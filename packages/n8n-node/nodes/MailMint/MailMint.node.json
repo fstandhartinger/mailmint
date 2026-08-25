@@ -32,7 +32,7 @@
 		"Utility": ["Data Transformation"]
 	},
 	"resources": {
-		"credentialDocumentation": [{ "url": "https://mailmint.dev/docs#authentication" }],
-		"primaryDocumentation": [{ "url": "https://mailmint.dev/docs/n8n" }]
+		"credentialDocumentation": [{ "url": "https://github.com/fstandhartinger/n8n-nodes-mailmint#credential" }],
+		"primaryDocumentation": [{ "url": "https://github.com/fstandhartinger/n8n-nodes-mailmint#readme" }]
 	}
 }

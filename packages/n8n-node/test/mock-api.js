@@ -25,7 +25,7 @@ const token = () => {
 
 /* ------------------------------------------------------------------- state */
 
-const state = { mailboxes: [], messages: [], events: [], deliveries: [] };
+const state = { mailboxes: [], messages: [], events: [], deliveries: [], endpoints: [] };
 
 function seedMailbox(name, schema) {
 	const mailbox = {
@@ -373,18 +373,32 @@ function deliver(mailbox, raw) {
 		message,
 	};
 	state.events.push(event);
-	if (mailbox.webhook_url) postWebhook(mailbox, message);
+	if (endpointsFor(mailbox).length) postWebhook(mailbox, message);
 	return message;
 }
 
+/** Every endpoint a parsed message should be delivered to, §5 and the API. */
+function endpointsFor(mailbox) {
+	const rows = state.endpoints.filter((e) => e.mailbox_id === mailbox.id && e.active);
+	if (rows.length) return rows;
+	if (mailbox.webhook_url) {
+		return [{ id: 'wep_alias', url: mailbox.webhook_url, secret: mailbox.webhook_secret || '' }];
+	}
+	return [];
+}
+
 function postWebhook(mailbox, message) {
+	for (const endpoint of endpointsFor(mailbox)) deliverTo(endpoint, message);
+}
+
+function deliverTo(endpoint, message) {
 	const body = Buffer.from(JSON.stringify(message), 'utf8');
 	const t = Math.floor(Date.now() / 1000);
 	const signature = crypto
-		.createHmac('sha256', mailbox.webhook_secret || '')
+		.createHmac('sha256', endpoint.secret || '')
 		.update(Buffer.concat([Buffer.from(`${t}.`, 'utf8'), body]))
 		.digest('hex');
-	const target = new URL(mailbox.webhook_url);
+	const target = new URL(endpoint.url);
 	const request = http.request(
 		{
 			hostname: target.hostname,
@@ -405,7 +419,8 @@ function postWebhook(mailbox, message) {
 			res.on('end', () =>
 				log('webhook.attempt', {
 					status: res.statusCode,
-					url: mailbox.webhook_url,
+					endpoint_id: endpoint.id,
+					url: endpoint.url,
 					body: Buffer.concat(chunks).toString('utf8').slice(0, 200),
 				}),
 			);
@@ -612,6 +627,57 @@ const server = http.createServer((req, res) => {
 			return send(res, 200, rebuilt);
 		}
 
+		const hooksMatch = module.exports.disableEndpointApi
+			? null
+			: /^\/v1\/mailboxes\/([^/]+)\/webhooks$/.exec(path);
+		if (hooksMatch) {
+			const mailbox = state.mailboxes.find((m) => m.id === hooksMatch[1]);
+			if (!mailbox) return fail(res, 404, 'mailbox_not_found', `No mailbox ${hooksMatch[1]}`);
+			if (req.method === 'GET') {
+				return send(res, 200, {
+					data: state.endpoints
+						.filter((e) => e.mailbox_id === mailbox.id)
+						.map(({ secret, ...rest }) => rest),
+				});
+			}
+			if (req.method === 'POST') {
+				if (!body.url) return fail(res, 400, 'missing_url', 'A webhook endpoint needs a "url"');
+				const endpoint = {
+					id: ulid('wep'),
+					mailbox_id: mailbox.id,
+					url: body.url,
+					description: body.description || null,
+					active: true,
+					secret: body.secret || crypto.randomBytes(24).toString('hex'),
+					created_at: new Date().toISOString(),
+				};
+				state.endpoints.push(endpoint);
+				log('webhook_endpoint.created', { endpoint_id: endpoint.id, mailbox_id: mailbox.id, url: endpoint.url });
+				return send(res, 201, { webhook: endpoint });
+			}
+		}
+
+		const hookMatch = /^\/v1\/webhooks\/([^/]+)$/.exec(path);
+		if (hookMatch) {
+			const index = state.endpoints.findIndex((e) => e.id === hookMatch[1]);
+			if (index < 0) return fail(res, 404, 'webhook_not_found', `No webhook ${hookMatch[1]}`);
+			const endpoint = state.endpoints[index];
+			if (req.method === 'GET') {
+				const { secret, ...rest } = endpoint;
+				return send(res, 200, { webhook: rest });
+			}
+			if (req.method === 'PATCH') {
+				Object.assign(endpoint, body);
+				const { secret, ...rest } = endpoint;
+				return send(res, 200, { webhook: rest });
+			}
+			if (req.method === 'DELETE') {
+				state.endpoints.splice(index, 1);
+				log('webhook_endpoint.deleted', { endpoint_id: endpoint.id });
+				return send(res, 200, { id: endpoint.id, deleted: true });
+			}
+		}
+
 		const bulkMatch = /^\/v1\/mailboxes\/([^/]+)\/reparse$/.exec(path);
 		if (bulkMatch && req.method === 'POST') {
 			const mailbox = state.mailboxes.find((m) => m.id === bulkMatch[1]);
@@ -692,4 +758,5 @@ server.listen(PORT, '0.0.0.0', () => {
 	log('server.listening', { port: PORT, mailbox: invoices.address, mailbox_id: invoices.id });
 });
 
-module.exports = { server, state, buildMessage, extract };
+/** Flipped by a test to emulate a MailMint that predates webhook endpoints. */
+module.exports = { server, state, buildMessage, extract, disableEndpointApi: false };

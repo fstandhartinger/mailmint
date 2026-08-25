@@ -19,8 +19,12 @@
 
 /** Runs whose baselines are within tolerance form one line. */
 function buildLines(runs) {
-  const usable = runs.filter((r) => r.text && r.text.trim() !== '' && Math.abs(r.angle) < 0.08);
-  const rotated = runs.length - usable.length;
+  const printing = runs.filter((r) => r.text && r.text.trim() !== '');
+  // Text at an angle cannot join a horizontal line without corrupting it. A
+  // ROTATED PAGE is already normalised by the viewport transform upstream, so
+  // what is left here is genuinely angled text — a watermark, a sidebar label.
+  const usable = printing.filter((r) => Math.abs(r.angle) < 0.08);
+  const rotated = printing.length - usable.length;
   const sorted = [...usable].sort((a, b) => a.y - b.y || a.x - b.x);
   const lines = [];
   for (const r of sorted) {

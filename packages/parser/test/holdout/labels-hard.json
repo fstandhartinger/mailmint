@@ -1,0 +1,211 @@
+{
+ "ho-hard-01-sum-mismatch.eml": {
+  "labels": {
+   "invoice_number": "NW-2026-0518",
+   "total": 302.7,
+   "subtotal": 242.7,
+   "due_date": "2026-09-12",
+   "invoice_date": "2026-08-21",
+   "currency": "GBP",
+   "line_items_count": 3
+  },
+  "note": "line items sum to 242.70 which equals subtotal; total is 302.70 because of a fee stated only in prose. arithmetic_mismatch on the total_equation is NOT expected (no tax/ship/discount field), but line_items_sum vs subtotal reconciles."
+ },
+ "ho-hard-02-two-totals.eml": {
+  "labels": {
+   "invoice_number": "HC-88214",
+   "total": 999.0,
+   "due_date": "2026-09-02",
+   "currency": "USD"
+  },
+  "note": "the FIRST total-looking figure ($1,299.00) is explicitly the wrong one."
+ },
+ "ho-hard-03-triple-forward.eml": {
+  "labels": {
+   "invoice_number": "AP-4471",
+   "total": 1249.5,
+   "subtotal": 1050.0,
+   "tax": 199.5,
+   "due_date": "2026-08-13",
+   "invoice_date": "2026-07-14",
+   "currency": "EUR",
+   "vendor": "Atlas Print Werk"
+  },
+  "note": "CONTRACT 1b.4 says body.forwarded_from must carry the recovered original and parsing runs against the INNER message. The real invoice is 3 levels deep behind \">\" and \"> >\" quoting."
+ },
+ "ho-hard-04-ambiguous-date-de.eml": {
+  "labels": {
+   "invoice_number": "90112",
+   "total": 480.0,
+   "due_date": "2026-04-03",
+   "currency": "EUR"
+  },
+  "note": "German sender, latin-1, so 03/04/2026 is 3 April 2026. Also: the Date: header is 2 March, so a month-first read (4 March) would be BEFORE... no, still after. The only disambiguator is the sender locale."
+ },
+ "ho-hard-05-two-currencies.eml": {
+  "labels": {
+   "receipt_number": "TM-77301",
+   "total": 1234.56,
+   "currency": "EUR",
+   "payment_date": "2026-08-06"
+  },
+  "note": "Both amounts happen to have the same digits (1234.56) but different currency. The CURRENCY is the trap, not the number. Correct currency = EUR."
+ },
+ "ho-hard-06-credit-note.eml": {
+  "labels": {
+   "invoice_number": "CN-3390",
+   "total": -525.0,
+   "currency": "USD",
+   "line_items_count": 2
+  },
+  "note": "Total is NEGATIVE. The \"Total\" row inside the table must be excluded from line_items (2 items, not 3)."
+ },
+ "ho-hard-07-discount-preheader.eml": {
+  "labels": {
+   "order_number": "RF-556120",
+   "total": 248.61,
+   "subtotal": 245.0,
+   "discount": 24.5,
+   "shipping": 9.95,
+   "tax": 18.16,
+   "currency": "USD",
+   "delivery_date": "2026-09-02",
+   "line_items_count": 3
+  },
+  "note": "Hidden preheader contains \"$500.00\" and the word \"total\". Visible total is 248.61. 245.00-24.50+9.95+18.16 = 248.61 exactly."
+ },
+ "ho-hard-08-items-across-quote.eml": {
+  "labels": {
+   "invoice_number": "SH-1042",
+   "total": 8400.0,
+   "currency": "USD",
+   "line_items_count": 6
+  },
+  "note": "SIX line items exist, three of them only inside the quoted reply. 1200+2200+800+1500+1800+900 = 8400 exactly, so arithmetic can PROVE completeness. A parser that strips the quote returns 3 rows summing to 4200."
+ },
+ "ho-hard-09-gb18030.eml": {
+  "labels": {
+   "invoice_number": "FP-2026-3388",
+   "total": 4480.0,
+   "currency": "CNY",
+   "invoice_date": "2026-08-12",
+   "due_date": "2026-09-11",
+   "line_items_count": 2
+  },
+  "note": "gb18030 charset in body AND in the RFC2047 encoded Subject/From. Chinese labels only."
+ },
+ "ho-hard-10-rfc2231-filename.eml": {
+  "labels": {
+   "invoice_number": "FT 2026/00417",
+   "total": 2310.75,
+   "currency": "EUR",
+   "due_date": "2026-09-06",
+   "attachment_filename": "Fatura FT 2026-00417 - Monteiro Serviços Unipessoal Lda (cópia).pdf"
+  },
+  "note": "RFC 2231 continuation + percent-encoding + UTF-8. Portuguese sender: 06/09/2026 is day-first."
+ },
+ "ho-hard-11-broken-boundary.eml": {
+  "labels": {
+   "receipt_number": "RC-40217",
+   "total": 19.0,
+   "currency": "USD",
+   "payment_date": "2026-08-02",
+   "card_last4": "4242"
+  },
+  "note": "Declared boundary ...1783.1 but the parts are delimited with ...1783.2. A correct-enough parser must still surface the text."
+ },
+ "ho-hard-12-preheader-total.eml": {
+  "labels": {
+   "receipt_number": "FT-77112",
+   "total": 211.0,
+   "currency": "USD",
+   "line_items_count": 2
+  },
+  "note": "A HIDDEN preheader literally says \"Total: $1,890.00\" and \"Receipt 000000\". It appears FIRST in the HTML source. Visible truth: 211.00 / FT-77112."
+ },
+ "ho-hard-13-stripe-shape.eml": {
+  "labels": {
+   "invoice_number": "CW-2026-0091",
+   "total": 759.5,
+   "subtotal": 700.0,
+   "tax": 59.5,
+   "due_date": "2026-09-09",
+   "currency": "USD",
+   "vendor": "Coilworks, Inc.",
+   "line_items_count": 7
+  },
+  "note": "The seven line items are each their own nested single-cell table - the real ESP shape. 240+144+32+99+50+75+60 = 700 = subtotal."
+ },
+ "ho-hard-14-total-in-subject.eml": {
+  "labels": {
+   "order_number": "KV-30188",
+   "total": 63.4,
+   "currency": "EUR",
+   "delivery_date": null
+  },
+  "note": "The ONLY place the paid amount appears is the Subject. Body contains 75,00 and 10,00 as decoys. 20.08.2026 is a SHIP date, not a delivery date -> delivery_date must be null (abstention test)."
+ },
+ "ho-hard-15-id-confusion.eml": {
+  "labels": {
+   "tracking_number": "1Z999AA10123456784",
+   "invoice_number": "JD014600006281230456",
+   "carrier": "DHL Express",
+   "delivery_date": "2026-08-24"
+  },
+  "note": "The tracking number is in UPS format while the carrier is DHL; the invoice reference is in DHL format. Labels, not patterns, are the only correct signal."
+ },
+ "ho-hard-16-fr-base64-latin1.eml": {
+  "labels": {
+   "invoice_number": "FA-2026-0774",
+   "total": 4034.88,
+   "subtotal": 3362.4,
+   "tax": 672.48,
+   "invoice_date": "2026-08-05",
+   "due_date": "2026-09-04",
+   "currency": "EUR",
+   "vendor": "Cabinet Guérin",
+   "line_items_count": 2
+  },
+  "note": "base64 + iso-8859-1 + French number format with NBSP thousands separators + RFC2047 QP subject."
+ },
+ "ho-hard-17-40-rows-text.eml": {
+  "labels": {
+   "invoice_number": "IPD-556677",
+   "total": 1523.4,
+   "currency": "USD",
+   "due_date": "2026-09-13",
+   "line_items_count": 40
+  },
+  "note": "forty rows in an aligned text table, one wrapping description. The #1 forum complaint."
+ },
+ "ho-hard-18-footer-decoys.eml": {
+  "labels": {
+   "receipt_number": "MRC-8891",
+   "total": 72.0,
+   "currency": "USD",
+   "payment_date": "2026-08-08",
+   "card_last4": "1881",
+   "line_items_count": 2
+  },
+  "note": "Footer contains $99.00 and $250.00 after a \"-- \" signature delimiter. 08/08/2026 is unambiguous."
+ },
+ "ho-hard-19-abstain.eml": {
+  "labels": {
+   "invoice_number": null,
+   "total": null,
+   "due_date": null,
+   "currency": null
+  },
+  "note": "ABSTENTION TEST. \"4471\" and \"204\" and \"12\" are all decoys. Correct output is four nulls."
+ },
+ "ho-hard-20-trailing-minus.eml": {
+  "labels": {
+   "invoice_number": "4900123456",
+   "total": -1780.0,
+   "currency": "EUR",
+   "invoice_date": "2026-08-17",
+   "due_date": "2026-09-16"
+  },
+  "note": "SAP trailing-minus notation \"1.780,00-\" means NEGATIVE 1780.00. No charset declared but 8-bit latin-1 umlauts present."
+ }
+}

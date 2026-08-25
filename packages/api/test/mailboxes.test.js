@@ -16,7 +16,10 @@ describe('mailboxes and schema versions', () => {
     assert.equal(mb.address, `${mb.token}@${H.config.inboundDomain}`);
     assert.equal(mb.alias, `invoices.${mb.token}@${H.config.inboundDomain}`);
     assert.equal(mb.schema_version, 1);
-    assert.ok(mb.webhook_secret && mb.webhook_secret.length >= 32, 'a mailbox is born with a signing secret');
+    // A mailbox with no webhook endpoint has no signing secret to report — the
+    // secret belongs to the endpoint now, not to the mailbox.
+    assert.equal(mb.webhook_secret, null);
+    assert.deepEqual(mb.webhooks, []);
   });
 
   test('tokens are unique across mailboxes', async () => {

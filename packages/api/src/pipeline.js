@@ -27,11 +27,13 @@ async function processMessage(message, opts = {}) {
       type,
       messageId: out.message.id,
     });
-    if (opts.deliver !== false && out.mailbox.webhook_url && !out.mailbox.paused) {
-      await webhooks.enqueue({
+    if (opts.deliver !== false && !out.mailbox.paused) {
+      // Every active endpoint, not one URL: two workflows may want the same mail
+      // and neither may be able to switch the other off.
+      await webhooks.enqueueForMailbox({
         messageId: out.message.id,
         accountId: out.message.account_id,
-        url: out.mailbox.webhook_url,
+        mailboxId: out.message.mailbox_id,
       });
     }
     return out;

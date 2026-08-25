@@ -1,0 +1,146 @@
+From: Mark Sapiro <mark@msapiro.net>
+To: mailman-users@mailman3.org
+Subject: [MM3-users] Change to content filtering collapse alternatives - was:
+ Re: Mailman shutting down Hyperkitty: Request too large
+Date: Sat, 01 Feb 2025 12:36:13 -0800
+Message-ID: <24e930da-e3e9-4901-954b-afd5435c0afe@msapiro.net>
+In-Reply-To: 
+ <26526.148.944980.981563@ip-192-168-11-5.eu-west-1.compute.internal>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="===============5020993491482330873=="
+
+--===============5020993491482330873==
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+On 2/1/25 03:08, Stephen J. Turnbull wrote:
+> Mark Sapiro writes:
+> 
+>   > Not if we're collapsing alternatives. If we're collapsing a
+>   > multipart/alternative part with text/plain and text/html
+>   > alternatives to just the first alternative we don't keep the
+>   > text/html part.
+> 
+> I understand that's what we currently do.  But I think that when the
+> MUA provides an empty plain text part and a non-null HTML part, that's
+> a mark of lazy MUA developers, not author intent.  I think that it's
+> very likely that the author would prefer the reader get converted HTML
+> rather than a blank.
+
+I think this is a request to change the collapsing of alternatives to 
+not collapse to the first alternative if it is empty and a subsequent 
+alternative is not. I see your point in general if the poster composes 
+an HTML message and the MUA makes a multipart/alternative message with 
+an empty text/plain part, but are there actually MUAs that do that? All 
+the ones I'm aware of either make an HTML only message or attempt to 
+make a reasonable text/plain alternative. Even Yahoo mail which does a 
+horrible job of making the text/plain part (i.e. links which are 
+copy/pasted in the HTML are dropped from the plain text) does make one.
+
+That said, the effect on the OP's case, which may be more common, may be 
+harmful depending on list and Mailman config.
+
+The original message from the OP (edited) is
+```
+Content-Type: multipart/related; boundary="000000000000da2dcc062cb38aa1"
+
+--000000000000da2dcc062cb38aa1
+
+Content-Type: multipart/alternative; boundary="000000000000da2dcb062cb38aa0"
+
+--000000000000da2dcb062cb38aa0
+Content-Type: text/plain; charset="UTF-8"
+
+
+
+--000000000000da2dcb062cb38aa0
+Content-Type: text/html; charset="UTF-8"
+
+<div dir="auto"><img src="cid:ii_194a8d787554eb091f02" style="max-width: 
+100%; height: auto;"><br><br></div>
+
+--000000000000da2dcb062cb38aa0--
+
+--000000000000da2dcc062cb38aa1
+Content-Type: image/jpeg; name="1000013462.jpg"
+Content-Disposition: inline; filename="1000013462.jpg"
+Content-Transfer-Encoding: base64
+Content-ID: <ii_194a8d787554eb091f02>
+X-Attachment-Id: ii_194a8d787554eb091f02
+
+<base64 content>
+--000000000000da2dcc062cb38aa1--
+```
+
+The HTML alternative only renders the jpg as an inline image. After 
+current collapse alternatives this becomes
+```
+Content-Type: multipart/related; boundary="000000000000da2dcc062cb38aa1"
+
+--000000000000da2dcc062cb38aa1
+
+Content-Type: text/plain; charset="UTF-8"
+
+
+--000000000000da2dcc062cb38aa1
+Content-Type: image/jpeg; name="1000013462.jpg"
+Content-Disposition: inline; filename="1000013462.jpg"
+Content-Transfer-Encoding: base64
+Content-ID: <ii_194a8d787554eb091f02>
+X-Attachment-Id: ii_194a8d787554eb091f02
+
+<base64 content>
+--000000000000da2dcc062cb38aa1--
+```
+which is an empty first part followed by the jpg part which is then 
+further collapsed to just the jpg part
+```
+Content-Type: image/jpeg; name="1000013462.jpg"
+Content-Disposition: inline; filename="1000013462.jpg"
+Content-Transfer-Encoding: base64
+
+<base64 content>
+```
+I.e. a single part message with content type image/jpeg.
+
+If instead we collapsed the alternatives to the HTML part the message 
+becomes
+```
+Content-Type: multipart/related; boundary="000000000000da2dcc062cb38aa1"
+
+--000000000000da2dcc062cb38aa1
+Content-Type: text/html; charset="UTF-8"
+
+<div dir="auto"><img src="cid:ii_194a8d787554eb091f02" style="max-width: 
+100%; height: auto;"><br><br></div>
+
+--000000000000da2dcc062cb38aa1
+Content-Type: image/jpeg; name="1000013462.jpg"
+Content-Disposition: inline; filename="1000013462.jpg"
+Content-Transfer-Encoding: base64
+Content-ID: <ii_194a8d787554eb091f02>
+X-Attachment-Id: ii_194a8d787554eb091f02
+
+<base64 content>
+--000000000000da2dcc062cb38aa1--
+```
+and what that html part looks like after conversion to plain text 
+depends on the configured command. With the default lynx the content is 
+unchanged, put the type is text/plain which will render as the text with 
+the image attached. With links the plain text content is empty which 
+results again in a message with empty first part and image/jpeg second part.
+
+In short, for this message at least, I see no real advantage to dropping 
+the empty text/plain alternative vs. dropping the text/html alternative. 
+Possibly there is a difference if we don't convert HTML to plain text in 
+that some MUAs might render the jpeg inline as opposed to an attachment, 
+but if we do convert with lynx the recipient sees a message with a body 
+which is HTML tags rendered as text.
+
+-- 
+Mark Sapiro <mark@msapiro.net>        The highway is for gamblers,
+San Francisco Bay Area, California    better use your sense - B. Dylan
+
+
+--===============5020993491482330873==--
+

@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MailMint for n8n — the schema editor inside the node</title>
+<meta name="description" content="Install n8n-nodes-mailmint, add the credential and build the first workflow. Define the fields you want on the n8n canvas, fan line items out one item per row, and route anything that needs review down its own output.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="/docs.css">
+</head>
+<body class="docs">
+
+<header class="docs-top">
+  <a class="logo" href="/">Mail<span>Mint</span></a>
+  <nav>
+    <a href="/quickstart">Quickstart</a>
+    <a href="/docs">API reference</a>
+    <a href="/dashboard">Dashboard</a>
+    <a class="cta" href="/signup">Get an API key</a>
+  </nav>
+</header>
+
+<div class="layout">
+
+  <aside class="toc">
+    <button class="toc-toggle" id="tocToggle" aria-expanded="false" aria-controls="tocBody">On this page</button>
+    <div class="toc-body" id="tocBody">
+      <h2>Getting it in</h2>
+      <ul>
+        <li><a href="#status">Publication status</a></li>
+        <li><a href="#install">Install</a></li>
+        <li><a href="#credential">The credential</a></li>
+      </ul>
+      <h2>First workflow</h2>
+      <ul>
+        <li><a href="#first">Mail you already have</a></li>
+        <li><a href="#schema-editor" class="sub">The schema editor</a></li>
+        <li><a href="#output" class="sub">What comes out</a></li>
+      </ul>
+      <h2>The good parts</h2>
+      <ul>
+        <li><a href="#lineitems">Line items, one per row</a></li>
+        <li><a href="#review">Routing what needs review</a></li>
+        <li><a href="#attachments">Attachments</a></li>
+      </ul>
+      <h2>Your own address</h2>
+      <ul>
+        <li><a href="#trigger">MailMint Trigger</a></li>
+        <li><a href="#operations">All eleven actions</a></li>
+      </ul>
+      <h2>Reference</h2>
+      <ul>
+        <li><a href="#errors">Errors</a></li>
+        <li><a href="#cloud">n8n Cloud today</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <main class="content">
+
+<h1>MailMint for n8n</h1>
+<p class="lede">Every other email parser makes you leave n8n, open their web app, upload a sample and click
+on the parts of it you want — then come back and receive whatever they decided to send. This node does the
+whole thing on the canvas: name a field, give it a type and a sentence of description, hit
+<em>Execute step</em>, see the value.</p>
+
+<div class="cards">
+  <div class="c"><strong>Package</strong><span><code>n8n-nodes-mailmint</code> · v0.1.0 · MIT</span></div>
+  <div class="c"><strong>Runtime dependencies</strong><span>zero</span></div>
+  <div class="c"><strong>Nodes</strong><span>MailMint (11 actions) + MailMint Trigger</span></div>
+</div>
+
+<!-- ============================================================== STATUS -->
+<section id="status">
+<h2>Publication status <a class="anchor" href="#status">#</a></h2>
+
+<div class="note warn">
+<p><strong><code>n8n-nodes-mailmint</code> has never been published to npm.</strong> <code>npm view
+n8n-nodes-mailmint</code> returns a 404 today. That means the <em>Settings &rarr; Community Nodes &rarr;
+Install</em> route below <strong>does not work yet</strong>, and n8n Cloud — which only accepts verified
+community nodes — cannot install it at all.</p>
+<p>Every screenshot on this page is the node running in a real n8n instance from a local build, not a
+mock-up. The install instructions are here because they are what will be true the moment it is published,
+and they are marked as not-yet rather than quietly presented as working. <a href="#cloud">What to do
+instead, today.</a></p>
+</div>
+</section>
+
+<!-- ============================================================= INSTALL -->
+<section id="install">
+<h2>Install <a class="anchor" href="#install">#</a></h2>
+
+<h3>Today &mdash; build the tarball and install that</h3>
+
+<p>Until the package is published this is the honest route, and it is the one every screenshot on this page
+was taken through:</p>
+
+<div class="code">
+<div class="cap">in packages/n8n-node</div>
+<button class="copy" type="button">Copy</button>
+<pre><code>npm install --ignore-scripts
+npm run build
+npm pack                       # -> n8n-nodes-mailmint-&lt;version&gt;.tgz
+
+cd ~/.n8n/nodes
+npm install /path/to/n8n-nodes-mailmint-&lt;version&gt;.tgz</code></pre>
+</div>
+<p>Then restart n8n.</p>
+
+<h3>Once it is published</h3>
+<p><em>Settings &rarr; Community Nodes &rarr; Install</em>, then enter <code>n8n-nodes-mailmint</code>; or
+<code>cd ~/.n8n/nodes &amp;&amp; npm install n8n-nodes-mailmint</code> from the CLI. Neither works yet &mdash; see
+<a href="#status">above</a>.</p>
+
+<p>Once installed, both nodes appear in the node panel under their own names. The trigger is found by
+searching the trigger panel for <em>MailMint</em>:</p>
+
+<figure>
+  <img src="/screens/01-node-panel-trigger.png" alt="The n8n &quot;What triggers this workflow?&quot; panel with MailMint typed into the search box, showing one result: MailMint, &quot;Starts the workflow when MailMint has parsed a new email&quot;." loading="lazy" width="1500" height="950">
+  <figcaption>The trigger panel. The node is marked &ldquo;Via npm&rdquo; by n8n because it is a community
+    node.</figcaption>
+</figure>
+
+<figure>
+  <img src="/screens/03-node-actions.png" alt="The n8n node details panel for MailMint showing Actions (11), grouped into Mailbox actions — Create a mailbox, Delete a mailbox, Get many mailboxes, Reparse every message in a mailbox, Update a mailbox — Message actions — Download an attachment, Get a message, Get many messages, Get the raw message, Reparse a message — and Parse actions — Parse an email." loading="lazy" width="1500" height="950">
+  <figcaption>Eleven actions across three resources, plus one trigger. <em>Reparse every message in a
+    mailbox</em> is the one worth knowing about — see <a href="#operations">below</a>.</figcaption>
+</figure>
+</section>
+
+<!-- ========================================================== CREDENTIAL -->
+<section id="credential">
+<h2>The credential <a class="anchor" href="#credential">#</a></h2>
+
+<ol>
+  <li>In n8n, add a <strong>MailMint API</strong> credential.</li>
+  <li><strong>API Key</strong> &mdash; the key for your MailMint account. It starts with
+    <code>mm_live_</code>.</li>
+  <li><strong>Base URL</strong> &mdash; the root URL of the MailMint API you are talking to, with no trailing
+    slash. <strong>There is no default, because there is no hosted MailMint to default to.</strong> Use your
+    own deployment, or <code>http://host.docker.internal:3100</code> when the API runs locally and n8n is in
+    Docker.</li>
+  <li>Save.</li>
+</ol>
+
+<p>The credential tests itself against <code>GET /v1/usage</code>, so you get a real green tick before you
+build anything rather than an &ldquo;untested&rdquo; badge:</p>
+
+<figure>
+  <img src="/screens/04-credential-tested-against-local-mock-api.png" alt="The n8n credential dialog for a MailMint account, credential type MailMint API, showing a green &quot;Connection tested successfully&quot; banner, a masked API Key field and a Base URL field." loading="lazy" width="1500" height="950">
+  <figcaption>&ldquo;Connection tested successfully&rdquo; means the key is valid and the account exists &mdash;
+    the test is a real authenticated call, not a format check. This one was taken against a MailMint API
+    running locally, because there is no hosted one to point it at.</figcaption>
+</figure>
+</section>
+
+<!-- =============================================================== FIRST -->
+<section id="first">
+<h2>First workflow — mail you already have <a class="anchor" href="#first">#</a></h2>
+
+<p>You do not need a MailMint address to start, which matters, because
+<a href="/quickstart#address">the hosted address is not live yet</a>. If mail is already reaching n8n —
+through the built-in <strong>Email Trigger (IMAP)</strong>, through Gmail, through anything — put a
+<strong>MailMint</strong> node after it and it parses what arrives.</p>
+
+<ol>
+  <li>Add an <strong>Email Trigger (IMAP)</strong> node and point it at your mailbox. Any <em>Format</em>
+    works.</li>
+  <li>Add a <strong>MailMint</strong> node after it. It opens on <strong>Parse &rarr; Parse Email</strong>
+    with <strong>Input: Automatic</strong>, which is already correct.</li>
+  <li>Under <strong>Fields</strong>, click <strong>Add Field</strong> three times and fill them in.</li>
+  <li><strong>Execute step.</strong></li>
+</ol>
+
+<div class="note">
+<p><strong>What &ldquo;Automatic&rdquo; actually does.</strong> It takes the raw <code>.eml</code> off the
+binary field when the IMAP node is set to RAW, and the <code>subject</code> / <code>textPlain</code> /
+<code>textHtml</code> fields off the JSON when it is set to Resolved or Simple. It will not mistake an
+attached PDF for the message. The other <strong>Input</strong> modes — <em>Binary File</em>, <em>Raw MIME
+Text</em> and <em>Fields</em> — are there for when you want to be explicit.</p>
+</div>
+
+<h3 id="schema-editor">The schema editor <a class="anchor" href="#schema-editor">#</a></h3>
+
+<p>This is the part that does not exist anywhere else. Each field you add has five inputs:</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Input</th><th>What to put in it</th></tr></thead>
+<tbody>
+<tr><td><strong>Name</strong></td><td>The JSON key you want back, e.g. <code>invoice_number</code>.</td></tr>
+<tr><td><strong>Type</strong></td><td>One of thirteen. See the table below.</td></tr>
+<tr><td><strong>Description</strong></td><td><strong>The single biggest lever on accuracy.</strong> Write it
+  the way you would explain the field to a new colleague — &ldquo;grand total including tax&rdquo;, not
+  &ldquo;total&rdquo;.</td></tr>
+<tr><td><strong>Hint</strong></td><td>The label the mail actually uses: &ldquo;labelled Total or Amount
+  Due&rdquo;.</td></tr>
+<tr><td><strong>Required</strong></td><td>A toggle. A required field that is missing still comes back
+  <code>null</code> — it is <em>flagged</em>, never fabricated.</td></tr>
+</tbody>
+</table>
+</div>
+
+<figure>
+  <img src="/screens/05-schema-editor.png" alt="The MailMint node's Fields editor in n8n. Field 2 has Description &quot;grand total including tax&quot;, Hint &quot;labelled Total&quot;, Name &quot;total&quot;, Required off and Type Number. Field 3 has Description &quot;when payment is due&quot;, Hint &quot;labelled Due&quot;, Name &quot;due_date&quot;, Required off and Type Date." loading="lazy" width="1500" height="950">
+  <figcaption>Three fields, defined on the canvas, next to the workflow that consumes them. No web app, no
+    sample upload, no clicking on a rendered email.</figcaption>
+</figure>
+
+<div class="tw">
+<table>
+<thead><tr><th>Type in the dropdown</th><th>You get back</th><th>Extra input</th></tr></thead>
+<tbody>
+<tr><td>String · Email · URL · Phone Number</td><td>the text as written</td><td></td></tr>
+<tr><td>Number · Integer</td><td>a number</td><td></td></tr>
+<tr><td>Currency</td><td><code>{ "amount": 31.5, "currency": "USD" }</code></td><td></td></tr>
+<tr><td>Date</td><td><code>2026-09-08</code></td><td></td></tr>
+<tr><td>Date and Time</td><td>ISO-8601, UTC</td><td></td></tr>
+<tr><td>Boolean</td><td><code>true</code> / <code>false</code></td><td></td></tr>
+<tr><td>Enum</td><td>one of your values, or <code>null</code></td><td><strong>Options</strong>, comma
+  separated</td></tr>
+<tr><td>Array</td><td>a list</td><td><strong>Item Type</strong></td></tr>
+<tr><td>Object</td><td>a nested object</td><td><strong>Sub-Fields</strong>, a JSON array of field
+  definitions</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>A value that cannot be coerced comes back as <code>null</code> with a <code>type_error</code> flag.
+<strong>It is never invented, and never a guess string like &ldquo;N/A&rdquo;.</strong></p>
+
+<p><strong>Schema</strong> also takes <em>From a Mailbox</em>, to reuse the schema saved on one of your
+MailMint mailboxes, and <em>JSON</em>, to compute the whole schema in an earlier node.</p>
+
+<h3 id="output">What comes out <a class="anchor" href="#output">#</a></h3>
+
+<figure>
+  <img src="/screens/06-parse-output.png" alt="The MailMint node after Execute step, with one output item shown as a table: invoice_number INV-2292, total 132, due_date 2026-09-15, _needs_review false, and a _meta column listing id, message_id, received_at, subject, from_email, type, flags, spf, dkim, dmarc and more." loading="lazy" width="1500" height="950">
+  <figcaption>One item out. Your fields at the top level, <code>_needs_review</code> beside them, and
+    everything else under <code>_meta</code>.</figcaption>
+</figure>
+
+<div class="code">
+<pre><code>{
+  "invoice_number": "INV-2291",
+  "total": 31.5,
+  "due_date": "2026-09-08",
+  "_needs_review": false,
+  "_meta": {
+    "subject": "Invoice INV-2291 from Acme Ltd",
+    "from_email": "billing@acme.example",
+    "received_at": "2026-08-25T09:14:03.221Z",
+    "type": "invoice",
+    "needs_review": false,
+    "flags": [],
+    "attachment_count": 1,
+    "attachment_names": ["invoice-2291.pdf"]
+  }
+}</code></pre>
+</div>
+
+<p>That is <strong>Simplify</strong>, which is on by default, because the next node is nearly always a Google
+Sheets, a Postgres or an IF. Turn it off and you get the full
+<a href="/docs#result">message object</a>: headers, both bodies, tables, detected amounts and dates, and
+per-field confidence with the evidence each value was read from.</p>
+</section>
+
+<!-- =========================================================== LINEITEMS -->
+<section id="lineitems">
+<h2>Line items — one item per row <a class="anchor" href="#lineitems">#</a></h2>
+
+<p>The loudest complaint in this whole category is &ldquo;the mail had forty rows and I got one&rdquo;. Set
+<strong>Output</strong> to <strong>One Item Per Line Item</strong> and one email becomes one n8n item per
+invoice line, with the header fields repeated on each.</p>
+
+<figure>
+  <img src="/screens/07-line-items.png" alt="The MailMint node with Simplify on, Output set to One Item Per Line Item, and an empty Line Items From field. The output panel shows 3 items, each repeating invoice_number INV-2292, total 132 and due_date 2026-09-15." loading="lazy" width="1500" height="950">
+  <figcaption>One email in, three items out — the header fields repeated on every row.</figcaption>
+</figure>
+
+<div class="code">
+<pre><code>{ "invoice_number": "INV-2292", "total": 132,
+  "Item": "Widget", "Qty": "3", "Amount": "$27.00",
+  "_row_index": 0, "_row_count": 3, "_line_items_truncated": false }</code></pre>
+</div>
+
+<ul>
+  <li><strong>It finds the rows on its own</strong>: an <code>array</code> field you defined first, then the
+    largest table found in the body. Name a specific one in <strong>Line Items From</strong> if you want a
+    particular table.</li>
+  <li><code>_row_count</code> travels on <em>every</em> row and <code>_line_items_truncated</code> says so
+    out loud when the table came back short. A short array can never be silent.</li>
+  <li>A message with no rows still produces exactly one item, with <code>_row_count: 0</code>. Nothing is
+    ever silently dropped.</li>
+  <li><code>pairedItem</code> is set on every row, so n8n can still trace all forty items back to the one
+    email they came from.</li>
+</ul>
+
+<div class="note">
+<p>For comparison: Zapier&rsquo;s documented answer to the same requirement is to hand-write
+<code>{{shotnumberOne}}</code>…<code>{{shotnumberN}}</code> against a hard cap of 15 templates, and Make
+needs an Iterator plus an Array Aggregator and breaks past two columns.</p>
+</div>
+</section>
+
+<!-- ============================================================== REVIEW -->
+<section id="review">
+<h2>Routing what needs a human <a class="anchor" href="#review">#</a></h2>
+
+<p>Every field carries a confidence, the source it came from and the <strong>verbatim evidence</strong> it
+was read out of. Turn on <strong>Options &rarr; Include Confidence</strong>:</p>
+
+<div class="code">
+<pre><code>"_confidence": {
+  "total": { "confidence": 0.97, "source": "rule+llm", "evidence": "Total: $31.50" }
+}</code></pre>
+</div>
+
+<p><code>_needs_review</code> sits at the top level of every simplified item. Turn on <strong>Route Messages
+Needing Review Separately</strong> and the node grows a second output: anything with a missing required
+field, a low-confidence value, a type it could not coerce, or evidence it could not find in the mail goes
+down <strong>Needs Review</strong> instead of <strong>Parsed</strong>.</p>
+
+<figure>
+  <img src="/screens/08-two-outputs.png" alt="The same MailMint node with the Route Messages Needing Review Separately toggle switched on, and the output panel now showing a warning indicator beside OUTPUT." loading="lazy" width="1500" height="950">
+  <figcaption>One toggle. No IF node, no expression, no matching on a sentence.</figcaption>
+</figure>
+
+<p>Line items follow their message: forty rows from a doubtful invoice all go down the same branch together,
+rather than being split across two.</p>
+
+<p>The same setting exists on the trigger, so mail that needs a human can be routed the moment it
+arrives.</p>
+</section>
+
+<!-- ========================================================= ATTACHMENTS -->
+<section id="attachments">
+<h2>Attachments <a class="anchor" href="#attachments">#</a></h2>
+
+<p>Filenames, content types, sizes and checksums are on every simplified item already, under
+<code>_attachments</code>, with no option to turn on. The bytes are the one thing behind a switch
+(<strong>Options &rarr; Include Attachment Bytes</strong>), because a single PDF is usually larger than the
+rest of the message put together. To get a file as real n8n binary data, use
+<strong>Message &rarr; Download Attachment</strong>.</p>
+
+<div class="note warn">
+<p><strong>Reading text out of a PDF is built but not yet wired in.</strong> The node knows how to fan
+line items out of <code>_attachments[].extracted</code>, the API reserves that slot, and the extractor
+itself exists — but nothing connects them yet, so the slot is empty today. An invoice whose detail
+lives <em>only</em> inside the attached PDF gives you the file and its metadata, not its contents.</p>
+</div>
+</section>
+
+<!-- ============================================================= TRIGGER -->
+<section id="trigger">
+<h2>MailMint Trigger <a class="anchor" href="#trigger">#</a></h2>
+
+<p>For mail that should come <em>to</em> MailMint rather than through your own IMAP. One node, two modes.</p>
+
+<figure>
+  <img src="/screens/09-trigger-webhook-mode.png" alt="The MailMint Trigger node parameters: Webhook URLs, Credential MailMint account, Poll Times with Mode Every Minute, Delivery set to Webhook, Mailbox Name or ID, Simplify on, Output One Item Per Message, Route Messages Needing Review Separately off, Filters and Options." loading="lazy" width="1500" height="950">
+  <figcaption>The <strong>Delivery</strong> parameter picks the mode, and Webhook is the default.
+    <em>Fetch Test Event</em>, top right, returns your most recent real message without moving the polling
+    cursor. (The mailbox address in the screenshot has been changed to a reserved example domain.)</figcaption>
+</figure>
+
+<h3>Webhook &mdash; the default</h3>
+<p>It registers itself. On activation it sets the mailbox&rsquo;s <code>webhook_url</code> to this
+workflow&rsquo;s URL and installs a signing secret it generates for you; on deactivation it clears them.
+Every incoming delivery has its <code>x-mailmint-signature</code> HMAC verified before the workflow runs — a
+body that does not verify is answered <code>401</code> and never starts anything. Instant, and there is
+nothing to configure beyond picking the mailbox.</p>
+
+<p><strong>Options &rarr; Signature Tolerance (Seconds)</strong> defaults to 300, and
+<strong>Options &rarr; Webhook Secret</strong> lets you pin your own instead of letting the node generate
+one.</p>
+
+<figure>
+  <img src="/screens/11-trigger-webhook-received.png" alt="The MailMint Trigger node after a real webhook delivery, showing one output item with invoice_number INV-2291, total 31.5, due_date 2026-09-08, _needs_review false, and a _meta column listing spf pass, dkim pass and dmarc pass." loading="lazy" width="1500" height="950">
+  <figcaption>A real delivery arriving on the trigger: signature verified, message parsed, one item on the
+    canvas. <code>spf</code>, <code>dkim</code> and <code>dmarc</code> sit in <code>_meta</code>.</figcaption>
+</figure>
+
+<h3>Polling</h3>
+<p>For an n8n the internet cannot reach. It reads <a href="/docs#events"><code>GET /v1/events</code></a> on
+your poll schedule and remembers the cursor on the node. <strong>On first activation it seeds the cursor and
+emits nothing</strong>, so switching a workflow on never floods it with a week of old mail.</p>
+
+<h3>Filters</h3>
+<p>Both modes take the same <strong>Filters</strong> — <em>Needs Review Only</em>, <em>From Sender</em> (an
+address or a domain) and <em>Mailbox Name or ID</em> — and the same <strong>Output</strong>,
+<strong>Simplify</strong> and <strong>Route Messages Needing Review Separately</strong> settings as the main
+node.</p>
+</section>
+
+<!-- ========================================================== OPERATIONS -->
+<section id="operations">
+<h2>All eleven actions <a class="anchor" href="#operations">#</a></h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>Resource</th><th>Operation</th><th>What it does</th></tr></thead>
+<tbody>
+<tr><td><strong>Parse</strong></td><td>Parse Email</td><td>Extract your fields from an email the workflow
+  already has. Nothing is stored.</td></tr>
+<tr><td rowspan="5"><strong>Message</strong></td><td>Get</td><td>One parsed message by ID</td></tr>
+<tr><td>Get Many</td><td>List parsed messages, filtered by mailbox, date or needs-review</td></tr>
+<tr><td>Get Raw</td><td>The original RFC822 message as binary <code>.eml</code></td></tr>
+<tr><td>Download Attachment</td><td>One attachment as binary data</td></tr>
+<tr><td>Reparse</td><td>Re-run one message, optionally against a different schema</td></tr>
+<tr><td rowspan="5"><strong>Mailbox</strong></td><td>Create</td><td>A new inbound address with a schema on
+  it</td></tr>
+<tr><td>Get Many</td><td>The addresses on your account</td></tr>
+<tr><td>Update</td><td>Name, schema, webhook URL, webhook secret</td></tr>
+<tr><td>Reparse Messages</td><td>Re-run <strong>every</strong> stored message after you fix the schema, with
+  a <strong>Dry Run</strong> first</td></tr>
+<tr><td>Delete</td><td></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="note">
+<p><strong>Reparse Messages is the one worth knowing about.</strong> Zapier&rsquo;s answer to &ldquo;can I
+replay old mail&rdquo; is verbatim <em>&ldquo;there is no way to replay them&rdquo;</em>, and Mailparser
+stops at the last 300. Fix your schema, dry-run it to see what would change, then run it for real.
+Re-delivery is a separate switch from re-parsing, so nobody accidentally fires a month of webhooks at their
+own workflow.</p>
+</div>
+
+<p>The main node is marked <code>usableAsTool</code>, so an <strong>n8n AI Agent can call MailMint
+directly</strong> as a tool.</p>
+</section>
+
+<!-- ============================================================== ERRORS -->
+<section id="errors">
+<h2>Errors <a class="anchor" href="#errors">#</a></h2>
+
+<p>Every failure carries the API&rsquo;s own message and its hint, plus the item index that failed. With
+<strong>Settings &rarr; Continue On Fail</strong> on, the failing item becomes:</p>
+
+<div class="code">
+<pre><code>{ "error": { "code": "message_not_found", "message": "…", "hint": "…", "httpCode": "404" },
+  "errorMessage": "…" }</code></pre>
+</div>
+
+<p>so an IF node can branch on <code>{{ $json.error.code }}</code> instead of matching on a sentence. The
+full code list is in <a href="/docs#errors">the API reference</a>.</p>
+</section>
+
+<!-- =============================================================== CLOUD -->
+<section id="cloud">
+<h2>What works on n8n Cloud today <a class="anchor" href="#cloud">#</a></h2>
+
+<p>n8n Cloud only accepts verified community nodes, and <code>n8n-nodes-mailmint</code> is not published at
+all yet, let alone verified. Until it is, an <strong>HTTP Request</strong> node does the same job from any
+n8n:</p>
+
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>Method:            POST
+URL:               {{ $env.MAILMINT_URL }}/v1/parse
+Authentication:    Generic → Header Auth
+  Name:            Authorization
+  Value:           Bearer mm_live_…
+Send Body:         on   (JSON)
+Body:
+  {
+    "subject": "{{ $json.subject }}",
+    "text":    "{{ $json.textPlain }}",
+    "html":    "{{ $json.textHtml }}",
+    "schema": [
+      { "name": "invoice_number", "type": "string", "description": "the invoice or reference number" },
+      { "name": "total",          "type": "number", "description": "grand total including tax" }
+    ]
+  }</code></pre>
+</div>
+
+<p>You lose the schema editor, the line-item fan-out and the second output — everything else, including the
+confidence and evidence on every field, is identical, because the node is a thin client over the same
+endpoint.</p>
+</section>
+
+  </main>
+</div>
+
+<footer style="border-top:1px solid var(--rule);padding:1.6rem 1.25rem;text-align:center;font-size:.86rem;color:var(--muted)">
+  <a href="/">MailMint</a> &middot;
+  <a href="/quickstart">Quickstart</a> &middot;
+  <a href="/docs">API reference</a> &middot;
+  <a href="/dashboard">Dashboard</a>
+</footer>
+
+<script src="/docs.js"></script>
+</body>
+</html>

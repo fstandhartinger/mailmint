@@ -1,0 +1,18 @@
+From: Ferrous Tools <no-reply@ferroustools.example>
+To: k7m2xq4h9bwz@parse.example.com
+Subject: Your Ferrous Tools receipt
+Date: Thu, 13 Aug 2026 22:14:00 +0000
+Message-ID: <ft-rcpt-771@ferroustools.example>
+MIME-Version: 1.0
+Content-Type: text/html; charset=utf-8
+
+<html><body>
+<div style="display:none;max-height:0;overflow:hidden">Total: $1,890.00 &mdash; your biggest order yet! Receipt 000000</div>
+<div style="display:none;max-height:0;overflow:hidden">&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;</div>
+<h1>Receipt</h1>
+<p>Receipt number: <b>FT-77112</b></p>
+<table><tr><th>Item</th><th>Amount</th></tr>
+<tr><td>Torque wrench 1/2"</td><td>$149.00</td></tr>
+<tr><td>Socket set, 24pc</td><td>$62.00</td></tr></table>
+<p>Total: <b>$211.00</b></p>
+</body></html>

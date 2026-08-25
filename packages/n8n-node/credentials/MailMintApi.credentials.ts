@@ -12,7 +12,7 @@ export class MailMintApi implements ICredentialType {
 
 	displayName = 'MailMint API';
 
-	documentationUrl = 'https://mailmint.dev/docs#authentication';
+	documentationUrl = 'https://github.com/fstandhartinger/n8n-nodes-mailmint#credential';
 
 	properties: INodeProperties[] = [
 		{
@@ -24,14 +24,19 @@ export class MailMintApi implements ICredentialType {
 			required: true,
 			placeholder: 'mm_live_...',
 			description:
-				'Create an account at https://mailmint.dev and copy the key from your dashboard. It starts with mm_live_.',
+				'The key for your MailMint account. It starts with mm_live_.',
 		},
 		{
+			// MailMint is not a hosted service yet, so there is no URL to default
+			// to. Guessing one here would only produce a credential that fails its
+			// own test with a DNS error.
 			displayName: 'Base URL',
 			name: 'baseUrl',
 			type: 'string',
-			default: 'https://api.mailmint.dev',
-			description: 'Only change this if you run your own MailMint instance',
+			default: '',
+			required: true,
+			placeholder: 'https://api.example.com',
+			description: 'The root URL of the MailMint API this credential talks to, with no trailing slash',
 		},
 	];
 
