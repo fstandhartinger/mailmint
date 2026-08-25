@@ -1,0 +1,35 @@
+#cloud-config
+hostname: mailmint-mx
+package_update: true
+package_upgrade: true
+packages: [curl, ca-certificates, nftables, unattended-upgrades, rsync, jq]
+users:
+  - name: mailmint
+    shell: /bin/bash
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPIV8t4F6O3t1oNTwoWlW07ItSKTGkyfmfDAUlXkdcfY mailmint-ops
+write_files:
+  - path: /etc/nftables.conf
+    content: |
+      #!/usr/sbin/nft -f
+      flush ruleset
+      table inet filter {
+        chain input {
+          type filter hook input priority 0; policy drop;
+          ct state established,related accept
+          iif lo accept
+          ip protocol icmp accept
+          ip6 nexthdr icmpv6 accept
+          tcp dport { 22, 25, 80, 443 } accept
+        }
+        chain forward { type filter hook forward priority 0; policy drop; }
+        chain output  { type filter hook output priority 0; policy accept; }
+      }
+runcmd:
+  - curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+  - apt-get install -y nodejs
+  - systemctl enable --now nftables
+  - install -d -o mailmint -g mailmint /opt/mailmint /var/lib/mailmint/spool /var/log/mailmint
+  - setcap 'cap_net_bind_service=+ep' $(readlink -f $(which node))
+  - touch /var/lib/cloud/mailmint-ready
