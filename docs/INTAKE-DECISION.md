@@ -67,7 +67,10 @@ own service, where CPU is ours to spend.
 the escape hatch. It is what a self-hosting or air-gapped customer runs, it is what we
 switch to if Cloudflare ever changes terms, and building it is what forced us to
 implement real SPF, DKIM and DMARC verification, which we now report on every message
-whichever intake delivered it. It has never accepted mail from the public internet.
+whichever intake delivered it. **Since 2026-08-26 it also runs live**: the MX for
+`smooth-operator.online` points at it, and it has accepted, parsed and
+authenticated real mail delivered straight from Google's outbound MTA. See
+[LIVE-INTAKE.md](LIVE-INTAKE.md) for the log lines.
 
 **We also ship adapters** for Mailgun, CloudMailin and a generic webhook, because a
 customer who already runs one of those should not have to move.
@@ -112,6 +115,17 @@ cannot know, which is the only defensible choice.
 
 If a customer needs SPF, they run our SMTP server. That is a real reason for the
 self-host path to exist beyond ideology.
+
+**This is now measured, not argued.** A Gmail message delivered to our live MX on
+2026-08-26 came back `spf: "pass"` for `gmail.com`, naming the mechanism that
+matched — `ip4:209.85.128.0/17 at _spf.google.com`, one DNS lookup — alongside
+`dkim: pass` and `dmarc: pass`. The same message through the Worker would have
+carried `spf: "none"`, because the sending IP never reaches the handler. The row
+in the table above is the difference between those two runs.
+
+One thing the table does not cover: this host cannot send. Hetzner blocks
+outbound 25 and 465, so the SMTP path emits no bounces or DSNs of its own —
+rejections happen in-session with a 5xx and the sender's MTA bounces instead.
 
 ## What the DKIM verifier is actually worth
 

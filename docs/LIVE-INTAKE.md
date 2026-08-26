@@ -44,22 +44,54 @@ points here, `certbot certonly --standalone -d smooth-operator.online` and
 swapping the two paths in `/etc/mailmint-smtpd.env` upgrades it to a trusted one;
 nothing else changes.
 
-## The full chain, on a real Gmail message
+## The full chain, on real internet mail
 
-A message genuinely sent by Gmail — two valid `DKIM-Signature` headers and its
-`Received:` chain from `mail-pg1-x529.google.com` intact — delivered over port 25:
+**2026-08-26.** The MX record now points here — `smooth-operator.online MX 10
+mx.smooth-operator.online`, and `mx.smooth-operator.online A 65.109.49.103`,
+identical from 1.1.1.1, 8.8.8.8 and 9.9.9.9. Florian sent a message from his
+Gmail to `9qtyv2e176dt@smooth-operator.online`. It reached this server the way a
+stranger's mail would: Gmail looked up the MX and connected directly.
 
-    smtpd   mail.delivered   status 200   bytes 5493
-    api     internal.deliver msg_01m0yna21g1e6qryqmn1ydd8dc
-    parsed  from: Florian Standhartinger <florian.standhartinger@gmail.com>
-            subject: MailMint intake proof - real internet mail
-    auth    {"spf":"softfail","dkim":"body_altered","dmarc":"fail","spam_score":2.7}
-    dkim    body hash mismatch, computed UngkG4… vs signed 1sacOe…
-    spf     softfail — "~all at _spf.google.com", 1 lookup
+The smtpd log, verbatim:
 
-SPF softfails and DMARC fails **correctly**: the message was relayed from this
-host, not from Google's outbound servers, so it does not match Gmail's SPF. DKIM
-is `body_altered`, which is right for a message that has been through a forward.
+    {"event":"mail.received","session":"643C3E1D82B30004",
+     "remote_ip":"209.85.215.171","helo":"mail-pg1-f171.google.com",
+     "mail_from":"florian.standhartinger@gmail.com","rcpt_count":1,
+     "bytes":4747,"tls":true,"via":"BDAT"}
+    {"event":"mail.delivered","status":200,"ms":75,"bytes":5284}
+    {"event":"smtp.session","remote_ip":"209.85.215.171","tls":true,
+     "messages":1,"errors":0,"ms":1150,"reason":"quit"}
+
+`209.85.215.171` is Google's outbound MTA, not this host. Stored as
+`msg_01m0yq5mhwen8na4qj1924wn3r`, `status: parsed`, `needs_review: false`,
+flags `["no_schema"]`, 5284 bytes. The parser pulled `type: invoice`,
+`invoice_number: INV-4242` and `128.50 EUR` out of the body in 3 ms with no LLM
+call.
+
+**And this is the delivery that settles the SPF question.** Every previous test
+was relayed from this machine, so SPF softfailed — correctly, but it never
+exercised the thing this path exists for. On a real MX delivery the verifier
+sees the connecting IP and returns a genuine verdict:
+
+    auth        {"spf":"pass","dkim":"pass","dmarc":"pass","spam_score":0}
+    spf   pass  gmail.com — matched ip4:209.85.128.0/17 at _spf.google.com, 1 lookup
+    dkim  pass  gmail.com selector 20251104, rsa-sha256, 2048-bit,
+                relaxed/relaxed, body hash matched
+    dmarc pass  policy none, aligned DKIM signature, spf+dkim alignment both true
+    spam  0     -0.5 spf=pass, -0.5 dkim=pass, -1 dmarc=pass
+
+That is `spf: "pass"` with the matching mechanism named — not `none`, not a
+guess. INTAKE-DECISION.md claims SPF evaluation is the one thing this path has
+that the Cloudflare Worker cannot offer. As of this delivery that claim is
+demonstrated rather than asserted.
+
+**No bounces, by construction.** Hetzner blocks outbound 25 and 465 from this
+host, so the server can accept mail but cannot send any. A message to an unknown
+mailbox is rejected during the SMTP session with a 5xx, which makes the *sending*
+MTA generate the bounce — the correct behaviour anyway. But anything that would
+require us to originate mail — a delayed bounce, a DSN, a notification — does not
+happen and will not happen on this host. Do not build a feature that depends on
+sending until that changes.
 
 ## Three real bugs this found
 
