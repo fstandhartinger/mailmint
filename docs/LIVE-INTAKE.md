@@ -31,8 +31,18 @@ MXToolbox connected from `18.209.86.113` — a third party on the public interne
     SMTP Open Relay   OK - Not an open relay
     SMTP Connection   0.398 seconds
 
-**It flags one real gap: no STARTTLS.** No certificate is configured, so mail
-arrives in plaintext. Senders that require TLS will refuse.
+It first flagged **no STARTTLS**. A certificate is now configured and the same
+check reports **`SMTP TLS  OK - Supports TLS`**. A real delivery negotiated
+**TLSv1.3 / TLS_AES_256_GCM_SHA384** and the session logged `tls: true`.
+
+**The certificate is self-signed**, because Let's Encrypt cannot reach this host:
+`smooth-operator.online` resolves to `75.2.60.5` / `99.83.231.61`, not to
+`65.109.49.103`, so HTTP-01 fails. That is honest opportunistic TLS — every
+normal MTA, Gmail included, will use it and none will reject the mail — but a
+sender configured for strict DANE or MTA-STS would refuse it. Once the A record
+points here, `certbot certonly --standalone -d smooth-operator.online` and
+swapping the two paths in `/etc/mailmint-smtpd.env` upgrades it to a trusted one;
+nothing else changes.
 
 ## The full chain, on a real Gmail message
 
@@ -73,7 +83,8 @@ fix.**
 
 ## Still open
 
-- **No STARTTLS.** Needs a certificate for `smooth-operator.online`.
+- **The certificate is self-signed.** Trusted cert needs the A record pointing
+  here; see above.
 - ~~A spurious `auth_fail:dkim`~~ — **found and fixed.** The pipeline stamps its
   own verdict into the message as an `Authentication-Results` header, which is
   what RFC 8601 is for, and the parser then read that header back to derive auth
