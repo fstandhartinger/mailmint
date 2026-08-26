@@ -294,6 +294,10 @@ async function parseStored(message, opts = {}) {
       // and having the result thrown away. The deterministic layer still runs —
       // an over-quota customer keeps their rule hits and their detected values.
       llm: !quotaExceeded,
+      // The authoritative verdict, so the parser does not re-read the
+      // Authentication-Results header this pipeline stamped itself. It lives on
+      // the stored row, which is what parseStored has.
+      auth: (message.envelope && message.envelope.auth) || undefined,
     });
   } catch (e) {
     if (billed) await require('./auth').refundQuota(message.account_id, 1);

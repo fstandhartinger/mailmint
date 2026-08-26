@@ -203,7 +203,16 @@ async function parseMessage(input, options) {
       referenceYear,
       localeHint: hint,
     });
-    const auth = readAuth(mime.headers.raw || {});
+    // Prefer a verdict the caller already computed over re-reading the
+    // Authentication-Results header. The inbound pipeline stamps its OWN
+    // verdict into that header, so re-deriving it read our own homework back:
+    // a body-altered DKIM is stamped `dkim=fail` — correct per RFC 8601, which
+    // has no body_altered value — and came back out as auth_fail:dkim, next to
+    // the dkim_body_altered the same message already carried. readAuth stays as
+    // the fallback for raw MIME that arrives with no verdict of ours.
+    const auth = (opts && opts.auth && typeof opts.auth === 'object')
+      ? { spf: null, dkim: null, dmarc: null, spam_score: null, ...opts.auth }
+      : readAuth(mime.headers.raw || {});
     timings.deterministic = Date.now() - tDet;
     log.debug('parse.stage', { request_id: requestId, stage: 'deterministic', ms: timings.deterministic,
       type: detected.type, tables: mime.tables.length, amounts: detected.amounts.length });

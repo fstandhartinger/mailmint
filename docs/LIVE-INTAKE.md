@@ -74,14 +74,22 @@ fix.**
 ## Still open
 
 - **No STARTTLS.** Needs a certificate for `smooth-operator.online`.
-- **A spurious `auth_fail:dkim`** accompanies the correct `dkim_body_altered` on a
-  stored message. The headline `auth.dkim` is right and `needs_review` is
-  correctly `false`, so this is cosmetic — but it is wrong and it is not fixed.
-  Ruled out, each tested directly: `smtpd/src/auth/index.js` (emits
-  `["dkim_body_altered","auth_fail:dmarc"]`), `api/src/messages.js` `authFlags()`
-  (emits no `auth_fail:dkim` for `body_altered`), and the parser (emits only
-  `no_schema`). Something between `store()` and persistence adds it; the
-  `spam_score` also changes from smtpd's 2.2 to the stored 2.7, so auth is being
-  recomputed somewhere not yet located.
+- ~~A spurious `auth_fail:dkim`~~ — **found and fixed.** The pipeline stamps its
+  own verdict into the message as an `Authentication-Results` header, which is
+  what RFC 8601 is for, and the parser then read that header back to derive auth
+  flags. It was reading our own homework. RFC 8601 has no `body_altered` value,
+  so a forwarded message is correctly stamped `dkim=fail` — and came back out as
+  `auth_fail:dkim` beside the `dkim_body_altered` the same message already
+  carried.
+
+  The parser now prefers a verdict the caller supplies and falls back to the
+  header only for raw MIME that arrives without one; the pipeline passes the
+  stored verdict through. Merged flags on a real delivery are now
+  `["auth_fail:spf","dkim_body_altered","auth_fail:dmarc","no_schema"]`.
+
+  Three isolated tests said each component was innocent. Only tracing the real
+  delivery showed `from_parse` carrying the flag. **Reasoning about which
+  component was at fault was slower and less reliable than printing what each
+  one actually produced.**
 - **MX still points at Namecheap's `eforward*` hosts**, so no stranger's mail
   reaches this server yet. Everything above was delivered to port 25 directly.
