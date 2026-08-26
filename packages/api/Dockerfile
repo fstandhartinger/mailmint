@@ -27,6 +27,14 @@ COPY packages/parser/package.json ./packages/parser/
 RUN npm ci --omit=dev --workspace mailmint-api --include-workspace-root \
  && rm -rf /root/.npm
 
+# The parser resolves its LLM client from ../../../shared/llm relative to
+# packages/parser/src, i.e. /app/shared/llm. That file used to live only in the
+# pdfnode monorepo ONE LEVEL ABOVE this repository, so it resolved on the dev box
+# and was absent in the image. The parser then threw 'no LLM client available',
+# the error was swallowed, and /v1/parse answered 200 with every field null and
+# no flags - the documented quickstart example returned nothing. It is vendored
+# into this repository now so the container has what the dev box has.
+COPY shared ./shared
 COPY packages/parser ./packages/parser
 COPY packages/api ./packages/api
 
