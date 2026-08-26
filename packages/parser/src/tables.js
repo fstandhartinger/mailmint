@@ -94,9 +94,20 @@ function takeAlignedBlock(lines, start) {
   if (block.length < MIN_ROWS + 1) return null;     // 1 header + 2 rows minimum
   const width = Math.max(...block.map((l) => l.length));
   const padded = block.map((l) => l.padEnd(width, ' '));
-  // Columns blank on every line.
+  // Columns blank on (nearly) every line. The tolerance matters: ONE overlong
+  // description in a forty-row invoice used to erase the separator entirely and
+  // collapse a three-column table into two, which then failed the header test
+  // and the whole table vanished. The header line must still be blank there, so
+  // a genuine column boundary is still required.
+  // Only large blocks get slack. In a four-line table a single tolerated
+  // non-space turns the last character of a description into its own column.
+  const slack = padded.length >= 12 ? Math.max(1, Math.floor(padded.length * 0.08)) : 0;
   const blank = [];
-  for (let c = 0; c < width; c++) blank.push(padded.every((l) => l[c] === ' '));
+  for (let c = 0; c < width; c++) {
+    let filled = 0;
+    for (const l of padded) if (l[c] !== ' ') filled++;
+    blank.push(padded[0][c] === ' ' && filled <= slack);
+  }
   const seps = [];
   let runStart = -1;
   for (let c = 0; c <= width; c++) {
@@ -111,7 +122,14 @@ function takeAlignedBlock(lines, start) {
   for (let k = 0; k < bounds.length; k += 2) spans.push([bounds[k], bounds[k + 1]]);
   const cols = spans.filter(([a, b]) => b > a);
   if (cols.length < 2) return null;
-  const rows = padded.map((l) => cols.map(([a, b]) => l.slice(a, b).trim()));
+  // Snap a boundary that lands mid-word on some line out to the nearest space,
+  // so the one row that overruns its column is not chopped in half.
+  const rows = padded.map((l) => cols.map(([a, b]) => {
+    let lo = a, hi = b;
+    for (let k = 0; k < 5 && lo > 0 && l[lo - 1] !== ' ' && l[lo] !== ' '; k++) lo--;
+    for (let k = 0; k < 5 && hi < l.length && l[hi] !== ' ' && l[hi - 1] !== ' '; k++) hi++;
+    return l.slice(lo, hi).trim();
+  }));
   const nonEmpty = rows.filter((r) => r.some((c) => c !== ''));
   if (nonEmpty.length < MIN_ROWS + 1) return null;
   // Reject prose that happens to have a wide gap: at least half the data rows

@@ -372,7 +372,7 @@ test('a filtered delivery answers 200 but does not start the workflow', async ()
 	assert.equal(result.webhookResponse.skipped, 'filtered');
 });
 
-test('registering the webhook sets webhook_url and a signing secret on the mailbox', async () => {
+test('each trigger registers its own webhook endpoint on the mailbox', async () => {
 	const mailbox = mock.state.mailboxes[0];
 	const staticData = {};
 	const params = { deliveryMode: 'webhook', mailboxId: mailbox.id, options: {} };
@@ -382,16 +382,37 @@ test('registering the webhook sets webhook_url and a signing secret on the mailb
 
 	const create = createContext({ params, staticData });
 	assert.equal(await hooks.create.call(create.context), true);
-	assert.equal(mailbox.webhook_url, 'http://n8n.test/webhook/abc');
-	assert.equal(mailbox.webhook_secret, staticData.webhookSecret);
+	assert.match(staticData.endpointId, /^wep_/);
 	assert.equal(staticData.webhookSecret.length, 64);
 
-	const after2 = createContext({ params, staticData });
-	assert.equal(await hooks.checkExists.call(after2.context), true);
+	const mine = mock.state.endpoints.find((e) => e.id === staticData.endpointId);
+	assert.equal(mine.url, 'http://n8n.test/webhook/abc');
+	assert.equal(mine.secret, staticData.webhookSecret);
+	assert.match(mine.description, /^n8n: /);
+	assert.equal(mailbox.webhook_url, null, 'the shared alias is left alone');
+
+	const again = createContext({ params, staticData });
+	assert.equal(await hooks.checkExists.call(again.context), true);
+
+	// A second trigger on the same mailbox gets its own endpoint and its own
+	// secret, and neither can switch the other one off.
+	const otherStatic = {};
+	const other = createContext({ params, staticData: otherStatic });
+	assert.equal(await hooks.create.call(other.context), true);
+	assert.notEqual(otherStatic.endpointId, staticData.endpointId);
+	assert.notEqual(otherStatic.webhookSecret, staticData.webhookSecret);
+	assert.equal(mock.state.endpoints.filter((e) => e.mailbox_id === mailbox.id).length, 2);
 
 	const remove = createContext({ params, staticData });
 	assert.equal(await hooks.delete.call(remove.context), true);
-	assert.equal(mailbox.webhook_url, null);
+	assert.equal(mock.state.endpoints.some((e) => e.id === staticData.endpointId), false);
+	assert.equal(
+		mock.state.endpoints.some((e) => e.id === otherStatic.endpointId),
+		true,
+		'the other workflow keeps its delivery',
+	);
+
+	await hooks.delete.call(createContext({ params, staticData: otherStatic }).context);
 });
 
 test('polling seeds its cursor on first activation and emits nothing', async () => {
@@ -463,7 +484,7 @@ test('the filters match on sender, mailbox and needs-review, in both output shap
 
 /* ------------------------------------------------- line items and review branch */
 
-const { findLineItems, simplifyMessage } = require('../dist/nodes/MailMint/GenericFunctions.js');
+const { findLineItems, shapeItems, simplifyMessage } = require('../dist/nodes/MailMint/GenericFunctions.js');
 
 const listAll = (extra = {}) =>
 	run({
@@ -613,4 +634,103 @@ test('the node declares its outputs from its own parameters', () => {
 	assert.equal(typeof outputs, 'string');
 	assert.match(outputs, /Needs Review/);
 	assert.match(new MailMintTrigger().description.outputs, /Needs Review/);
+});
+
+/* ------------------------------------------------- the fixes from the review */
+
+test('a list of tags is not mistaken for the line items', () => {
+	const message = {
+		fields: {
+			tags: { value: ['urgent', 'invoice'] },
+			line_items: { value: [{ sku: 'A' }, { sku: 'B' }] },
+		},
+		tables: [],
+	};
+	// Object rows win over a scalar list defined before them.
+	assert.equal(findLineItems(message).source, 'fields.line_items');
+
+	// A table beats a scalar list too.
+	const scalarsOnly = {
+		fields: { tags: { value: ['a', 'b'] } },
+		tables: [{ index: 0, records: [{ Item: 'Z' }] }],
+	};
+	assert.equal(findLineItems(scalarsOnly).source, 'tables[0]');
+
+	// A scalar list is still used when there is genuinely nothing else.
+	const nothingElse = { fields: { skus: { value: ['a', 'b'] } }, tables: [] };
+	const found = findLineItems(nothingElse);
+	assert.equal(found.source, 'fields.skus');
+	assert.deepEqual(found.rows, [{ value: 'a' }, { value: 'b' }]);
+});
+
+test('a row column never silently overwrites a header field', () => {
+	const message = {
+		fields: { total: { value: 132 }, line_items: { value: [{ total: 27, sku: 'A' }] } },
+		tables: [],
+	};
+	const [item] = shapeItems(message, { simplify: true, output: 'lineItems' }, 0);
+	assert.equal(item.json.total, 27, 'the row value wins for that row');
+	assert.deepEqual(item.json._shadowed, { total: 132 }, 'the message value is kept, not lost');
+
+	const noClash = {
+		fields: { total: { value: 132 }, line_items: { value: [{ amount: 27 }] } },
+		tables: [],
+	};
+	const [clean] = shapeItems(noClash, { simplify: true, output: 'lineItems' }, 0);
+	assert.equal(clean.json._shadowed, undefined);
+});
+
+test('_row_count is there whether Simplify is on or off', () => {
+	const empty = { fields: {}, tables: [] };
+	const [simple] = shapeItems(empty, { simplify: true, output: 'lineItems' }, 0);
+	const [full] = shapeItems(empty, { simplify: false, output: 'lineItems' }, 0);
+	assert.equal(simple.json._row_count, 0);
+	assert.equal(full.json._row_count, 0);
+	assert.equal(full.json.line_item_count, 0);
+});
+
+test('Fetch Test Event works in webhook mode too, and does not poll on a schedule', async () => {
+	const params = { deliveryMode: 'webhook', simplify: true, filters: {}, options: {} };
+
+	const manual = createContext({ params, staticData: {}, mode: 'manual' });
+	const sample = await MailMintTrigger.prototype.poll.call(manual.context);
+	assert.equal(sample[0].length, 1, 'the headline mode still returns a real sample');
+
+	const scheduled = createContext({ params, staticData: {}, mode: 'trigger' });
+	assert.equal(await MailMintTrigger.prototype.poll.call(scheduled.context), null);
+});
+
+test('the webhook is only declared when the node is actually in webhook mode', () => {
+	const webhook = new MailMintTrigger().description.webhooks[0];
+	assert.match(webhook.path, /deliveryMode/);
+	assert.match(webhook.path, /undefined/);
+});
+
+test('an API with only one webhook per mailbox is not quietly stolen from', async () => {
+	const mailbox = mock.state.mailboxes[1];
+	mailbox.webhook_url = 'https://someone-else.example/hook';
+	const params = { deliveryMode: 'webhook', mailboxId: mailbox.id, options: {} };
+	// Pretend this MailMint predates per-registration endpoints.
+	mock.disableEndpointApi = true;
+
+	await assert.rejects(hooks.create.call(createContext({ params, staticData: {} }).context), (error) => {
+		assert.match(error.message, /already delivers to another webhook/);
+		assert.match(error.description, /someone-else\.example/);
+		return true;
+	});
+	assert.equal(mailbox.webhook_url, 'https://someone-else.example/hook', 'untouched');
+
+	// Deactivating this workflow must not switch off the other one either.
+	assert.equal(await hooks.delete.call(createContext({ params, staticData: {} }).context), true);
+	assert.equal(mailbox.webhook_url, 'https://someone-else.example/hook', 'still untouched');
+
+	mailbox.webhook_url = null;
+	mock.disableEndpointApi = false;
+});
+
+test('Poll Times is left to n8n, which injects exactly one of them', () => {
+	const declared = new MailMintTrigger().description.properties.filter((p) => p.name === 'pollTimes');
+	// Declaring our own produced a second Poll Times section in the editor next
+	// to n8n's injected one, which is worse than the one it was meant to hide.
+	assert.equal(declared.length, 0);
 });

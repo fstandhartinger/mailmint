@@ -1,0 +1,109 @@
+From: Jeremy Stanley <fungi@yuggoth.org>
+To: mailman-users@mailman3.org
+Subject: [MM3-users] The paradox of VERP probe messages
+Date: Tue, 28 Jan 2025 21:04:26 +0000
+Message-ID: <Z5lGWryzBbPsTxE1@yuggoth.org>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="===============7278124486465834931=="
+
+--===============7278124486465834931==
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+tl;dr: Is there a way to have VERP probe messages not include copies
+of the bounce message that triggered them?
+
+Longer form...
+
+Some months ago I turned on bounce processing for a fairly large
+list with a long history, because I could see from the MTA logs that
+there were easily hundreds of old subscribers whose addresses had
+become defunct and this seemed like a great way to clean that up and
+make the server more conscientious at not repeatedly trying to
+deliver messages to sites that were just going to reject them. This
+worked really well.
+
+Until legitimate subscribers also started to get removed, that is,
+due primarily to false positives from overzealous spam filters. I
+had previously read about MM3's VERP probe message feature, which
+seemed to solve the main reason I had kept bounce processing
+disabled in the MM2 days, and thought it was on by default but
+clearly it wasn't. So I found the necessary config option and
+switched that on. This worked really well.
+
+Until legitimate subscribers started to get removed again, that is,
+due primarily to false positives from overzealous spam filters. See,
+I realized that the VERP probes were helpfully including copies of
+the most recent bounce for that user, and those NDRs quite often
+helpfully included their own copies of the messages which had been
+bounced. So if a subscriber's MTA was rejecting a message because
+the content looked like spam, then there was a good chance it would
+also reject the VERP probe message because it included the same
+content which had caused the earlier rejection. The VERP probe
+feature was essentially defeating its own purpose as a neutral
+confirmation that the subscriber hadn't been rejecting messages due
+to their content.
+
+This behavior raises a more significant concern as well. The MTA on
+the Mailman server in this case (Exim if it matters) wants to
+perform batch deliveries when there are multiple subscribers who all
+share the same remote MTAs. If multiples of those reject a list
+post, then the NDR back to Mailman aggregates those multiple
+rejections into a single message. If that incident triggers a VERP
+probe, the bulk NDR enumerating the addresses of all the subscribers
+who were rejected gets forwarded along as part of the VERP probe,
+disclosing a potentially sensitive litany of random subscriber
+addresses to other subscribers within that batch. I don't know
+whether this is a misconfiguration, or an unintended consequence of
+the intersection of Mailman and MTA features.
+
+While I understand that the inclusion of a bounce sample within a
+VERP probe may be a way to take some workload off list admins in
+that users can possibly see a message/rejection to explain the
+reason for the probe, the downsides of that choice make the feature
+unfortunately unusable for some lists that could otherwise have
+benefited from it. Am I possibly missing an existing switch that
+could make VERP probe messages *not* include copies of the bounces
+that triggered them?
+
+This is in some ways similar to the problems I've noticed with
+message hold notifications to moderators including copies of the
+held messages, since these are (at least in the case of the lists I
+manage) often spam, so has a tendency to cause the mail providers
+for the list moderators to start considering the mailing list server
+a spam source. If there were a switch to make message hold
+notifications to moderators *not* include copies of the messages
+themselves, I'd start allowing moderator notifications again.
+
+Suggestions welcome! Also willing to try to submit patches to enable
+some of these solutions if they don't already exist. And thanks to
+anyone who read this far!
+-- 
+Jeremy Stanley
+
+--===============7278124486465834931==
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="signature.asc"
+MIME-Version: 1.0
+
+LS0tLS1CRUdJTiBQR1AgU0lHTkFUVVJFLS0tLS0KCmlRS1RCQUFCQ2dCOUZpRUVsNjVKYjhBdDdK
+L0RVN0xuU1BtV0VVTkpXQ2tGQW1lWlJsQmZGSUFBQUFBQUxnQW8KYVhOemRXVnlMV1p3Y2tCdWIz
+UmhkR2x2Ym5NdWIzQmxibkJuY0M1bWFXWjBhR2h2Y25ObGJXRnVMbTVsZERrMwpRVVUwT1RaR1F6
+QXlSRVZET1VaRE16VXpRakpGTnpRNFJqazVOakV4TkRNME9UVTRNamtBQ2drUVNQbVdFVU5KCldD
+bWZLZy8vYzcxUDViem03cTFDbjM3WmsySEU1eS9FeTdPcUEwSFFRTWVUbnpuRnRaUjZWWkJDYXkz
+MVVTMXQKczY3TEVNbEl6UkxlNk1xSEJteThVSk45SDhVRk1lc3ROeHFlbWwyUUswd3Bsd29EVlJ3
+WXRjR3ppMU83SXN1Qgpmakl0OEZYWjhKaDMzS3Z5UWRLOTkzOWlnbVpUWi83L2pENjVRNDhkYld1
+Q3BEL2NzMWMwSmFxUGNVVVFyM3FMCklwTy9ZSGxSOVk4b2NhYitOejhGSGhQRTJmK3RxM3FaWUxh
+c056R1JEaWJ5SVhuV0FDWHV5aXRXR1ZYcmpZN2MKbkU1T0pLWkFiYVJ1R3VSZzB2UjBYcjBic0N5
+NGFMaHN6cHRVcEpsSHNLMVFsTmVFeTNGSlhBZGRlZVRSeXpyawovZEo2alhuMG12bmkyNjhwbFBh
+OXhEN3czUUVKZEMxUDhGOHBsakdobHdLRUlINk1xY1gxamRiQVgzVEJzYXVpCkRhNytHR1UrRjJZ
+NzZoVDBHSUxEQjhzeE5GSUJCUXJvWUlnRnRpZEtheEZCeFFiUUhHNVliYmJlZFo5Ni9nNjIKVnZY
+OEVqV2xLdGxpU3Jrc3hEUytidTd4QzRwSTFiRW13MU55Si8vclhtVUhPM1c4dE5tb2FwUW9iRHZR
+cXVmUwpQZm15MVlkQkRVUElNT24ybVNINEVGVk1GVEVwSi9EQ1BqaEhuRTFNZ09TL3pOWmVNUDVE
+K21sV2tZbXhRLzhnCmdES2JKYmlIbGVwb01mTVNOMUhGMi90QlNBY3dYS0pEcEdJNmdQM2xBSW9N
+eGZOWlRXTkIyUm9JWVdPSFlNUHgKMm1ScE95NFQxcEc0dU9PUkFYRDRSbEpZZ3lWTGVVYmhtQXZV
+a1g0MkYvYlBSZ0g5anZjPQo9NEdXcAotLS0tLUVORCBQR1AgU0lHTkFUVVJFLS0tLS0K
+
+--===============7278124486465834931==--
+

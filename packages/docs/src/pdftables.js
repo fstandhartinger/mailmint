@@ -38,7 +38,9 @@ const TOTALS_LABEL = new RegExp(
   + '|rechnungsbetrag|zu zahlen(der betrag)?|endbetrag|versand(kosten)?|rabatt|steuer'
   + '|sous[- ]total|montant( du| total| à payer)?|tva|remise|frais de port'
   + '|importe( total)?|subtotal|iva|total a pagar|totale|imponibile|sconto'
-  + '|totaal|btw|te betalen)\\b[\\s:.]*$', 'i');
+  // A trailing rate is part of the label, not a second value: "VAT 19%",
+  // "MwSt. 19 %", "Tax (7.5%)" all name the same kind of summary line.
+  + '|totaal|btw|te betalen)\\b[\\s:.]*(\\(?\\s*[\\d.,]{1,7}\\s*%\\s*\\)?)?[\\s:.]*$', 'i');
 
 function isNumericCell(s) { return Boolean(s) && NUMERIC.test(s.trim()) && /\d/.test(s); }
 
@@ -58,7 +60,7 @@ function tablesFromLines(lines, opts = {}) {
 
   const built = [];
   for (const block of blocks) {
-    const t = buildBlock(block, lines, medianH, maxRows);
+    const t = buildBlock(block, lines, medianH);
     if (t) built.push(t);
   }
 
@@ -114,31 +116,62 @@ function aligned(a, b) {
 function overlap(a, b) { return Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0); }
 
 /**
- * Columns are the vertical white corridors running through every line of the
- * block. Anything narrower than roughly one space is inside a cell, not
- * between two.
+ * Columns are the vertical corridors that run through the block.
+ *
+ * The naive version — union every segment's x-range and call the holes
+ * separators — is destroyed by one wide line. A report header spanning the full
+ * width, a note, a merged title: any single line that crosses a corridor closes
+ * it, and a six-column invoice register collapses to two.
+ *
+ * So a corridor is not "no text here", it is "almost no text here": we count
+ * how many LINES cover each x position and treat a position as a separator when
+ * only a small minority do. One title across forty rows stops mattering; a
+ * genuine column with entries in half its rows still does.
  */
 function columnsOf(block, medianH) {
-  const spans = [];
-  for (const l of block) for (const s of l.segments) spans.push([s.x0, s.x1]);
-  spans.sort((a, b) => a[0] - b[0]);
-  const merged = [];
-  for (const s of spans) {
-    const last = merged[merged.length - 1];
-    if (last && s[0] <= last[1] + 0.5) last[1] = Math.max(last[1], s[1]);
-    else merged.push([s[0], s[1]]);
+  const xs = [];
+  for (const l of block) for (const s of l.segments) xs.push(s.x0, s.x1);
+  if (!xs.length) return [];
+  const lo = Math.floor(Math.min(...xs));
+  const hi = Math.ceil(Math.max(...xs));
+  const width = hi - lo;
+  if (width <= 0) return [];
+
+  const cover = new Int32Array(width + 1);
+  for (const l of block) {
+    const marked = new Uint8Array(width + 1);
+    for (const s of l.segments) {
+      const a = Math.max(0, Math.floor(s.x0) - lo);
+      const b = Math.min(width, Math.ceil(s.x1) - lo);
+      for (let i = a; i <= b; i++) marked[i] = 1;
+    }
+    for (let i = 0; i <= width; i++) cover[i] += marked[i];
   }
+
+  // A line or two crossing a corridor does not close it. Below three lines the
+  // threshold is zero, i.e. the strict definition, because with so little
+  // evidence a guess is worse than none.
+  const tolerance = block.length >= 8 ? Math.floor(block.length * 0.12) : 0;
   const minGap = Math.max(3, medianH * 0.6);
+
   const cols = [];
-  for (const m of merged) {
-    const last = cols[cols.length - 1];
-    if (last && m[0] - last[1] < minGap) last[1] = Math.max(last[1], m[1]);
-    else cols.push([m[0], m[1]]);
+  let start = -1;
+  for (let i = 0; i <= width; i++) {
+    const occupied = cover[i] > tolerance;
+    if (occupied && start < 0) start = i;
+    if (!occupied && start >= 0) {
+      // Close the column only if the blank run ahead is wide enough to be a gap.
+      let j = i;
+      while (j <= width && cover[j] <= tolerance) j++;
+      if (j - i >= minGap || j > width) { cols.push([lo + start, lo + i - 1]); start = -1; i = j - 1; }
+      else i = j - 1;
+    }
   }
-  return cols;
+  if (start >= 0) cols.push([lo + start, lo + width]);
+  return cols.filter((c) => c[1] > c[0]);
 }
 
-function buildBlock(block, allLines, medianH, maxRows) {
+function buildBlock(block, allLines, medianH) {
   const cols = columnsOf(block, medianH);
   if (cols.length < 2) return null;
 
@@ -196,13 +229,24 @@ function buildBlock(block, allLines, medianH, maxRows) {
   };
   if (totalsOnly) { t.totals = rows.map(toTotal).filter(Boolean); t.rows = []; return t; }
 
-  // Or a table with the totals stack sitting inside it.
-  while (t.rows.length && looksTotals(t.rows[t.rows.length - 1], t.meta[t.meta.length - 1])) {
-    const r = t.rows.pop(); t.meta.pop();
-    const tot = toTotal(r);
-    if (tot) t.totals.unshift(tot);
+  // Or a table with the totals stack sitting inside it. Peel from the bottom
+  // while the rows read as summaries — allowing a row that is NOT obviously a
+  // summary to be carried along when it is sandwiched between two that are,
+  // because "Subtotal / VAT 19% / Total" is one block and the middle line is
+  // only recognisable from its neighbours.
+  const isTot = (i) => looksTotals(t.rows[i], t.meta[i]);
+  let peelFrom = t.rows.length;
+  for (let i = t.rows.length - 1; i >= 0;) {
+    if (isTot(i)) { peelFrom = i; i--; continue; }
+    if (peelFrom < t.rows.length && i > 0 && isTot(i - 1)) { i--; continue; }
+    break;
   }
-  if (t.rows.length > maxRows) t.rows = t.rows.slice(0, maxRows);
+  if (peelFrom < t.rows.length) {
+    for (const r of t.rows.slice(peelFrom)) { const tot = toTotal(r); if (tot) t.totals.push(tot); }
+    t.rows.length = peelFrom;
+    t.meta.length = peelFrom;
+  }
+  if (!t.rows.length && t.totals.length) t.isTotalsBlock = true;
   return t;
 }
 
@@ -259,10 +303,10 @@ function qualifies(t) {
   if (!t.rows.length) return false;
   const cols = t.headers.length;
   if (cols >= 3) return t.rows.length >= 1;
-  if (t.rows.length < 3) return false;
+  if (t.rows.length < 2) return false;
   for (let c = 0; c < cols; c++) {
     const vals = t.rows.map((r) => r[c]).filter(Boolean);
-    if (vals.length >= 3 && vals.filter(isNumericCell).length / vals.length >= 0.6) return true;
+    if (vals.length >= 2 && vals.filter(isNumericCell).length / vals.length >= 0.6) return true;
   }
   return false;
 }

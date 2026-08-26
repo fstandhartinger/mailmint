@@ -7,9 +7,11 @@ const { log } = require('./log');
 const ids = require('./ids');
 const { ApiError, bad, notFound } = require('./errors');
 const { authenticate, requireQuota } = require('./auth');
+const senderAuth = require('./sender-auth');
 const { validateSchema } = require('./schema');
 const mailboxes = require('./mailboxes');
 const reparse = require('./reparse');
+const endpoints = require('./webhook-endpoints');
 const messages = require('./messages');
 const pipeline = require('./pipeline');
 const { parseMessage, needsReview, meanConfidence } = require('./parser');
@@ -69,6 +71,44 @@ router.patch('/mailboxes/:id', withAuth, asyncRoute(async (req, res) => {
 
 router.delete('/mailboxes/:id', withAuth, asyncRoute(async (req, res) => {
   res.json(await mailboxes.remove(req.account.id, String(req.params.id)));
+}));
+
+/* --------------------------------------------------------- webhooks */
+
+/**
+ * A mailbox has many webhook endpoints.
+ *
+ * One `webhook_url` would make two n8n MailMintTrigger nodes on the same mailbox
+ * silently clobber each other, and disabling one workflow would delete the
+ * other's delivery. Each registration gets its own row and its own signing
+ * secret, so they are independent. `mailbox.webhook_url` still works and is an
+ * alias for the first endpoint.
+ */
+router.post('/mailboxes/:id/webhooks', withAuth, asyncRoute(async (req, res) => {
+  const mb = await mailboxes.get(req.account.id, String(req.params.id));
+  const e = await endpoints.create(mb, req.body || {});
+  // The secret is shown here and never again, like an API key.
+  res.status(201).json({ webhook: endpoints.publicEndpoint(e, { includeSecret: true }) });
+}));
+
+router.get('/mailboxes/:id/webhooks', withAuth, asyncRoute(async (req, res) => {
+  const mb = await mailboxes.get(req.account.id, String(req.params.id));
+  const rows = await endpoints.listFor(mb.id);
+  res.json({ data: rows.map((e) => endpoints.publicEndpoint(e)) });
+}));
+
+router.get('/webhooks/:id', withAuth, asyncRoute(async (req, res) => {
+  const e = await endpoints.get(req.account.id, String(req.params.id));
+  res.json({ webhook: endpoints.publicEndpoint(e) });
+}));
+
+router.patch('/webhooks/:id', withAuth, asyncRoute(async (req, res) => {
+  const e = await endpoints.update(req.account.id, String(req.params.id), req.body || {});
+  res.json({ webhook: endpoints.publicEndpoint(e, { includeSecret: req.body && req.body.secret !== undefined }) });
+}));
+
+router.delete('/webhooks/:id', withAuth, asyncRoute(async (req, res) => {
+  res.json(await endpoints.remove(req.account.id, String(req.params.id)));
 }));
 
 /* -------------------------------------------------------------- messages */
@@ -200,10 +240,15 @@ router.post('/messages/:id/reparse', withAuth, asyncRoute(async (req, res) => {
   const message = await pipeline.loadMessage(String(req.params.id), req.account.id);
   if (!message) throw notFound('message_not_found', `There is no message "${req.params.id}" on this account.`);
   const body = req.body || {};
-  const opts = { requestId: req.id, eventType: 'message.reparsed', deliver: Boolean(body.deliver) };
+  // Never billed. The email was already paid for when it arrived, and the whole
+  // point of re-parsing is that someone is fixing a schema against real mail —
+  // charging per attempt would make people tune blind, which is the behaviour
+  // every competitor's lack of a replay already forces.
+  const opts = {
+    requestId: req.id, eventType: 'message.reparsed', deliver: Boolean(body.deliver), bill: false,
+  };
   if (body.schema !== undefined) opts.schema = validateSchema(body.schema);
   else if (body.schema_version !== undefined) opts.schemaVersion = Number(body.schema_version);
-  if (req.account.key_mode === 'test') opts.bill = false;
 
   const out = await pipeline.processMessage(message, opts);
   if (out.error) {
@@ -277,6 +322,17 @@ router.post('/parse', withAuth, asyncRoute(async (req, res) => {
       hint: 'If this is a real message that another service handles fine, send it to support with this request id.',
     });
   }
+  // DKIM is computable from the raw message alone, so a stateless parse can and
+  // should answer it. SPF and DMARC cannot be: they need the envelope and the
+  // connecting IP. Reporting all three as null made the honest gap look like a
+  // finding of "nothing wrong".
+  if (Buffer.isBuffer(input)) {
+    result.auth = { ...(result.auth || {}), ...(await senderAuth.verifyRaw(input, { requestId })) };
+    if (result.auth.dkim === 'body_altered' && !(result.flags || []).includes('dkim_body_altered')) {
+      result.flags = [...(result.flags || []), 'dkim_body_altered'];
+    }
+  }
+
   result.id = null;
   result.mailbox = null;
   result.raw_url = null;

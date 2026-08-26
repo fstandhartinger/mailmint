@@ -12,6 +12,7 @@ const { escapeHtml } = require('./html');
 const api = require('./api');
 const internal = require('./internal');
 const web = require('./web');
+const site = require('./site');   // static landing page + docs; serves '/' and '/docs'
 const billing = require('./billing');
 const webhooks = require('./webhooks');
 const reparse = require('./reparse');
@@ -66,6 +67,7 @@ app.get('/healthz', (req, res) => res.json({
 
 app.use('/internal', internal.router);
 app.use('/v1', api.router);
+app.use('/', site.router);   // static /, /docs, /quickstart, /n8n — must precede web.router
 app.use('/', web.router);
 app.use(express.static(path.join(__dirname, '..', 'public'), { maxAge: '1h' }));
 

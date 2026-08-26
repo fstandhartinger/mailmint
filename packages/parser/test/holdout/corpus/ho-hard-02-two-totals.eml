@@ -1,0 +1,33 @@
+From: "Helio Cloud Billing" <billing@heliocloud.io>
+To: k7m2xq4h9bwz@parse.example.com
+Subject: Corrected invoice HC-88214
+Date: Mon, 3 Aug 2026 17:41:02 +0000
+Message-ID: <hc-88214-corr@heliocloud.io>
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="b2"
+
+--b2
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+
+Corrected invoice HC-88214
+
+An earlier copy of this invoice was issued in error. Please disregard it.
+
+  Previously invoiced total: $1,299.00   <- DO NOT PAY
+  Corrected total due:       $999.00
+
+Due date: 2026-09-02
+Invoice date: 2026-08-03
+
+--b2
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: 7bit
+
+<html><body><h2>Corrected invoice HC-88214</h2>
+<p>An earlier copy of this invoice was issued in error. Please disregard it.</p>
+<p><s>Previously invoiced total: $1,299.00</s></p>
+<p><b>Corrected total due: $999.00</b></p>
+<p>Due date: 2026-09-02</p></body></html>
+
+--b2--

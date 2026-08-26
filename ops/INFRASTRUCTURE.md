@@ -87,3 +87,57 @@ ops/reap.sh --destroy   # delete the Render services, the Neon project and the S
 `--destroy` prints what it will remove and requires typing `DESTROY`. It deliberately
 does **not** delete the GitHub repos and does **not** unpublish from npm: unpublishing
 breaks anyone who installed the package, and after 72 hours npm refuses anyway.
+
+## Parked parse failures
+
+`packages/api/src/messages.js` copies anything that throws during parsing into
+`ops/failures/` (CONTRACT.md §parse.failed). On 2026-08-25 that directory held 21
+messages, all recorded with the same error — `Invalid or unexpected token` — on
+plain-text invoices.
+
+Every one of them was replayed through the current parser and **all 21 parse
+cleanly**. Whatever broke had been fixed, and nobody had gone back to check.
+
+They now live in `packages/parser/test/regressions/` and run on every
+`npm test` in that package, so the fix is held in place. `ops/failures/` is empty
+again, which is what it should look like.
+
+**If this directory fills up, replay it before assuming it is stale.** A parked
+failure nobody replays is litter with a timestamp.
+
+## mailmint-api.service — added 2026-08-26
+
+The API was found running as a bare `node` process with no unit behind it: PID
+546654, started by hand in someone's shell. Two things were wrong with that.
+
+**It would not have survived a reboot,** and the failure would have been quiet in
+the worst way. `smtpd` delivers into `API_URL=http://127.0.0.1:3100`, so with the
+API gone, port 25 keeps accepting mail and then has nowhere to put it. The
+service looks up, the MX still answers, and mail is lost.
+
+**It had inherited the whole developer shell** — `STRIPE_LIVE_SECRET_KEY`,
+`GITHUB_PAT`, `ANTHROPIC_ADMIN_API_KEY`, `HETZNER_API_TOKEN` and about seventy
+more. The unit uses `EnvironmentFile=` pointing at `packages/api/.env`, which is
+mode 600 and gitignored, so the process now carries only the variables
+`src/config.js` actually reads.
+
+`SESSION_SECRET` was also absent, which meant `config.js` fell back to its literal
+`dev-only-insecure-secret` for signing session cookies. A random one was generated
+into `.env`. That invalidated existing sessions; there were no real users to lose.
+
+    sudo cp ops/mailmint-api.service /etc/systemd/system/
+    sudo systemctl daemon-reload && sudo systemctl enable --now mailmint-api
+
+Verified on 2026-08-26, not assumed:
+
+- `systemctl is-enabled` → `enabled`, `is-active` → `active`
+- `SIGKILL` on the MainPID → came back on a new PID, `/healthz` `ok:true`
+- a message sent to `<token>@smooth-operator.online` through `127.0.0.1:25`
+  arrived in `messages` with `status: parsed`
+
+**Still true and not fixed here:** the API listens on `127.0.0.1:3100` only. The
+landing page, signup and billing code all exist under `packages/api/public` and
+`src/billing.js`, but nothing is deployed publicly, so no stranger can reach any
+of it. Deploying it is the next step and belongs on Sandy (Coolify is already
+healthy on this box and owns :80/:443); the `sandy-deploy` MCP was installed at
+16:10 on 2026-08-26, so a session started after that has the tools for it.

@@ -42,16 +42,37 @@ function verify(secret, body, header, toleranceSeconds = 300) {
  * restarts this process, and a webhook that only lived in memory would be a
  * message the customer never learns about and cannot ask for again.
  */
-async function enqueue({ messageId, accountId, url }) {
+async function enqueue({ messageId, accountId, url, endpointId = null }) {
   if (!url) return null;
   const id = ids.deliveryId();
   await query(
-    `INSERT INTO webhook_deliveries (id, message_id, account_id, url, attempt, next_attempt_at)
-     VALUES ($1,$2,$3,$4,0, now())`,
-    [id, messageId, accountId, url],
+    `INSERT INTO webhook_deliveries (id, message_id, account_id, url, endpoint_id, attempt, next_attempt_at)
+     VALUES ($1,$2,$3,$4,$5,0, now())`,
+    [id, messageId, accountId, url, endpointId],
   );
-  log.info('webhook.queued', { delivery_id: id, message_id: messageId, url });
+  log.info('webhook.queued', { delivery_id: id, message_id: messageId, endpoint_id: endpointId, url });
   return id;
+}
+
+/**
+ * Queues one delivery per ACTIVE endpoint on the mailbox.
+ *
+ * Fan-out rather than a single URL, because two workflows may legitimately want
+ * the same mail and neither should be able to switch the other off. Each gets
+ * its own delivery row, so a receiver that is down retries on its own schedule
+ * without holding up the one that is up.
+ */
+async function enqueueForMailbox({ messageId, accountId, mailboxId }) {
+  // eslint-disable-next-line global-require
+  const endpoints = require('./webhook-endpoints');
+  const active = await endpoints.activeFor(mailboxId);
+  const queued = [];
+  for (const e of active) {
+    // eslint-disable-next-line no-await-in-loop
+    const id = await enqueue({ messageId, accountId, url: e.url, endpointId: e.id });
+    if (id) queued.push(id);
+  }
+  return queued;
 }
 
 /** Claims one due delivery. SKIP LOCKED so two workers never take the same row. */
@@ -76,10 +97,17 @@ function claim() {
 const retriable = (status) => !(status >= 400 && status < 500) || status === 408 || status === 429;
 
 async function attemptOnce(delivery) {
+  // The signing secret comes from the ENDPOINT when there is one, so rotating
+  // one workflow's secret cannot invalidate another's. Deliveries queued before
+  // endpoints existed fall back to the mailbox secret they were signed with.
   const { rows } = await query(
-    `SELECT m.id, m.mailbox_id, m.account_id, mb.webhook_secret, mb.name AS mailbox_name, mb.token, mb.slug
-       FROM messages m JOIN mailboxes mb ON mb.id = m.mailbox_id WHERE m.id = $1`,
-    [delivery.message_id],
+    `SELECT m.id, m.mailbox_id, m.account_id, mb.name AS mailbox_name, mb.token, mb.slug,
+            COALESCE(e.secret, mb.webhook_secret) AS webhook_secret, e.id AS endpoint_id
+       FROM messages m
+       JOIN mailboxes mb ON mb.id = m.mailbox_id
+       LEFT JOIN webhook_endpoints e ON e.id = $2
+      WHERE m.id = $1`,
+    [delivery.message_id, delivery.endpoint_id || null],
   );
   if (!rows.length) {
     await query(`UPDATE webhook_deliveries SET failed_at = now(), error = $2 WHERE id = $1`,
@@ -87,6 +115,8 @@ async function attemptOnce(delivery) {
     return;
   }
   const meta = rows[0];
+  // eslint-disable-next-line global-require
+  const endpoints = require('./webhook-endpoints');
 
   // The body is built here rather than stored on the row so a re-parse that
   // corrected a field is what gets retried, not the version that failed.
@@ -107,6 +137,7 @@ async function attemptOnce(delivery) {
         'User-Agent': 'MailMint-Webhook/1',
         'x-mailmint-event': 'message.parsed',
         'x-mailmint-delivery': delivery.id,
+        ...(delivery.endpoint_id ? { 'x-mailmint-endpoint': delivery.endpoint_id } : {}),
         'x-mailmint-signature': header,
         'x-mailmint-timestamp': String(timestamp),
       },
@@ -125,6 +156,7 @@ async function attemptOnce(delivery) {
   const ms = Date.now() - started;
   log.info('webhook.attempt', {
     delivery_id: delivery.id, message_id: delivery.message_id, account_id: Number(delivery.account_id),
+    endpoint_id: delivery.endpoint_id || null,
     url: delivery.url, attempt, max_attempts: MAX_ATTEMPTS, status, ms, ok, error, bytes: body.length,
   });
 
@@ -134,6 +166,7 @@ async function attemptOnce(delivery) {
               error = NULL, locked_at = NULL, next_attempt_at = NULL WHERE id = $1`,
       [delivery.id, attempt, status],
     );
+    await endpoints.recordSuccess(delivery.endpoint_id, status);
     return;
   }
 
@@ -146,9 +179,13 @@ async function attemptOnce(delivery) {
     );
     log.warn('webhook.failed', {
       delivery_id: delivery.id, message_id: delivery.message_id, account_id: Number(delivery.account_id),
+      endpoint_id: delivery.endpoint_id || null,
       url: delivery.url, attempts: attempt, status, error: error || `HTTP ${status}`,
       reason: attempt >= MAX_ATTEMPTS ? 'attempts_exhausted' : 'non_retriable_status',
     });
+    // Only a delivery that has given up counts against the endpoint. One failed
+    // attempt out of six is a hiccup, not a dead receiver.
+    await endpoints.recordFailure(delivery.endpoint_id, status, error || `HTTP ${status}`);
     return;
   }
 
@@ -189,4 +226,4 @@ function startWorker() {
   return () => { stopped = true; };
 }
 
-module.exports = { sign, verify, enqueue, startWorker, attemptOnce, claim, SCHEDULE_SECONDS, MAX_ATTEMPTS, retriable };
+module.exports = { sign, verify, enqueue, enqueueForMailbox, startWorker, attemptOnce, claim, SCHEDULE_SECONDS, MAX_ATTEMPTS, retriable };

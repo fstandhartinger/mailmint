@@ -1,0 +1,21 @@
+From: Northwind Supply <ar@northwind-supply.co.uk>
+To: k7m2xq4h9bwz@parse.example.com
+Subject: Invoice NW-2026-0518 due 12 September 2026
+Date: Fri, 21 Aug 2026 09:12:44 +0100
+Message-ID: <nw-2026-0518@northwind-supply.co.uk>
+MIME-Version: 1.0
+Content-Type: text/html; charset=utf-8
+
+<html><body>
+<p>Invoice <b>NW-2026-0518</b></p>
+<p>Invoice date: 21 August 2026<br>Payment due: 12 September 2026</p>
+<table>
+<tr><th>Description</th><th>Qty</th><th>Amount</th></tr>
+<tr><td>Hex bolt M8 (box of 200)</td><td>4</td><td>&pound;128.00</td></tr>
+<tr><td>Nylon washer 8mm (bag of 500)</td><td>2</td><td>&pound;41.50</td></tr>
+<tr><td>Threadlock 243, 50ml</td><td>3</td><td>&pound;73.20</td></tr>
+</table>
+<p>Subtotal: &pound;242.70<br>
+Total due: &pound;302.70</p>
+<p>(includes a &pound;60.00 non-recurring account setup fee)</p>
+</body></html>

@@ -87,7 +87,7 @@ describe('quota', () => {
     assert.equal(json.used, 0);
     // The docs page quotes this number; if they disagree, one of them is lying
     // to a customer about what they are getting.
-    const docs = await H.req('/docs');
+    const docs = await H.req('/docs/reference');
     assert.match(docs.text, new RegExp(`The free plan is ${json.plan.quota} parsed emails a month`));
   });
 

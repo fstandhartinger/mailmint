@@ -50,6 +50,42 @@ async function readBlob(ref) {
  * is: losing the bytes is recoverable, losing the fact that mail arrived is not.
  */
 /**
+ * §1c. Which authentication results are worth flagging, and which are not.
+ *
+ * `auth_fail:<mech>` means CHECKED AND FAILED. Three cases are deliberately not
+ * that:
+ *
+ *  - **`dkim: "body_altered"`.** The signature is real and the key is right, but
+ *    the body hash no longer matches because something changed the message after
+ *    it was signed. Forwarding, mailing lists and corporate security gateways
+ *    all do this routinely — and forwarding mail to us from Gmail is one of the
+ *    two main ways people use this product. Treating our own happy path as
+ *    suspicious would be a self-inflicted wound. It gets its own flag,
+ *    `dkim_body_altered`, which says what happened without asserting anything
+ *    went wrong, and it does not count towards needs_review.
+ *  - **`spf: "none"`.** On the Cloudflare Email Routing path the worker never
+ *    sees a client IP, so SPF cannot be evaluated at all. "Not checked" is not
+ *    "checked and absent", and reporting it as a failure would be a false claim
+ *    about what we know.
+ *  - **`temperror` / `permerror`.** A DNS timeout or a broken record on the
+ *    sender's side is an infrastructure problem, not evidence of forgery.
+ */
+const AUTH_MECHANISMS = ['spf', 'dkim', 'dmarc'];
+const NOT_A_FAILURE = new Set(['pass', 'none', 'neutral', 'temperror', 'permerror', 'policy', null, undefined, '']);
+
+function authFlags(envelope = {}) {
+  const auth = envelope.auth && typeof envelope.auth === 'object' ? envelope.auth : envelope;
+  const out = [];
+  for (const mech of AUTH_MECHANISMS) {
+    const v = auth[mech];
+    if (mech === 'dkim' && v === 'body_altered') { out.push('dkim_body_altered'); continue; }
+    if (NOT_A_FAILURE.has(v)) continue;
+    out.push(`auth_fail:${mech}`);
+  }
+  return out;
+}
+
+/**
  * Pulls the sender's own Message-ID out of the head of the raw message.
  *
  * Only the head is scanned, and only the first 16 KB of it: this runs on the
@@ -98,10 +134,7 @@ async function ingest({ mailbox, envelope = {}, raw, receivedAt, idempotencyKey,
   const spamScore = envelope.spam_score === undefined || envelope.spam_score === null
     ? null : Number(envelope.spam_score);
   if (spamScore !== null && spamScore >= 5) flags.push('spam_suspected');
-  for (const mech of ['spf', 'dkim', 'dmarc']) {
-    const v = envelope[mech] || (envelope.auth || {})[mech];
-    if (v && v !== 'pass' && v !== 'none') flags.push(`auth_fail:${mech}`);
-  }
+  flags.push(...authFlags(envelope));
 
   // The plan decides how long the bytes live. The caller usually already knows
   // it — /internal/resolve reads it when it resolves the mailbox — and asking
@@ -134,9 +167,9 @@ async function ingest({ mailbox, envelope = {}, raw, receivedAt, idempotencyKey,
        RETURNING ref
      )
      INSERT INTO messages (id, mailbox_id, account_id, received_at, from_email, subject, size,
-                           status, flags, raw_ref, spam_score, envelope, source_message_id)
+                           status, flags, raw_ref, spam_score, envelope, source_message_id, auth_details)
      VALUES ($5, $6, $7, COALESCE($8::timestamptz, now()), $9, NULL, $10,
-             'received', $11, (SELECT ref FROM new_blob), $12, $13, $14)
+             'received', $11, (SELECT ref FROM new_blob), $12, $13, $14, $15)
      -- The unique index is the real guard: two deliveries of the same message can
      -- race, and only the database can decide which one wins.
      ON CONFLICT (mailbox_id, source_message_id) WHERE source_message_id IS NOT NULL
@@ -145,7 +178,8 @@ async function ingest({ mailbox, envelope = {}, raw, receivedAt, idempotencyKey,
     [ids.blobRef(), mailbox.account_id, raw && !oversize ? raw : null, String(retentionFor(effectivePlan, 'raw')),
       messageId, mailbox.id, mailbox.account_id, receivedAt || null,
       (envelope.from || '').slice(0, 320) || null, size, flags, spamScore,
-      JSON.stringify(envelope), sourceMessageId],
+      JSON.stringify(envelope), sourceMessageId,
+      envelope.auth_details ? JSON.stringify(envelope.auth_details) : null],
   );
 
   if (!rows.length) {
@@ -260,6 +294,10 @@ async function parseStored(message, opts = {}) {
       // and having the result thrown away. The deterministic layer still runs —
       // an over-quota customer keeps their rule hits and their detected values.
       llm: !quotaExceeded,
+      // The authoritative verdict, so the parser does not re-read the
+      // Authentication-Results header this pipeline stamped itself. It lives on
+      // the stored row, which is what parseStored has.
+      auth: (message.envelope && message.envelope.auth) || undefined,
     });
   } catch (e) {
     if (billed) await require('./auth').refundQuota(message.account_id, 1);
@@ -358,6 +396,17 @@ async function persistResult(message, mailbox, result) {
     // Bytes never go into the JSONB column: the row is read on every list call.
     result.attachments = rendered;
 
+    // The receiving edge — the smtpd, or the Cloudflare worker — is the only thing
+    // that can actually evaluate SPF/DKIM/DMARC; the parser can only read what the
+    // headers claim. Merge the edge's verdict in ONCE, here, so the stored result
+    // is the single source of truth and the API, the webhook body and the
+    // dashboard cannot end up saying different things about the same message.
+    const edgeAuth = (message.envelope && message.envelope.auth) || null;
+    if (edgeAuth) result.auth = { ...(result.auth || {}), ...edgeAuth };
+    if (result.auth && (result.auth.spam_score === null || result.auth.spam_score === undefined)
+        && message.spam_score !== null && message.spam_score !== undefined) {
+      result.auth.spam_score = message.spam_score;
+    }
     const review = needsReview(result.flags);
     const { rows } = await client.query(
       `UPDATE messages SET status = 'parsed', result = $2, flags = $3, needs_review = $4,
@@ -425,6 +474,16 @@ function renderResult(row, mailbox, opts = {}) {
   };
   result.received_at = new Date(row.received_at).toISOString();
   result.envelope = row.envelope && Object.keys(row.envelope).length ? row.envelope : (result.envelope || {});
+  // Authentication is decided at the edge, by whatever accepted the connection —
+  // the smtpd, or the Cloudflare worker. The parser can only guess from headers,
+  // so the envelope's verdict wins where it has one.
+  const edgeAuth = (row.envelope && row.envelope.auth) || null;
+  if (edgeAuth) result.auth = { ...(result.auth || {}), ...edgeAuth };
+  if (result.auth && row.spam_score !== null && row.spam_score !== undefined
+      && (result.auth.spam_score === null || result.auth.spam_score === undefined)) {
+    result.auth.spam_score = row.spam_score;
+  }
+  result.auth_details = row.auth_details || (row.envelope && row.envelope.auth_details) || null;
   result.flags = row.flags || result.flags || [];
   result.needs_review = row.needs_review;
   result.status = row.status;
@@ -513,5 +572,5 @@ function renderReviewRow(row) {
 
 module.exports = {
   storeBlob, readBlob, ingest, parseStored, persistResult, emitEvent,
-  renderResult, renderSummary, renderReviewRow, findDuplicate, sniffMessageId,
+  renderResult, renderSummary, renderReviewRow, findDuplicate, sniffMessageId, authFlags,
 };

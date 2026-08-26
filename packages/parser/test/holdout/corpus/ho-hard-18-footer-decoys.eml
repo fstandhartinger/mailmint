@@ -1,0 +1,35 @@
+From: The Mercantile <receipts@mercantile.example>
+To: k7m2xq4h9bwz@parse.example.com
+Subject: Receipt
+Date: Sat, 8 Aug 2026 20:00:00 +0000
+Message-ID: <mrc-8891@mercantile.example>
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="mm9"
+
+--mm9
+Content-Type: text/plain; charset=utf-8
+
+The Mercantile
+
+Receipt no. MRC-8891
+Paid 08/08/2026 by Visa ending 1881
+
+Espresso beans, 1kg          $28.00
+Ceramic pour-over            $44.00
+                             ------
+Amount charged               $72.00
+
+--
+Free delivery on orders over $99.00.
+Gift cards from $250.00.
+Unsubscribe: https://mercantile.example/u/8891
+
+--mm9
+Content-Type: text/html; charset=utf-8
+
+<html><body><p>Receipt no. MRC-8891</p>
+<p>Amount charged <b>$72.00</b></p>
+<p style="font-size:10px;color:#999">Free delivery on orders over $99.00. Gift cards from $250.00.</p>
+</body></html>
+
+--mm9--

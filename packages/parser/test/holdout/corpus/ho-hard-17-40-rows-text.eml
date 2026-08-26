@@ -1,0 +1,54 @@
+From: Industrial Parts Direct <ar@ipd.example>
+To: k7m2xq4h9bwz@parse.example.com
+Subject: Invoice IPD-556677
+Date: Fri, 14 Aug 2026 11:00:00 +0000
+Message-ID: <ipd-556677@ipd.example>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+
+Invoice IPD-556677
+
+Description                                                   Qty     Amount
+Component part 001                                               2      11.37
+Component part 002                                               3      12.74
+Component part 003                                               4      14.11
+Component part 004                                               5      15.48
+Component part 005                                               1      16.85
+Component part 006                                               2      18.22
+Component part 007                                               3      19.59
+Component part 008                                               4      20.96
+Component part 009                                               5      22.33
+Component part 010                                               1      23.70
+Component part 011                                               2      25.07
+Component part 012                                               3      26.44
+Component part 013                                               4      27.81
+Component part 014                                               5      29.18
+Component part 015                                               1      30.55
+Component part 016                                               2      31.92
+Component part 017 with an unusually long description that wraps   3      33.29
+Component part 018                                               4      34.66
+Component part 019                                               5      36.03
+Component part 020                                               1      37.40
+Component part 021                                               2      38.77
+Component part 022                                               3      40.14
+Component part 023                                               4      41.51
+Component part 024                                               5      42.88
+Component part 025                                               1      44.25
+Component part 026                                               2      45.62
+Component part 027                                               3      46.99
+Component part 028                                               4      48.36
+Component part 029                                               5      49.73
+Component part 030                                               1      51.10
+Component part 031                                               2      52.47
+Component part 032                                               3      53.84
+Component part 033                                               4      55.21
+Component part 034                                               5      56.58
+Component part 035                                               1      57.95
+Component part 036                                               2      59.32
+Component part 037                                               3      60.69
+Component part 038                                               4      62.06
+Component part 039                                               5      63.43
+Component part 040                                               1      64.80
+
+Total: 1523.40 USD
+Due date: 2026-09-13

@@ -1,0 +1,15 @@
+From: Parcel Updates <track@shipwise.example>
+To: k7m2xq4h9bwz@parse.example.com
+Subject: Shipment update
+Date: Wed, 20 Aug 2026 08:00:00 +0000
+Message-ID: <sw-9911@shipwise.example>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+
+Your parcel is on its way.
+
+Carrier: DHL Express
+Tracking number: 1Z999AA10123456784
+Reference / customer invoice no.: JD014600006281230456
+
+Estimated delivery: 2026-08-24

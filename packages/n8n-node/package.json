@@ -1,7 +1,7 @@
 {
   "name": "n8n-nodes-mailmint",
   "version": "0.1.0",
-  "description": "Turn inbound email into structured JSON. Define the fields you want right inside n8n, then receive parsed messages by webhook or polling — or parse mail that another node already fetched.",
+  "description": "Turn inbound email into structured JSON. Define the fields you want right inside n8n, then receive parsed messages by webhook or polling \u2014 or parse mail that another node already fetched.",
   "keywords": [
     "n8n-community-node-package",
     "n8n",
@@ -16,7 +16,7 @@
     "mailmint"
   ],
   "license": "MIT",
-  "homepage": "https://mailmint.dev",
+  "homepage": "https://github.com/fstandhartinger/n8n-nodes-mailmint#readme",
   "author": {
     "name": "Florian Standhartinger",
     "email": "florian.standhartinger@gmail.com"
@@ -31,7 +31,6 @@
   "engines": {
     "node": ">=20.15"
   },
-  "main": "index.js",
   "scripts": {
     "build": "n8n-node build && rm -rf dist/docs dist/package.json dist/tsconfig.tsbuildinfo && find dist -name '*.js.map' -delete",
     "dev": "n8n-node dev",

@@ -1,0 +1,10 @@
+From: Acme Billing <billing@acme.com>
+To: g48xvkxyae1e@parse.mailmint.test
+Subject: Invoice INV-2291 from Acme Ltd
+Message-Id: <e66a270ce715f57f@acme.com>
+Date: Tue, 25 Aug 2026 09:31:05 GMT
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+
+Total: $31.50
+Due: Sep 8, 2026

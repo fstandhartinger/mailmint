@@ -1,0 +1,24 @@
+From: Rowan & Fell <orders@rowanfell.example>
+To: k7m2xq4h9bwz@parse.example.com
+Subject: Order RF-556120 confirmed
+Date: Sat, 15 Aug 2026 19:05:00 +0000
+Message-ID: <rf-556120@rowanfell.example>
+MIME-Version: 1.0
+Content-Type: text/html; charset=utf-8
+
+<html><body>
+<span style="display:none;font-size:1px;color:#ffffff">Save up to $500.00 on your next order - total savings event ends soon</span>
+<h2>Thanks! Order RF-556120</h2>
+<table>
+<tr><th>Item</th><th>Qty</th><th>Amount</th></tr>
+<tr><td>Cotton overshirt, olive, M</td><td>1</td><td>$89.00</td></tr>
+<tr><td>Merino crew sock 3-pack</td><td>2</td><td>$36.00</td></tr>
+<tr><td>Waxed canvas tote</td><td>1</td><td>$120.00</td></tr>
+</table>
+<p>Subtotal: $245.00<br>
+Discount (WELCOME10): -$24.50<br>
+Shipping: $9.95<br>
+Sales tax: $18.16<br>
+<b>Order total: $248.61</b></p>
+<p>Estimated delivery: September 2, 2026</p>
+</body></html>

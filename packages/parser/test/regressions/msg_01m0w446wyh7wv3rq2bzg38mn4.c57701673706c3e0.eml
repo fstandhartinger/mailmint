@@ -1,0 +1,10 @@
+From: Acme Billing <billing@acme.com>
+To: 452nybht5mad@parse.mailmint.test
+Subject: Invoice INV-900 from Acme Ltd
+Message-Id: <139b917568e187df@acme.com>
+Date: Tue, 25 Aug 2026 09:30:51 GMT
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+
+Invoice INV-900
+Total: $31.50

@@ -86,7 +86,9 @@ describe('a real message, end to end', () => {
     // rather than a guess.
     assert.deepEqual(Object.keys(json.fields).sort(), ['invoice_number', 'total']);
     for (const f of Object.values(json.fields)) {
-      assert.ok(['rule', 'llm', 'header', 'attachment', 'none'].includes(f.source), `bad source ${f.source}`);
+      // §1a added `rule+llm`: the deterministic layer and the model agreed
+      // independently, which is the strongest provenance we can report.
+      assert.ok(['rule', 'llm', 'rule+llm', 'header', 'attachment', 'none'].includes(f.source), `bad source ${f.source}`);
       assert.ok(typeof f.confidence === 'number' && f.confidence >= 0 && f.confidence <= 1);
       if (f.value === null) assert.equal(f.evidence, null);
     }

@@ -1,0 +1,33 @@
+From: Coilworks Billing <invoice+stmt@coilworks.example>
+To: k7m2xq4h9bwz@parse.example.com
+Subject: Invoice CW-2026-0091 from Coilworks, Inc.
+Date: Mon, 10 Aug 2026 06:00:00 +0000
+Message-ID: <cw-2026-0091@coilworks.example>
+MIME-Version: 1.0
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+<html><body>
+<table><tr><td><h2>Invoice CW-2026-0091</h2></td></tr></table>
+<table width=3D"100%"><tr><td><table><tr><td class=3D"d">Platform subscript=
+ion - Aug 2026</td></tr><tr><td class=3D"q">Qty 1</td><td class=3D"a">$240.=
+00</td></tr></table></td></tr></table><table width=3D"100%"><tr><td><table>=
+<tr><td class=3D"d">Additional seats (12)</td></tr><tr><td class=3D"q">Qty =
+12</td><td class=3D"a">$144.00</td></tr></table></td></tr></table><table wi=
+dth=3D"100%"><tr><td><table><tr><td class=3D"d">Overage: 3,200 API calls</t=
+d></tr><tr><td class=3D"q">Qty 1</td><td class=3D"a">$32.00</td></tr></tabl=
+e></td></tr></table><table width=3D"100%"><tr><td><table><tr><td class=3D"d=
+">Priority support add-on</td></tr><tr><td class=3D"q">Qty 1</td><td class=
+=3D"a">$99.00</td></tr></table></td></tr></table><table width=3D"100%"><tr>=
+<td><table><tr><td class=3D"d">Sandbox environment</td></tr><tr><td class=
+=3D"q">Qty 2</td><td class=3D"a">$50.00</td></tr></table></td></tr></table>=
+<table width=3D"100%"><tr><td><table><tr><td class=3D"d">SSO module</td></t=
+r><tr><td class=3D"q">Qty 1</td><td class=3D"a">$75.00</td></tr></table></t=
+d></tr></table><table width=3D"100%"><tr><td><table><tr><td class=3D"d">Aud=
+it log retention, 24mo</td></tr><tr><td class=3D"q">Qty 1</td><td class=3D"=
+a">$60.00</td></tr></table></td></tr></table>
+<table><tr><td>Subtotal</td><td>$700.00</td></tr>
+<tr><td>Tax (8.5%)</td><td>$59.50</td></tr>
+<tr><td>Amount due</td><td>$759.50</td></tr></table>
+<p>Due 2026-09-09. Billed to Vireo Labs LLC.</p>
+</body></html>

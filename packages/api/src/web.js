@@ -19,6 +19,7 @@ const messages = require('./messages');
 const pipeline = require('./pipeline');
 const webhooks = require('./webhooks');
 const reparse = require('./reparse');
+const endpoints = require('./webhook-endpoints');
 const billing = require('./billing');
 const { validateSchema, TYPES } = require('./schema');
 
@@ -68,7 +69,7 @@ const requireAccount = asyncRoute(async (req, res, next) => {
 
 const topbar = (badge = 0) => `<header class="topbar"><a class="logo" href="/dashboard">Mail<span>Mint</span></a>
   <nav><a href="/dashboard/review">Review${badge ? ` <span class="flag review">${badge}</span>` : ''}</a>
-  <a href="/docs">Docs</a><form method="post" action="/logout"><button class="link">Sign out</button></form></nav></header>`;
+  <a href="/docs">Docs</a><a href="/docs/reference">Reference</a><form method="post" action="/logout"><button class="link">Sign out</button></form></nav></header>`;
 
 /* ------------------------------------------------------------ auth pages */
 
@@ -473,25 +474,50 @@ router.get('/dashboard/mailboxes/:id', requireAccount, asyncRoute(async (req, re
   </section>
 
   <section class="card">
-    <h2>Webhook</h2>
-    <form method="post" action="/dashboard/mailboxes/${encodeURIComponent(mb.id)}/webhook" class="inline">
-      <label style="flex:1 1 340px">URL<input type="url" name="webhook_url" style="width:100%"
-        value="${escapeHtml(mb.webhook_url || '')}" placeholder="https://example.com/hooks/mailmint"></label>
-      <button>Save</button>
+    <h2>Webhooks</h2>
+    <p class="muted small">Every parsed message is POSTed to each active endpoint below with
+      <code>x-mailmint-signature: t=&lt;unix&gt;,v1=&lt;hex&gt;</code> — the HMAC-SHA256 of
+      <code>"&lt;t&gt;." + rawBody</code> under that endpoint's own secret. Retries at 0s, 30s, 2m,
+      10m, 1h, 6h. Each endpoint is independent: adding, rotating or deleting one never touches
+      another, so two workflows can safely watch the same mailbox.</p>
+    ${mb.endpoints.length ? `<table class="rows">
+      <tr><th>URL</th><th>What for</th><th>Last</th><th>Secret</th><th></th></tr>
+      ${mb.endpoints.map((e) => `<tr>
+        <td style="word-break:break-all">${escapeHtml(e.url)}
+          ${e.disabled_at ? `<br><span class="flag review">switched off</span> <span class="muted small">${escapeHtml(e.disabled_reason || '')}</span>` : ''}
+          ${!e.active && !e.disabled_at ? '<br><span class="flag">paused</span>' : ''}</td>
+        <td>${escapeHtml(e.description || '—')}</td>
+        <td>${e.last_delivered_at ? `<span class="ok">${e.last_status}</span> ${timeAgo(e.last_delivered_at)}`
+    : e.last_status ? `<span class="bad">${e.last_status}</span>` : '<span class="muted">never</span>'}
+          ${e.consecutive_failures ? `<br><span class="muted small">${e.consecutive_failures} failed in a row</span>` : ''}</td>
+        <td><code id="sec_${escapeHtml(e.id)}">${escapeHtml(e.secret)}</code>
+          <button class="copy" data-target="sec_${escapeHtml(e.id)}">Copy</button></td>
+        <td>
+          <form method="post" action="/dashboard/webhooks/${encodeURIComponent(e.id)}/toggle" class="inline" style="margin:0">
+            <button class="link">${e.active ? 'Pause' : 'Enable'}</button></form>
+          <form method="post" action="/dashboard/webhooks/${encodeURIComponent(e.id)}/rotate" class="inline" style="margin:0"
+            onsubmit="return confirm('Rotate this endpoint\'s secret? Anything verifying with the old one starts failing immediately.')">
+            <button class="link">Rotate</button></form>
+          <form method="post" action="/dashboard/webhooks/${encodeURIComponent(e.id)}/delete" class="inline" style="margin:0"
+            onsubmit="return confirm('Delete this endpoint? Only this one stops receiving; the others are untouched.')">
+            <button class="link danger">Delete</button></form>
+        </td></tr>`).join('')}
+    </table>` : '<p class="muted">No endpoints yet. Mail is still received and stored — you can poll for it, or add one here.</p>'}
+    <form method="post" action="/dashboard/mailboxes/${encodeURIComponent(mb.id)}/webhooks" class="inline">
+      <label style="flex:1 1 300px">URL<input type="url" name="url" style="width:100%" required
+        placeholder="https://example.com/hooks/mailmint"></label>
+      <label>What for<input type="text" name="description" placeholder="n8n invoice workflow" maxlength="200"></label>
+      <button>Add endpoint</button>
     </form>
-    <p class="muted small">Every parsed message is POSTed there with
-      <code>x-mailmint-signature: t=&lt;unix&gt;,v1=&lt;hex&gt;</code>, the HMAC-SHA256 of
-      <code>"&lt;t&gt;." + rawBody</code> under the secret below. Retries at 0s, 30s, 2m, 10m, 1h, 6h.</p>
-    <p class="keybox"><code id="whs">${escapeHtml(mb.webhook_secret)}</code><button class="copy" data-target="whs">Copy</button>
-      <form method="post" action="/dashboard/mailboxes/${encodeURIComponent(mb.id)}/rotate" style="display:inline"
-        onsubmit="return confirm('Rotate the secret? Anything verifying with the old one starts failing immediately.')">
-        <button class="link danger">Rotate</button></form></p>
+    <p class="muted small">An endpoint that fails ${endpoints.MAX_CONSECUTIVE_FAILURES} deliveries in a row
+      — each already six attempts over six hours — is switched off rather than retried into a black hole.
+      Enable it again once the receiver is back.</p>
     ${deliveries.length ? `<details><summary>Recent deliveries</summary><table class="rows">
       <tr><th>When</th><th>Attempt</th><th>Status</th><th>Result</th></tr>
       ${deliveries.map((d) => `<tr><td>${timeAgo(d.created_at)}</td><td>${d.attempt}</td><td>${d.status_code || '—'}</td>
         <td>${d.delivered_at ? '<span class="ok">delivered</span>'
     : d.failed_at ? `<span class="bad">gave up</span> <span class="muted small">${escapeHtml(d.error || '')}</span>`
-      : `<span class="muted">retrying ${d.next_attempt_at ? timeAgo(d.next_attempt_at).replace(' ago', ' overdue') : ''}</span>`}</td></tr>`).join('')}
+      : '<span class="muted">retrying</span>'}</td></tr>`).join('')}
     </table></details>` : ''}
   </section>
 
@@ -594,6 +620,50 @@ function forwardingCard(mb, c) {
   </section>`;
 }
 
+/**
+ * Sender authentication, in words rather than in jargon.
+ *
+ * Two verdicts are stated carefully on purpose:
+ *
+ *  - **DKIM `body_altered`** is not a failure. The signature and the key are
+ *    genuine; the body changed after signing, which is what forwarding, mailing
+ *    lists and corporate gateways do as a matter of course. Since forwarding
+ *    mail to us from Gmail is one of the two main ways this product is used,
+ *    calling our own happy path "failed" would be both wrong and alarming.
+ *  - **SPF `none`** means it could not be checked — on the Cloudflare Email
+ *    Routing path the worker never sees a client IP — NOT that the check ran and
+ *    found nothing. Those are different facts and the page says which one it is.
+ */
+const AUTH_WORDS = {
+  pass: { text: 'passed', cls: 'ok' },
+  fail: { text: 'failed', cls: 'bad' },
+  softfail: { text: 'soft-failed', cls: 'bad' },
+  body_altered: { text: 'signed, but the message was changed after signing (normal for forwarded mail)', cls: '' },
+  none: { text: 'not checked — no result was available', cls: 'muted' },
+  neutral: { text: 'neutral', cls: 'muted' },
+  temperror: { text: 'could not be checked (temporary error)', cls: 'muted' },
+  permerror: { text: 'could not be checked (the sender\'s record is broken)', cls: 'muted' },
+};
+
+function authLine(m) {
+  // Merged, not "first one wins": the stored result already carries the edge's
+  // verdict, but a message parsed before that merge existed only has it on the
+  // envelope, and a row with `auth: {spf: null, ...}` would otherwise shadow it.
+  const auth = { ...((m.envelope && m.envelope.auth) || {}), ...((m.result && m.result.auth) || {}) };
+  for (const k of Object.keys(auth)) if (auth[k] === null || auth[k] === undefined) delete auth[k];
+  if (!Object.keys(auth).length) return '';
+  const parts = ['spf', 'dkim', 'dmarc']
+    .filter((k) => auth[k] !== undefined && auth[k] !== null)
+    .map((k) => {
+      const w = AUTH_WORDS[auth[k]] || { text: String(auth[k]), cls: 'muted' };
+      return `<span class="${w.cls}">${k.toUpperCase()} ${escapeHtml(w.text)}</span>`;
+    });
+  if (auth.spam_score !== undefined && auth.spam_score !== null) {
+    parts.push(`<span class="muted">spam score ${Number(auth.spam_score).toFixed(1)}</span>`);
+  }
+  return parts.length ? `<p class="small muted">Sender authentication: ${parts.join(' · ')}</p>` : '';
+}
+
 function renderMessageBlock(m) {
   const result = m.result || {};
   const fields = result.fields || {};
@@ -605,7 +675,8 @@ function renderMessageBlock(m) {
       <div>${m.status === 'parsed' ? (m.needs_review ? '<span class="flag review">needs review</span>' : '<span class="ok">parsed</span>')
     : `<span class="bad">${escapeHtml(m.status)}</span>`}</div>
     </div>
-    ${(m.flags || []).length ? `<p>${(m.flags || []).map((f) => `<span class="flag${/^(low_confidence|missing_required|type_error|hallucinated_evidence|enum_violation):/.test(f) ? ' review' : ''}">${escapeHtml(f)}</span>`).join('')}</p>` : ''}
+    ${(m.flags || []).length ? `<p>${(m.flags || []).map((f) => `<span class="flag${needsReview([f]) ? ' review' : ''}">${escapeHtml(f)}</span>`).join('')}</p>` : ''}
+    ${authLine(m)}
     ${names.length ? `<table class="rows"><tr><th>Field</th><th>Value</th><th>Confidence</th><th>Source</th><th>Evidence</th></tr>
       ${names.map((n) => {
     const f = fields[n] || {};
@@ -653,6 +724,36 @@ router.post('/dashboard/mailboxes/:id/webhook', requireAccount, asyncRoute(async
   }
 }));
 
+router.post('/dashboard/mailboxes/:id/webhooks', requireAccount, asyncRoute(async (req, res) => {
+  const mb = await mailboxes.get(req.account.id, String(req.params.id));
+  try {
+    await endpoints.create(mb, { url: req.body?.url, description: req.body?.description });
+    back(res, `/dashboard/mailboxes/${mb.id}`, { saved: 1 });
+  } catch (e) {
+    back(res, `/dashboard/mailboxes/${mb.id}`, { err: e.message });
+  }
+}));
+
+router.post('/dashboard/webhooks/:id/toggle', requireAccount, asyncRoute(async (req, res) => {
+  const e = await endpoints.get(req.account.id, String(req.params.id));
+  await endpoints.update(req.account.id, e.id, { active: !e.active });
+  back(res, `/dashboard/mailboxes/${e.mailbox_id}`, { saved: 1 });
+}));
+
+router.post('/dashboard/webhooks/:id/rotate', requireAccount, asyncRoute(async (req, res) => {
+  const e = await endpoints.get(req.account.id, String(req.params.id));
+  await endpoints.update(req.account.id, e.id, { secret: '' });
+  back(res, `/dashboard/mailboxes/${e.mailbox_id}`, { saved: 1 });
+}));
+
+router.post('/dashboard/webhooks/:id/delete', requireAccount, asyncRoute(async (req, res) => {
+  const e = await endpoints.get(req.account.id, String(req.params.id));
+  await endpoints.remove(req.account.id, e.id);
+  back(res, `/dashboard/mailboxes/${e.mailbox_id}`, { saved: 1 });
+}));
+
+// Rotates the FIRST endpoint's secret — the mailbox-level alias. Kept so an old
+// bookmark still does something sensible; the per-endpoint control is above.
 router.post('/dashboard/mailboxes/:id/rotate', requireAccount, asyncRoute(async (req, res) => {
   await mailboxes.update(req.account.id, String(req.params.id), { webhook_secret: '' });
   back(res, `/dashboard/mailboxes/${req.params.id}`, { saved: 1 });
@@ -811,11 +912,24 @@ router.post('/dashboard/portal', requireAccount, asyncRoute(async (req, res) => 
 
 /* ------------------------------------------------------------------ docs */
 
-router.get('/docs', asyncRoute(async (req, res) => {
+/**
+ * The generated API reference.
+ *
+ * The hand-written documentation site (`src/site.js`, `public/docs.html`) owns
+ * `/docs`. This page is different in kind and worth keeping alongside it: every
+ * number on it — the free allowance, the retention window per plan, the rate
+ * limit, the failure tolerance before an endpoint is switched off — is
+ * interpolated from the same constants the code enforces, so it is the one page
+ * that CANNOT drift into telling a customer something untrue. The tests assert
+ * that; they cannot assert it about prose.
+ */
+router.get('/docs/reference', asyncRoute(async (req, res) => {
   const example = webhooks.sign('your_webhook_secret', '{"id":"msg_…"}');
   res.type('html').send(shell('MailMint docs', `${topbar()}
 <main>
-  <h1>Docs</h1>
+  <h1>API reference</h1>
+  <p class="muted">Every number on this page is read from the running configuration, so it says what
+    this deployment actually enforces. The written guides are at <a href="/docs">/docs</a>.</p>
   <p class="muted">Base URL <code>${escapeHtml(config.publicUrl || `${req.protocol}://${req.get('host')}`)}</code>.
     Every call carries <code>Authorization: Bearer mm_live_…</code>.</p>
 
@@ -884,13 +998,40 @@ GET  /v1/reparse/:job_id   -&gt; {status, done, total, changed, diffs:[…]}</co
   <p>How far back it reaches is how long the original bytes are kept — see retention below.</p>
 
   <h2 id="webhooks">Webhooks</h2>
+  <pre><code>POST   /v1/mailboxes/:id/webhooks   {url, description?}  -&gt; {id, url, secret}
+GET    /v1/mailboxes/:id/webhooks
+GET    /v1/webhooks/:id
+PATCH  /v1/webhooks/:id             {url?, description?, active?, secret?}
+DELETE /v1/webhooks/:id</code></pre>
+  <p>A mailbox has <strong>many</strong> endpoints, each with its own signing secret. Two workflows
+    can watch one mailbox without touching each other: adding, pausing, rotating or deleting one
+    endpoint never affects another. <code>mailbox.webhook_url</code> still works and is an alias for
+    the first endpoint.</p>
   <p>Headers: <code>x-mailmint-event: message.parsed</code>, <code>x-mailmint-delivery: dlv_…</code>,
+    <code>x-mailmint-endpoint: whe_…</code>,
     <code>x-mailmint-signature: ${escapeHtml(example.header.slice(0, 24))}…</code></p>
   <pre><code>const [t, v1] = header.split(',').map(p =&gt; p.split('=')[1]);
 const expected = crypto.createHmac('sha256', secret).update(t + '.' + rawBody).digest('hex');
 if (!crypto.timingSafeEqual(Buffer.from(expected,'hex'), Buffer.from(v1,'hex'))) reject();
 if (Math.abs(Date.now()/1000 - Number(t)) &gt; 300) reject();   // replay window</code></pre>
-  <p>Retries at 0s, 30s, 2m, 10m, 1h, 6h. 10s timeout. A 4xx other than 408 or 429 is not retried.</p>
+  <p>Retries at 0s, 30s, 2m, 10m, 1h, 6h. 10s timeout. A 4xx other than 408 or 429 is not retried.
+    An endpoint whose deliveries exhaust their retries ${endpoints.MAX_CONSECUTIVE_FAILURES} times in a
+    row is switched off and flagged on the dashboard, rather than retried forever into a dead host.</p>
+
+  <h2 id="auth">Sender authentication</h2>
+  <p><code>auth</code> carries <code>spf</code>, <code>dkim</code>, <code>dmarc</code> and
+    <code>spam_score</code>; <code>auth_details</code> carries the finer result when the receiving
+    edge produced one. <code>dkim</code> is one of
+    <code>pass</code>, <code>fail</code>, <code>body_altered</code>, <code>none</code>,
+    <code>temperror</code>, <code>permerror</code>.</p>
+  <p><strong><code>body_altered</code> is not a failure.</strong> The signature and key are genuine and
+    the body changed after signing — which is what forwarding, mailing lists and corporate security
+    gateways do routinely. It raises <code>dkim_body_altered</code>, never
+    <code>auth_fail:dkim</code>, and never sets <code>needs_review</code>. Only a real
+    <code>fail</code> does.</p>
+  <p><strong><code>spf: "none"</code> means it could not be checked</strong>, not that it was checked
+    and found nothing — mail arriving through Cloudflare Email Routing gives the receiving worker no
+    client IP, so there is nothing to evaluate. It is not treated as a problem anywhere.</p>
 
   <h2 id="quota">Quota</h2>
   <p>The free plan is ${PLANS.free.quota} parsed emails a month, no card. Over the line, mail is

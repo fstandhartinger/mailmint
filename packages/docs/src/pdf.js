@@ -109,7 +109,16 @@ async function extractPdf(buffer, { limits, log, requestId, deadline } = {}) {
   try {
     const md = await doc.getMetadata();
     info = md.info || {};
-    metadata = md.metadata ? md.metadata.getAll() : null;
+    // The XMP wrapper's shape has changed across pdf.js majors (getAll() in v3,
+    // iterable in v5). Iterate if we can, and never let metadata cost us a page.
+    if (md.metadata) {
+      const m = {};
+      try {
+        if (typeof md.metadata.getAll === 'function') Object.assign(m, md.metadata.getAll());
+        else for (const [k, v] of md.metadata) m[k] = v;
+      } catch { /* keep whatever we got */ }
+      metadata = Object.keys(m).length ? m : null;
+    }
   } catch (e) { warnings.push(`metadata_failed:${e.message}`); }
 
   const form = await readAcroForm(doc, repaired.buffer, warnings);
@@ -173,7 +182,9 @@ async function readAcroForm(doc, buffer, warnings) {
       const value = raw.resolve(d.V);
       if (!name) continue;
       const v = typeof value === 'string' ? value : pdfString(value);
-      if (v !== null && v !== '') out[name] = v;
+      // `/Off` is a checkbox that is not ticked. It is the absence of a value,
+      // and returning it as one turns every blank form into 60 bogus fields.
+      if (v !== null && v !== '' && v !== 'Off') out[name] = v;
     }
   } catch { /* best effort */ }
   return out;

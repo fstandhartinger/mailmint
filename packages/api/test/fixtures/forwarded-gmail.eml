@@ -1,0 +1,85 @@
+Delivered-To: mailmint-ff472f63@emalupe.com
+Return-Path: <florian.standhartinger@gmail.com>
+Received: from mail-pg1-x529.google.com (mail-pg1-x529.google.com [2607:f8b0:4864:20::529])
+	by in.mail.tm (Haraka/3.1.7) with ESMTPS id FD1AC62C-0D23-494E-9C96-5DC0E0B24256.1
+	envelope-from <florian.standhartinger@gmail.com>
+	tls TLS_AES_256_GCM_SHA384;
+	Tue, 25 Aug 2026 20:24:25 +0000
+Received: by mail-pg1-x529.google.com with SMTP id 41be03b00d2f7-cc1469c1b83so237907a12.1
+        for <mailmint-ff472f63@emalupe.com>; Tue, 25 Aug 2026 13:24:25 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1787689464; cv=none;
+        d=google.com; s=arc-20260327;
+        b=C2IriWJefzDYjRvmi451iJ3ukuMZnsVIRtoTEc9iVom45WJlUn191K9/cRLtZOpScf
+         oYm6Tc95yOtR9EkWZdC+dd1NPsDmsQZRXD1v19fQS+Spg4yjCcyK9bkFDhzCGWxIQI8O
+         N61jOcQ7bYXVCbZEmW8iD4tBpM8jE6k3rdCg37bEMOfKeP9KuulfBEOPtJzl3vkHmLyd
+         v0AaQk9FAZr0vDFAqcMN3J6IC90UTGbvgiKTB8dCJgOxoXyHp6LusBSkIC8qr22/g8HW
+         QQ0c3wt68ENG9w3I7mwjMX+KP84nDRz1cdmksUBQDd3mQXMwQn2N70eZ8vN+9Mjy9sJJ
+         nfZQ==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
+        h=to:subject:message-id:date:from:mime-version:dkim-signature;
+        bh=1sacOeTTX9rBmGrO+Z0lFIKqj3E9S1rmLt30UMVyq9E=;
+        fh=++jYMvtXEoCAr+bA0lMz1OAfnMg35Ke5kpn3vUGRNv8=;
+        b=VSKQlOW/OG1RF/7QIKEMZm3WqwXZ67Qxm9Xk7jMCa6mBugohBBTn8YyWkckRZr/xvu
+         O0XJF5hVl34b2CzaZnjpWDfn8HWn1zZXnnkk338pbttBMXmIlt84KszOcWn2LuclTQPZ
+         p3/3aVtpAQpApcUxBo2UNo9eBiezS3mwGIo//EISYT5DkOgou4T778epE6ADlILfw+3r
+         Kd3uU5jE+0cOoBPxWTn+e9A4dBVx1E0M3vCjUnO88r5FC91ViocB6GOtsOqpKseYTJFZ
+         vYHgR5YYBiD9bnlYdXvSbhXfvye1v2ADbuqVMwOZa3zjrUjVDPquvhXX/C+b10eVFk+G
+         ULiA==;
+        darn=emalupe.com
+ARC-Authentication-Results: i=1; mx.google.com; arc=none
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20251104; t=1787689464; x=1788294264; darn=emalupe.com;
+        h=content-type:to:subject:message-id:date:from:mime-version:from:to
+         :cc:subject:date:message-id:reply-to:content-type;
+        bh=1sacOeTTX9rBmGrO+Z0lFIKqj3E9S1rmLt30UMVyq9E=;
+        b=RpObNXU0rzx25YV22yXbqzuRct8AVgGtsrHC6eFdQVqCNgTNwWQ+p3qwKp6u3JvW4u
+         gITd/BIcJKdPXHFESMLyGAdiPElMuZVFtrh047hU7Kwt8iS4K6/26uTmRCfoTShvs5hQ
+         jp/rPpcHmWeMvLNQZKs662NTUMQpBsllVQnzV5PXqx1b5KWyWS7PnU/NiXm0rkYe00d7
+         2gYrE8imVbVHFa4C9302ZdklrJL6JaJcEI1qjA+AmnGcN3A8FubGCoxGw7IuAjRcUG/Y
+         lEgOC3UvxNfKwaNOJNwCsqSYF8YnC2p+iKBUU8B4MK1ZVgkN73ib+CnDbybxX9ptSE36
+         DsOg==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20251104; t=1787689464; x=1788294264;
+        h=content-type:to:subject:message-id:date:from:mime-version:x-gm-gg
+         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
+         :content-type;
+        bh=1sacOeTTX9rBmGrO+Z0lFIKqj3E9S1rmLt30UMVyq9E=;
+        b=AC2U1Nay1xw8PZr0J3pjfZjIhWig3nmXusSCedDLaixHMKE01Qu1BdA4lp4tyVzJfn
+         EKuQmEVESIzrqo4opo4905xRSNXB2muAIHN0jAFO5F0n6vcDeZkU/D7UXQuASalxMZdJ
+         FnpL4TBPT2sqORCzOjvsPeVULh4klBs05jjjQHbLF1tK3sqTAzaio5Dr9nbRGxy57bxP
+         yJW4XKmtmh7dMUkB7FhQWP6uG1XrI6vSoeZ2Hb1upFW88sYbZcW4toZuIxSolgOpXsJd
+         QRbnsdVY1lnE10dQQESAsbcZ+toRy5UEacHEw0JZWOJf30S+4tSzP7o+ko8A6zjO+Uml
+         E6JA==
+X-Gm-Message-State: AFuF++n01MJeuRdBD7WzfRkX8qvWpMHGHbI9wUXFou/V20EEHD3zGBWl
+	MfY/yA38qwuaGNVtzDBZTGguMfs5zZHtKVUqmzunpW1nKS5aWYtkN5VD2ARdhfvqJDLI6stWcJi
+	qQOt1WxP/RZtj1Xwx4hlA3Dq4mfUXj5dQjO26nh7b2T0O
+X-Gm-Gg: AR+sD10ZgRDkvQDyMbJtZIgqW5Lv2143nsJr9tHSRhOypoFkX0STCeqF8hZIGNICZcM
+	9MA5He25NNO9CWWWv9ASTBEnEGEpDqc/sfkVFyGyNrArHbfFnJJsCAFe0EP/vZbcDp2QsTXDnak
+	bcW467N89T55KLRjGXvhKkfXFxnDhSyO7vj+VBaGbc2TismdoVYE/deB9Be69/Sl7Krayp7i7D4
+	HsU+My2ZUN8ej55wHS4EBvmkoxKxxbwXsn0VIR1zeKe9gOOtI/4P5P2Tp5sYBMiMdplHyNy+5iC
+	gSBF+2axqzodoTxS7W6JwMdTyZFpgMCkZFsp19vAFHuu1uNQpnBK
+X-Received: by 2002:a05:6a00:acd:b0:852:355b:2430 with SMTP id
+ d2e1a72fcca58-85373eb1abfmr1908084b3a.10.1787689464099; Tue, 25 Aug 2026
+ 13:24:24 -0700 (PDT)
+MIME-Version: 1.0
+From: Florian Standhartinger <florian.standhartinger@gmail.com>
+Date: Tue, 25 Aug 2026 20:24:12 +0000
+X-Gm-Features: AcwNN1VTQNXpMBDgsOjWc3xdvqulVbwyjnu_JGhtxKoCm7pJh7DeD1sJsEugm70
+Message-ID: <CAH9Y4-ifw78_G=J0vNmt_Lxnkxcg2-5m1ue3yY_Lq4oT0H6r8Q@mail.gmail.com>
+Subject: MailMint intake proof - real internet mail
+To: mailmint-ff472f63@emalupe.com
+Content-Type: multipart/alternative; boundary="00000000000079f7380659e4e3cb"
+
+
+--00000000000079f7380659e4e3cbContent-Type: text/plain; charset="UTF-8"
+
+Sent from Gmail to a public mailbox on another provider.
+If MailMint's intake pulls and parses this, the intake path handles real
+internet mail.
+
+--00000000000079f7380659e4e3cb
+Content-Type: text/html; charset="UTF-8"
+
+<div dir="ltr">Sent from Gmail to a public mailbox on another provider.<br>If MailMint&#39;s intake pulls and parses this, the intake path handles real internet mail.<br></div>
+
+--00000000000079f7380659e4e3cb--

@@ -1,0 +1,1888 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MailMint API reference — inbound email to structured JSON</title>
+<meta name="description" content="Full reference for the MailMint API: mailboxes, schemas, the parsed message object, flags and needs_review, webhook HMAC verification in Node and Python, the polling cursor, re-parsing, errors, rate limits and retention.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="/docs.css">
+</head>
+<body class="docs">
+
+<header class="docs-top">
+  <a class="logo" href="/">Mail<span>Mint</span></a>
+  <nav>
+    <a href="/quickstart">Quickstart</a>
+    <a href="#webhooks">Webhooks</a>
+    <a href="#errors">Errors</a>
+    <a href="/n8n">n8n</a>
+    <a href="/dashboard">Dashboard</a>
+    <a class="cta" href="/signup">Get an API key</a>
+  </nav>
+</header>
+
+<div class="layout">
+
+  <aside class="toc">
+    <button class="toc-toggle" id="tocToggle" aria-expanded="false" aria-controls="tocBody">On this page</button>
+    <div class="toc-body" id="tocBody">
+      <h2>Start here</h2>
+      <ul>
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#authentication">Authentication</a></li>
+        <li><a href="#quota">Quota &amp; billing</a></li>
+      </ul>
+
+      <h2>Concepts</h2>
+      <ul>
+        <li><a href="#mailboxes">Mailboxes &amp; addresses</a></li>
+        <li><a href="#schema">Schemas</a></li>
+        <li><a href="#field-types" class="sub">Field types</a></li>
+        <li><a href="#result">The message object</a></li>
+        <li><a href="#confidence">Confidence &amp; evidence</a></li>
+        <li><a href="#calibration" class="sub">Is the number honest?</a></li>
+        <li><a href="#determinism">Determinism &amp; debugging</a></li>
+        <li><a href="#flags">Flags &amp; needs_review</a></li>
+        <li><a href="#tables">Tables &amp; line items</a></li>
+        <li><a href="#attachments">Attachments</a></li>
+      </ul>
+
+      <h2>Endpoints</h2>
+      <ul>
+        <li><a href="#ep-mailboxes">/v1/mailboxes</a></li>
+        <li><a href="#ep-messages">/v1/messages</a></li>
+        <li><a href="#ep-message">/v1/messages/{id}</a></li>
+        <li><a href="#ep-raw" class="sub">…/raw</a></li>
+        <li><a href="#ep-attachment">/v1/attachments/{id}</a></li>
+        <li><a href="#reparse">Re-parsing</a></li>
+        <li><a href="#parse">POST /v1/parse</a></li>
+        <li><a href="#events">GET /v1/events</a></li>
+        <li><a href="#ep-test">POST /v1/test/deliver</a></li>
+        <li><a href="#ep-usage">GET /v1/usage</a></li>
+        <li><a href="#ep-health">GET /healthz</a></li>
+      </ul>
+
+      <h2>Delivery</h2>
+      <ul>
+        <li><a href="#webhooks">Webhooks</a></li>
+        <li><a href="#verify" class="sub">Verifying a signature</a></li>
+        <li><a href="#retries" class="sub">Retries</a></li>
+        <li><a href="#webhook-endpoints" class="sub">Several endpoints</a></li>
+        <li><a href="#pagination">Pagination &amp; cursors</a></li>
+      </ul>
+
+      <h2>Reference</h2>
+      <ul>
+        <li><a href="#errors">Errors</a></li>
+        <li><a href="#limits">Limits &amp; rate limits</a></li>
+        <li><a href="#retention">Retention</a></li>
+        <li><a href="#n8n">n8n node</a></li>
+        <li><a href="#honest">What is not built yet</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <main class="content">
+
+<h1>MailMint API reference</h1>
+<p class="lede">An inbound email address in, one frozen JSON object out — with a computed confidence, a
+source and a verbatim evidence span on every field you asked for. Delivered by webhook, by polling, or into
+n8n.</p>
+
+<div class="cards">
+  <div class="c"><strong>Base URL</strong><span>your deployment — see <a href="#overview">below</a></span></div>
+  <div class="c"><strong>Auth</strong><span><code>Authorization: Bearer mm_live_…</code></span></div>
+  <div class="c"><strong>Everything under</strong><span><code>/v1</code></span></div>
+</div>
+
+<!-- ============================================================ OVERVIEW -->
+<section id="overview">
+<h2>Overview <a class="anchor" href="#overview">#</a></h2>
+
+<p>There is no public hosted deployment yet, so there is no base URL this page can honestly print as if it
+were live. Set <code>MAILMINT_URL</code> to whichever MailMint you are calling — <code>http://127.0.0.1:3100</code>
+when you run it from the repository — and every example below works verbatim.</p>
+
+<p>Everything is JSON in, JSON out, except three endpoints that return bytes:
+<code>GET /v1/messages/{id}/raw</code> returns <code>message/rfc822</code>,
+<code>GET /v1/attachments/{id}</code> returns the file, and <code>GET /healthz</code> needs no auth.</p>
+
+<p>Every response carries an <code>X-Request-Id</code> header, and every error body repeats it as
+<code>error.request_id</code>. Quote it if you get in touch; it is the key that ties a response to the
+service&rsquo;s logs.</p>
+
+<h3>The three shapes you will meet <a class="anchor" href="#overview">#</a></h3>
+<div class="tw">
+<table>
+<thead><tr><th>Shape</th><th>Returned by</th><th>What it is</th></tr></thead>
+<tbody>
+<tr><td>The <strong>message object</strong></td>
+    <td><code>GET /v1/messages/{id}</code>, the webhook body, <code>GET /v1/events[].message</code>,
+        <code>POST /v1/parse</code>, <code>POST /v1/test/deliver</code>, both re-parse endpoints</td>
+    <td>The frozen result shape. <a href="#result">Documented field by field.</a> One function builds it,
+        so all three transports are byte-for-byte identical.</td></tr>
+<tr><td>The <strong>summary</strong></td><td><code>GET /v1/messages</code></td>
+    <td>A cheap row for paging: id, from, subject, status, flags, <code>needs_review</code>, the extracted
+        <code>fields</code>, and attachment metadata without any bytes or text.</td></tr>
+<tr><td>The <strong>mailbox</strong></td><td>every <code>/v1/mailboxes</code> route</td>
+    <td>Address, schema, schema version, webhook settings.</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ====================================================== AUTHENTICATION -->
+<section id="authentication">
+<h2>Authentication <a class="anchor" href="#authentication">#</a></h2>
+
+<p>Every <code>/v1</code> call takes an API key as a bearer token. <code>X-API-Key</code> is accepted as an
+alternative for clients that cannot set <code>Authorization</code>.</p>
+
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>curl "$MAILMINT_URL/v1/usage" -H "Authorization: Bearer $MAILMINT_API_KEY"</code></pre>
+</div>
+
+<div class="tw">
+<table>
+<thead><tr><th>Prefix</th><th>Behaviour</th></tr></thead>
+<tbody>
+<tr><td><code>mm_live_</code></td><td>A normal key. Parses count against your monthly quota.</td></tr>
+<tr><td><code>mm_test_</code></td><td>Identical in every other way, but nothing it does is ever billed or
+  counted. This is the key for CI.</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Keys are shown once, at creation, and cannot be read back — they are stored as a salted SHA-256 digest,
+never in the clear. Create and revoke them on <a href="/dashboard">the dashboard</a>. A revoked key stops
+working on the very next request. The API refuses to revoke your <em>only</em> key
+(<code>409 last_key</code>), because that would lock you out of the account entirely.</p>
+
+<div class="note">
+<p>A key that is missing gives <code>401 missing_api_key</code>; one with the wrong shape or a revoked one
+gives <code>401 invalid_api_key</code>. Both carry a <code>hint</code> saying what to do next.</p>
+</div>
+</section>
+
+<!-- =============================================================== QUOTA -->
+<section id="quota">
+<h2>Quota &amp; billing <a class="anchor" href="#quota">#</a></h2>
+
+<p>Quota is counted in <strong>parsed emails per calendar month</strong>, and it rolls over lazily on the
+first request after the month turns. <code>GET /v1/usage</code> reports where you are.</p>
+
+<p>Two things behave differently, deliberately:</p>
+
+<ul>
+  <li><strong>An API call that would exceed the quota is refused</strong> with
+    <code>402 quota_exceeded</code>. That is the right answer for a call you made on purpose.</li>
+  <li><strong>Inbound mail is never refused.</strong> A message that arrives when you are out of quota is
+    still accepted, still stored and still delivered — only the parsing is skipped, and the message says so
+    in its flags. Bouncing a stranger&rsquo;s mail because a customer hit a limit is a failure we would have
+    to explain to the sender, so we do not do it.</li>
+</ul>
+
+<div class="note">
+<p><strong>There is no pricing decision yet.</strong> Plan names and quotas exist in the service so that
+quota accounting has something to count against, and they are not an offer. When there is a price it will
+appear on the <a href="/#pricing">home page</a> first.</p>
+</div>
+</section>
+
+<!-- =========================================================== MAILBOXES -->
+<section id="mailboxes">
+<h2>Mailboxes &amp; addresses <a class="anchor" href="#mailboxes">#</a></h2>
+
+<p>A <strong>mailbox</strong> is one inbound address, plus the schema and the webhook that belong to it. Its
+address is <code>&lt;token&gt;@&lt;inbound domain&gt;</code>, where the token is twelve characters of
+lowercase Crockford base32 with <code>i</code>, <code>l</code>, <code>o</code> and <code>u</code> left out so
+it cannot be misread aloud.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Form</th><th>Example</th><th>Routes to</th></tr></thead>
+<tbody>
+<tr><td>Canonical</td><td class="kv">k7m2xq4h9bwz@parse.example.com</td><td>the mailbox</td></tr>
+<tr><td>Slug alias</td><td class="kv">invoices.k7m2xq4h9bwz@parse.example.com</td><td>the same mailbox</td></tr>
+<tr><td>Sub-address</td><td class="kv">k7m2xq4h9bwz+acme@parse.example.com</td><td>the same mailbox</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>The slug is a display convenience only: it is lowercased and stripped of anything that could introduce a
+dot, so it can never change which label is the token. The <code>+tag</code> form is the cheap way to route
+several senders into one mailbox and still tell them apart — the tag survives on
+<code>envelope.to</code>.</p>
+
+<div class="note warn">
+<p><strong>The hosted address is not live.</strong> Addresses are minted and reserved when you create a
+mailbox, but external mail cannot reach them until a domain is pointed at the service, and none has been
+bought yet. Everything else — schemas, webhooks, re-parsing, the event feed — works today through
+<a href="#ep-test"><code>POST /v1/test/deliver</code></a> and
+<a href="#parse"><code>POST /v1/parse</code></a>. See <a href="/quickstart#address">the quickstart</a>.</p>
+</div>
+</section>
+
+<!-- ============================================================== SCHEMA -->
+<section id="schema">
+<h2>Schemas <a class="anchor" href="#schema">#</a></h2>
+
+<p>A schema is the list of fields you want extracted. It is validated <em>at write time</em>, loudly — a
+field you thought you defined but which the parser silently ignored is the worst failure available here,
+because the mail arrives, the field is <code>null</code>, and nothing anywhere says why.</p>
+
+<div class="code">
+<div class="cap">the array form — what is stored</div>
+<button class="copy" type="button">Copy</button>
+<pre><code>"schema": [
+  { "name": "total", "type": "number", "description": "grand total incl. tax",
+    "required": true, "hint": "labelled Total or Amount Due" }
+]</code></pre>
+</div>
+
+<div class="code">
+<div class="cap">the object shorthand — accepted, normalised to the above</div>
+<button class="copy" type="button">Copy</button>
+<pre><code>"schema": { "invoice_number": "string", "total": { "type": "number", "hint": "labelled Total" } }</code></pre>
+</div>
+
+<div class="tw">
+<table>
+<thead><tr><th>Key</th><th>Type</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td><code>name</code></td><td>string, required</td><td>Becomes the key in <code>fields</code>. Must match
+  <code>^[A-Za-z_][A-Za-z0-9_]{0,63}$</code> — it has to be usable as a JSON key. Duplicates are
+  rejected.</td></tr>
+<tr><td><code>type</code></td><td>string</td><td>One of the thirteen <a href="#field-types">field
+  types</a>. Defaults to <code>string</code>.</td></tr>
+<tr><td><code>description</code></td><td>string, ≤&nbsp;500 chars</td><td><strong>The single biggest lever on
+  accuracy.</strong> Write it the way you would explain the field to a new colleague.</td></tr>
+<tr><td><code>hint</code></td><td>string, ≤&nbsp;300 chars</td><td>The label the mail actually uses, e.g.
+  <code>"labelled Amount Due"</code>.</td></tr>
+<tr><td><code>required</code></td><td>boolean</td><td>A required field that is missing is still
+  <code>null</code> — it is <em>flagged</em>, never fabricated.</td></tr>
+<tr><td><code>options</code></td><td>array</td><td><code>enum</code> only. Up to 200 values.</td></tr>
+<tr><td><code>items</code></td><td>object</td><td><code>array</code> only: <code>{"type": …}</code>, plus
+  <code>fields</code> when the item type is <code>object</code>.</td></tr>
+<tr><td><code>fields</code></td><td>array</td><td><code>object</code> only: the nested field list.</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>A schema may define at most <strong>60 fields</strong> and nest at most <strong>two levels</strong> of
+objects. Both limits are refused with <code>400 invalid_schema</code> and a message that names the
+offending path. The width limit is not arbitrary: a schema that wide costs accuracy as well as tokens, and
+splitting it across mailboxes is the better answer.</p>
+
+<h3 id="field-types">Field types <a class="anchor" href="#field-types">#</a></h3>
+
+<p>Coercion happens <strong>after</strong> the extraction, never before. A value that will not coerce becomes
+<code>null</code> with confidence <code>0</code> and the flag <code>type_error:&lt;field&gt;</code>. It is
+never silently rounded, guessed, or replaced with a plausible-looking substitute.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Type</th><th>You get back</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td><code>string</code></td><td class="kv">"INV-2291"</td><td>The text as written in the mail.</td></tr>
+<tr><td><code>number</code></td><td class="kv">31.5</td><td>Decimals allowed.</td></tr>
+<tr><td><code>integer</code></td><td class="kv">3</td><td>A whole number.</td></tr>
+<tr><td><code>boolean</code></td><td class="kv">true</td><td></td></tr>
+<tr><td><code>date</code></td><td class="kv">"2026-09-08"</td><td>Normalised to <code>YYYY-MM-DD</code>.</td></tr>
+<tr><td><code>datetime</code></td><td class="kv">"2026-09-08T14:00:00Z"</td><td>ISO-8601, UTC.</td></tr>
+<tr><td><code>email</code></td><td class="kv">"billing@acme.example"</td><td>Validated.</td></tr>
+<tr><td><code>url</code></td><td class="kv">"https://…"</td><td></td></tr>
+<tr><td><code>phone</code></td><td class="kv">"+1 555 0100"</td><td></td></tr>
+<tr><td><code>currency</code></td><td class="kv">{ "amount": 31.5, "currency": "USD" }</td>
+    <td>Always this pair, never a bare number.</td></tr>
+<tr><td><code>enum</code></td><td class="kv">"paid"</td>
+    <td>Requires <code>options</code>. A value outside the list becomes <code>null</code> and raises
+      <code>enum_violation:&lt;field&gt;</code>.</td></tr>
+<tr><td><code>array</code></td><td class="kv">[ … ]</td>
+    <td>Requires <code>items: { "type": … }</code>. Item type <code>object</code> also needs
+      <code>items.fields</code>. See <a href="#tables">line items</a>.</td></tr>
+<tr><td><code>object</code></td><td class="kv">{ … }</td><td>Requires <code>fields: [ … ]</code>.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="schema-versions">Schema versions <a class="anchor" href="#schema-versions">#</a></h3>
+
+<p>Every change to a mailbox schema increments <code>schema_version</code>, and every parse records which
+version produced it in <code>parse.schema_version</code>. That is what makes &ldquo;why did this message come
+out differently from that one&rdquo; answerable rather than a guess, and it is what
+<a href="#reparse">re-parsing</a> reaches back through. Docparser sells the same capability as
+&ldquo;Parser Version Control&rdquo;, a paid add-on; here it is on by default and cannot be turned off.</p>
+</section>
+
+<!-- ============================================================== RESULT -->
+<section id="result">
+<h2>The message object <a class="anchor" href="#result">#</a></h2>
+
+<p>One shape, three transports. This is what <code>GET /v1/messages/{id}</code> returns, what is POSTed to
+your webhook, and what appears as <code>message</code> in the event feed.</p>
+
+<div class="code">
+<div class="cap">the complete shape</div>
+<pre><code>{
+  "id": "msg_01JQ8Z3K4M5N6P7Q8R9S",
+  "mailbox": { "id": "mbx_01JQ8Y…", "address": "k7m2xq4h9bwz@parse.example.com", "name": "Invoices" },
+  "received_at": "2026-08-25T09:14:03.221Z",
+  "status": "parsed",
+  "envelope": {
+    "from": "billing@acme.example",
+    "to": ["k7m2xq4h9bwz@parse.example.com"],
+    "helo": "mail.acme.example",
+    "remote_ip": "203.0.113.7",
+    "tls": true
+  },
+  "headers": {
+    "message_id": "&lt;a1b2c3@mail.acme.example&gt;",
+    "date": "2026-08-25T09:14:01.000Z",
+    "subject": "Invoice INV-2291 from Acme Ltd",
+    "from": { "name": "Acme Billing", "email": "billing@acme.example" },
+    "to":   [ { "name": null, "email": "k7m2xq4h9bwz@parse.example.com" } ],
+    "cc": [], "reply_to": [],
+    "in_reply_to": null, "references": [],
+    "raw": { "x-mailer": "…", "list-unsubscribe": "…" }
+  },
+  "body": {
+    "text": "plain text, quoted-printable decoded, charset-normalised to UTF-8",
+    "html": "&lt;html&gt;…&lt;/html&gt;",
+    "text_from_html": "text rendered from the html part when there is no text/plain",
+    "stripped_text": "the body with the quoted reply chain and signature removed",
+    "language": "en"
+  },
+  "attachments": [ … ],
+  "auth": { "spf": "pass", "dkim": "pass", "dmarc": "pass", "spam_score": 0.4 },
+  "tables": [ … ],
+  "detected": { … },
+  "fields": { … },
+  "flags": [],
+  "needs_review": false,
+  "parse": {
+    "request_id": "req_…",
+    "schema_version": 3,
+    "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
+    "llm_used": true,
+    "timings_ms": { "total": 4735, "mime": 22, "deterministic": 14, "llm": 4611, "persist": 12 },
+    "cost": { "input_tokens": 4120, "output_tokens": 380, "llm_calls": 1, "usd": 0.00021 },
+    "warnings": []
+  },
+  "raw_url": "https://…/v1/messages/msg_01JQ8Z…/raw"
+}</code></pre>
+</div>
+
+<div class="tw">
+<table>
+<thead><tr><th>Key</th><th>What it is</th></tr></thead>
+<tbody>
+<tr><td><code>id</code></td><td>Sortable, prefixed <code>msg_</code>. <code>null</code> from
+  <code>POST /v1/parse</code>, which stores nothing.</td></tr>
+<tr><td><code>received_at</code></td><td>When <em>we</em> accepted the message — not the sender&rsquo;s
+  <code>Date:</code> header, which is in <code>headers.date</code> and may be wrong, or
+  <code>null</code>.</td></tr>
+<tr><td><code>status</code></td><td><code>parsed</code>, or a state you can filter
+  <code>GET /v1/messages</code> by.</td></tr>
+<tr><td><code>envelope</code></td><td>What the SMTP conversation said: <code>MAIL FROM</code>,
+  <code>RCPT TO</code>, the HELO name, the connecting IP, and whether the hop was over TLS. This is
+  frequently <em>not</em> what <code>headers.from</code> says, and the difference matters.</td></tr>
+<tr><td><code>headers</code></td><td>Decoded and unfolded, RFC&nbsp;2047 encoded words resolved. Everything
+  we do not name explicitly is under <code>headers.raw</code> with lowercased keys.</td></tr>
+<tr><td><code>body.stripped_text</code></td><td>The body with the trailing quoted reply chain and the
+  signature removed. This is usually what you want to extract from.</td></tr>
+<tr><td><code>auth</code></td><td>SPF, DKIM and DMARC. <a href="#auth">Documented in full below</a>,
+  including why <code>dkim: "body_altered"</code> is a different thing from
+  <code>dkim: "fail"</code>.</td></tr>
+<tr><td><code>tables</code></td><td>Deterministic table extraction. <a href="#tables">See below.</a></td></tr>
+<tr><td><code>detected</code></td><td>Always present, always deterministic, and does not need a schema:
+  document <code>type</code> (<code>invoice</code>, <code>receipt</code>, <code>order</code>,
+  <code>shipping</code>, <code>form</code>, <code>calendar</code>, <code>generic</code>), plus every
+  <code>emails</code>, <code>urls</code>, <code>phones</code>, <code>amounts</code>, <code>dates</code>,
+  <code>ids</code> and <code>addresses</code> found.</td></tr>
+<tr><td><code>fields</code></td><td>Your schema&rsquo;s answers. <code>{}</code> when no schema is set, and
+  the message is flagged <code>no_schema</code>.</td></tr>
+<tr><td><code>parse.model</code></td><td>The model that answered, or <code>null</code> when the deterministic
+  layer resolved everything and no model ran at all.</td></tr>
+<tr><td><code>parse.cost</code></td><td>What this parse actually cost: input and output tokens, how many
+  model calls were made, and the amount in USD. A message the rules layer resolved on its own reports
+  <code>llm_calls: 0</code>. Parseur puts <code>credits_used</code> on its document object; nobody else in
+  this category publishes per-document cost, and cost is the loudest complaint in the forum data, so it is
+  here by default.</td></tr>
+<tr><td><code>raw_url</code></td><td>The original RFC822 bytes, API-key authenticated.
+  <code>null</code> once the raw message has aged out or was never stored.</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ========================================================== CONFIDENCE -->
+<section id="confidence">
+<h2>Confidence &amp; evidence <a class="anchor" href="#confidence">#</a></h2>
+
+<p>Every entry in <code>fields</code> has exactly four keys.</p>
+
+<div class="code">
+<pre><code>"total": {
+  "value":      31.5,                  // null when not found. Never invented, never "N/A".
+  "confidence": 0.97,                  // float 0..1, computed by us
+  "source":     "rule",                // rule | llm | rule+llm | header | attachment | none
+  "evidence":   "Total: $31.50"        // a verbatim substring of the input, or null
+}</code></pre>
+</div>
+
+<div class="note">
+<p><strong>Confidence is computed, never taken from the model.</strong> This is the whole point, and it is
+worth being precise about why. A widely repeated finding from practitioners is that a raw LLM self-report is
+uncalibrated — <em>&ldquo;the same email comes back as 0.8 one day and 0.9 the next&rdquo;</em>, and
+<em>&ldquo;a model will report 0.95 on a PO code it hallucinated&rdquo;</em>. A number like that is worse
+than no number, because it reaches you wearing a confidence score.</p>
+</div>
+
+<p>So the score is derived from signals that can be checked without asking the model&rsquo;s opinion, in
+roughly this order of weight:</p>
+
+<ol>
+  <li><strong>Evidence verification.</strong> <code>evidence</code> must be a verbatim substring of the
+    input, normalised for whitespace and case. This test actually runs on every field. Failing it is
+    near-disqualifying rather than a soft penalty: the confidence is multiplied down <em>and</em> capped, and
+    the field is flagged <code>hallucinated_evidence:&lt;field&gt;</code>.</li>
+  <li><strong>Independent agreement.</strong> A deterministic rules layer and the model both run. When they
+    produce the same answer independently, <code>source</code> becomes <code>"rule+llm"</code> and the score
+    reaches its ceiling. When they disagree, the <strong>rule&rsquo;s</strong> value is kept, the confidence
+    drops sharply, and <code>rule_llm_disagreement:&lt;field&gt;</code> is raised. No competitor runs both
+    layers, so no competitor can detect this at all.</li>
+  <li><strong>Arithmetic consistency.</strong> On invoices and receipts: do the line items sum to the
+    subtotal, and does subtotal + tax + shipping &minus; discount equal the total? Reconciling raises
+    confidence across the whole cluster of related fields; failing sets <code>arithmetic_mismatch</code>.
+    This is the check that catches &ldquo;forty rows in the mail, one row in the output&rdquo; — the failure
+    that is otherwise silent, because every individual value looks plausible.</li>
+  <li><strong>Type, format and enum validity</strong> after coercion.</li>
+  <li><strong>The model&rsquo;s own self-report</strong> — the smallest weight, and it may only ever
+    <em>lower</em> a score, never raise one above what the verifiable signals justify.</li>
+</ol>
+
+<div class="tw">
+<table>
+<thead><tr><th><code>source</code></th><th>Means</th></tr></thead>
+<tbody>
+<tr><td><code>rule</code></td><td>A deterministic rule found it. No model was involved for this field.</td></tr>
+<tr><td><code>llm</code></td><td>Only the model found it.</td></tr>
+<tr><td><code>rule+llm</code></td><td>Both layers ran and agreed independently. The highest-trust source.</td></tr>
+<tr><td><code>header</code></td><td>Lifted from a message header.</td></tr>
+<tr><td><code>attachment</code></td><td>Read out of an attachment.</td></tr>
+<tr><td><code>none</code></td><td>Not found. <code>value</code> is <code>null</code> and
+  <code>confidence</code> is <code>0</code>.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="calibration">Is the number honest? <a class="anchor" href="#calibration">#</a></h3>
+
+<p>A confidence score is only worth reading if it declines when the answer gets worse. So every extracted
+value is bucketed by the confidence we reported and checked against a hand label. Measured on a
+<strong>hold-out set the parser had never seen</strong> &mdash; 36 deliberately adversarial messages, 163
+labelled field slots, 25&nbsp;August 2026:</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Reported confidence</th><th>Values</th><th>Actually correct</th></tr></thead>
+<tbody>
+<tr><td>0.9 &ndash; 1.0</td><td>62</td><td><strong>91.9&nbsp;%</strong></td></tr>
+<tr><td>0.7 &ndash; 0.9</td><td>29</td><td>82.8&nbsp;%</td></tr>
+<tr><td>0.6 &ndash; 0.7</td><td>7</td><td>57.1&nbsp;%</td></tr>
+<tr><td>below 0.6</td><td>5</td><td>20.0&nbsp;%</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Overall on that set: <strong>83.5&nbsp;% precision, 91.5&nbsp;% recall.</strong> On our own labelled
+corpus the same pipeline scores 100&nbsp;% on both, and we do not quote that number, because a score
+measured on the cases you tuned against is not a score.</p>
+
+<p>The commitment is the shape of that table, not any single figure in it: if values reported at 0.9+ stop
+being right about 90&nbsp;% of the time, the formula is wrong and gets fixed. Both runs, and every case each
+one gets wrong, are in <code>packages/parser/</code>.</p>
+</section>
+
+
+<!-- ========================================================= DETERMINISM -->
+<section id="determinism">
+<h2>Determinism, and where to stand when it is wrong <a class="anchor" href="#determinism">#</a></h2>
+
+<p>The honest thing the incumbents have that an LLM pipeline does not: <strong>a rule that returns the same
+answer every time, and somewhere to stand when it is wrong.</strong> This is not us being generous &mdash; it
+is Parseur&rsquo;s own published comparison of their AI engine against their template engine, which lists
+<em>&ldquo;Deterministic results with debugging support&rdquo;</em> as a pro of the templates and
+<em>&ldquo;Results may vary slightly; limited debugging capability&rdquo;</em> as a con of the AI.</p>
+
+<p>When a Mailparser rule returns the wrong value, the user opens the filter chain and watches the preview
+change filter by filter until they see which one ate it. When a model returns the wrong value, the usual
+recourse is to edit a hint string and hope. So MailMint keeps three properties that make
+<code>source</code> and <code>evidence</code> a real debugging surface rather than decoration:</p>
+
+<ol>
+  <li><strong>A matched rule wins, and its value is what you get.</strong> For every field the deterministic
+    layer resolved, the output is byte-identical run to run. That is the determinism the incumbents sell,
+    and it covers the large majority of field slots on ordinary invoice mail.</li>
+  <li><strong>The model still runs, and still sees those fields</strong> &mdash; not to overrule the rule, but
+    to cross-examine it. Agreement is what earns a confidence above ~0.9; disagreement keeps the
+    <em>rule&rsquo;s</em> value and lowers the score with
+    <code>rule_llm_disagreement:&lt;field&gt;</code>. Determinism of the value, verification of the
+    confidence. Skipping the model wherever the rule looks confident would remove the strongest verification
+    signal exactly where it matters most.</li>
+  <li><strong><code>evidence</code> is the &ldquo;where did this come from&rdquo; pointer.</strong> It is a
+    verbatim span for every source, and it contains the value. It is what the incumbents give you by letting
+    you watch a preview, except you can assert on it in code.</li>
+</ol>
+
+<p>Two limits, stated rather than papered over. A long document with many fields costs us more than it costs
+a rule chain &mdash; which is why <a href="#result"><code>parse.cost</code></a> is published on every result.
+And our non-English accuracy rests on the model wherever no deterministic rules exist; the label synonym
+tables are Latin-script only.</p>
+</section>
+
+<!-- =============================================================== FLAGS -->
+<section id="flags">
+<h2>Flags &amp; <code>needs_review</code> <a class="anchor" href="#flags">#</a></h2>
+
+<p><code>flags</code> is a flat array of strings. Field-scoped flags carry the field name after a colon
+(<code>low_confidence:due_date</code>); whole-message flags do not.</p>
+
+<div class="note">
+<p><strong>A message with any flag still delivers.</strong> Nothing is ever silently dropped, and no flag
+suppresses a webhook. The flags are how you find out something went wrong — they are not an error
+channel.</p>
+</div>
+
+<div class="tw">
+<table>
+<thead><tr><th>Flag</th><th>Raised when</th><th>Sets <code>needs_review</code></th></tr></thead>
+<tbody>
+<tr><td><code>low_confidence:&lt;field&gt;</code></td><td>The computed confidence fell below 0.6.</td><td>yes</td></tr>
+<tr><td><code>missing_required:&lt;field&gt;</code></td><td>A field marked <code>required</code> came back
+  <code>null</code>.</td><td>yes</td></tr>
+<tr><td><code>type_error:&lt;field&gt;</code></td><td>The value would not coerce to the declared type.</td><td>yes</td></tr>
+<tr><td><code>hallucinated_evidence:&lt;field&gt;</code></td><td>The quoted evidence is not actually in the
+  message.</td><td>yes</td></tr>
+<tr><td><code>enum_violation:&lt;field&gt;</code></td><td>The value was outside the declared
+  <code>options</code>.</td><td>yes</td></tr>
+<tr><td><code>rule_llm_disagreement:&lt;field&gt;</code></td><td>The rules layer and the model answered
+  differently. The rule&rsquo;s value is kept.</td><td>yes</td></tr>
+<tr><td><code>arithmetic_mismatch</code></td><td>The line items do not add up to the stated total.</td><td>yes</td></tr>
+<tr><td><code>table_truncated</code></td><td>A table hit the row cap and is known to be short.</td><td>yes</td></tr>
+<tr><td><code>attachment_unreadable</code></td><td>An attachment could not be read.</td><td>yes</td></tr>
+<tr><td><code>array_incomplete:&lt;field&gt;</code></td><td>The model returned fewer rows than the
+  deterministic extractors found.</td><td>no</td></tr>
+<tr><td><code>array_source_disagreement:&lt;field&gt;</code></td><td>Two independent row extractors produced
+  different row sets. Flagged rather than quietly resolved.</td><td>no</td></tr>
+<tr><td><code>no_schema</code></td><td>The mailbox has no schema, so <code>fields</code> is
+  <code>{}</code>.</td><td>no</td></tr>
+<tr><td><code>llm_unavailable</code></td><td>The model chain could not be reached. Deterministic results are
+  still returned.</td><td>no</td></tr>
+<tr><td><code>truncated_body</code></td><td>The body exceeded the text cap and was cut.</td><td>no</td></tr>
+<tr><td><code>attachment_too_large</code></td><td>An attachment exceeded the storage cap. Its metadata is
+  still recorded.</td><td>no</td></tr>
+<tr><td><code>spam_suspected</code></td><td>An upstream spam score of 5 or more.</td><td>no</td></tr>
+<tr><td><code>auth_fail:spf</code> · <code>:dkim</code> · <code>:dmarc</code></td>
+    <td>The named mechanism reported <code>fail</code>, <code>softfail</code>, <code>permerror</code> or
+      <code>temperror</code>.</td><td>no</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="needs-review"><code>needs_review</code> <a class="anchor" href="#needs-review">#</a></h3>
+
+<p>A single top-level boolean: <strong>true when any flag in the right-hand column above says a human should
+look.</strong> It is derived in one place and used everywhere, so the API, the dashboard&rsquo;s review queue
+and the webhook body can never disagree about it.</p>
+
+<p>It is also a first-class query, with its own index:</p>
+
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code><span class="tok-c"># everything that needs a human, newest first</span>
+curl "$MAILMINT_URL/v1/messages?needs_review=true&view=review" \
+  -H "Authorization: Bearer $MAILMINT_API_KEY"
+
+<span class="tok-c"># everything that hit one specific flag</span>
+curl "$MAILMINT_URL/v1/messages?flag=arithmetic_mismatch" \
+  -H "Authorization: Bearer $MAILMINT_API_KEY"</code></pre>
+</div>
+
+<p><code>view=review</code> adds an <code>issues</code> array to each row — which flag fired, on which field,
+what the value and confidence were, and the evidence it came from. That is enough to accept or fix a message
+without opening it.</p>
+</section>
+
+<!-- ============================================================== TABLES -->
+<section id="tables">
+<h2>Tables &amp; line items <a class="anchor" href="#tables">#</a></h2>
+
+<p><code>tables</code> is deterministic table extraction from the text and HTML parts, present whether or not
+you defined a schema.</p>
+
+<div class="code">
+<pre><code>"tables": [
+  {
+    "source":  "html",              // which part it came from
+    "index":   0,
+    "headers": ["Item", "Qty", "Amount"],
+    "rows":    [ ["Widget", "3", "$27.00"] ],
+    "records": [ { "Item": "Widget", "Qty": "3", "Amount": "$27.00" } ],
+    "row_count": 39,
+    "truncated": false
+  }
+]</code></pre>
+</div>
+
+<p><code>row_count</code> and <code>truncated</code> are the point. &ldquo;The mail had forty rows and I got
+one&rdquo; is the most common unanswered complaint in this category, and the reason it stays unanswered is
+that a short array looks exactly like a correct one. Here it does not: the count travels with the table, and
+a table cut off at the cap (5,000 rows) also raises <code>table_truncated</code>, which sets
+<code>needs_review</code>.</p>
+
+<p>Row extraction runs from more than one independent source and reconciles the candidates, because
+<strong>real HTML email frequently contains no real table at all</strong> — Outlook compatibility pushes
+every large sender towards nested single-cell tables, where a <code>&lt;table&gt;</code>&nbsp;&rarr;
+headers/rows extractor structurally cannot see the line items. When two sources disagree the field is
+flagged <code>array_source_disagreement:&lt;field&gt;</code> rather than silently resolved in favour of
+one.</p>
+
+<p>To get line items as typed data rather than strings, declare an <code>array</code> of
+<code>object</code>:</p>
+
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>{ "name": "line_items", "type": "array",
+  "items": { "type": "object", "fields": [
+    { "name": "description", "type": "string" },
+    { "name": "qty",         "type": "integer" },
+    { "name": "amount",      "type": "number" }
+  ] } }</code></pre>
+</div>
+</section>
+
+<!-- ========================================================= ATTACHMENTS -->
+<section id="attachments">
+<h2>Attachments <a class="anchor" href="#attachments">#</a></h2>
+
+<div class="code">
+<pre><code>"attachments": [
+  {
+    "id": "att_01JQ8Z3K4M5N6P7Q8R9S",
+    "filename": "invoice-2291.pdf",
+    "content_type": "application/pdf",
+    "size": 48213,
+    "sha256": "9f2c8b…",
+    "inline": false,
+    "content_id": null,
+    "url": "https://…/v1/attachments/att_01JQ8Z…",
+    "content_base64": "…"        // only with ?include=attachments
+  }
+]</code></pre>
+</div>
+
+<p>Every attachment is its own addressable object — nothing is zipped together, and nothing is flattened
+into the same namespace as our own metadata. <code>inline</code> and <code>content_id</code> are what
+separate a customer&rsquo;s invoice from the sender&rsquo;s Outlook signature logo, which is a real,
+documented failure elsewhere in this category.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Query parameter</th><th>Effect</th></tr></thead>
+<tbody>
+<tr><td><code>?include=attachments</code></td><td>Inlines the bytes as <code>content_base64</code>.</td></tr>
+<tr><td><code>?include=extracted_text</code></td><td>Returns the full extracted text instead of the
+  2,000-character preview.</td></tr>
+<tr><td><code>?exclude=extracted</code></td><td>Drops the <code>extracted</code> block entirely — worth doing
+  on a hot polling loop.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="note warn">
+<p><strong>Attachment content extraction is built but not yet wired in.</strong> The extractor exists
+— <code>packages/docs</code> handles PDF text and tables, XLSX, CSV, DOCX, plain text and HTML, with
+an OCR fallback for scans — and the response shape reserves
+<code>attachments[].extracted</code> for <code>{kind, text, pages, tables, meta}</code>, and the n8n node
+already knows how to fan line items out of it. Nothing connects the two yet, so <strong>that slot is not
+populated today</strong>: a message whose data lives <em>only</em> inside the attachment gives you the
+file, its metadata and its SHA-256, not its contents. Written against the code as of 25&nbsp;August 2026.</p>
+</div>
+</section>
+
+<!-- ================================================================ AUTH -->
+<section id="auth">
+<h2>SPF, DKIM and DMARC <a class="anchor" href="#auth">#</a></h2>
+
+<div class="code">
+<pre><code>"auth": { "spf": "pass", "dkim": "pass", "dmarc": "pass", "spam_score": 0.4 }</code></pre>
+</div>
+
+<div class="tw">
+<table>
+<thead><tr><th>Key</th><th>Values</th></tr></thead>
+<tbody>
+<tr><td><code>spf</code></td><td><code>pass</code> · <code>fail</code> · <code>softfail</code> ·
+  <code>neutral</code> · <code>none</code> · <code>temperror</code> · <code>permerror</code></td></tr>
+<tr><td><code>dkim</code></td><td><code>pass</code> · <code>fail</code> · <strong><code>body_altered</code></strong> ·
+  <code>none</code> · <code>temperror</code> · <code>permerror</code></td></tr>
+<tr><td><code>dmarc</code></td><td><code>pass</code> · <code>fail</code> · <code>none</code> ·
+  <code>temperror</code> · <code>permerror</code></td></tr>
+<tr><td><code>spam_score</code></td><td>A number, or <code>null</code>. 5 or above raises
+  <code>spam_suspected</code>.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="body-altered"><code>dkim: "body_altered"</code> is not <code>dkim: "fail"</code>
+  <a class="anchor" href="#body-altered">#</a></h3>
+
+<p>A DKIM signature can fail for two completely different reasons, and collapsing them into one code is
+always cheaper to write and always wrong to consume:</p>
+
+<ul>
+  <li><strong>The signature or the key is wrong.</strong> Somebody forged the message, or the selector is
+    gone. That is <code>fail</code>.</li>
+  <li><strong>The body hash does not match.</strong> The message was signed correctly and then <em>modified
+    after signing</em>. That is <code>body_altered</code>.</li>
+</ul>
+
+<p>The second is overwhelmingly benign and overwhelmingly common: forwarding, mailing lists, and corporate
+security gateways that rewrite links all break the body hash while leaving a perfectly legitimate message
+behind. A large share of mail reaching a parser is forwarded from Gmail, so reporting that as a signature
+failure would mark the happy path as suspicious.</p>
+
+<div class="note">
+<p><strong>Write <code>if (auth.dkim === "fail")</code> and you get forgeries, not your colleague&rsquo;s
+forward.</strong> That is the whole reason the value exists, and it is branchable without reading any
+sub-object. A finer breakdown — per-signature results, and a
+<code>failure_type</code> of <code>body_hash</code>, <code>signature</code>, <code>key</code>,
+<code>policy</code> or <code>dns</code> — is computed alongside it for anyone who wants it.</p>
+</div>
+
+<h3 id="auth-provenance">Where these values come from <a class="anchor" href="#auth-provenance">#</a></h3>
+
+<ul>
+  <li><strong>MailMint&rsquo;s own SMTP server verifies them itself</strong> — a real SPF evaluation, real
+    DKIM signature and body-hash verification against the signing domain&rsquo;s live DNS key, and a real
+    DMARC alignment check. It was measured against <strong>69 real third-party signatures</strong> from
+    senders including gmail.com, Fastmail, Pobox and GMX, all 69 of which verify; 33 of those use
+    <code>relaxed/simple</code> canonicalisation, which is the combination naive implementations get
+    wrong.</li>
+  <li><strong>On the hosted Cloudflare Email Routing path, <code>spf</code> is reported as
+    <code>none</code></strong>, because Email Routing gives the receiving worker no client IP and SPF cannot
+    be evaluated without one. We report <code>none</code> rather than guessing at a result we did not
+    compute.</li>
+  <li><strong>When mail reaches us through an upstream MTA that already stamped an
+    <code>Authentication-Results</code> header</strong>, that header is what we read.</li>
+</ul>
+</section>
+
+<!-- ======================================================= EP: MAILBOXES -->
+<section id="ep-mailboxes">
+<h2>Mailboxes <a class="anchor" href="#ep-mailboxes">#</a></h2>
+
+<h3><span class="pill post">POST</span><span class="path">/v1/mailboxes</span></h3>
+
+<p>Creates a mailbox and mints its address. Up to 100 per account.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Body</th><th>Type</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td><code>name</code></td><td>string</td><td>Defaults to <code>"Inbox"</code>. Trimmed to 80
+  characters.</td></tr>
+<tr><td><code>schema</code></td><td>array or object</td><td><a href="#schema">See schemas.</a></td></tr>
+<tr><td><code>webhook_url</code></td><td>string</td><td>Absolute <code>http</code> or <code>https</code>.
+  Anything else is <code>400 invalid_webhook_url</code>.</td></tr>
+<tr><td><code>slug</code></td><td>string</td><td>Optional pretty alias. Derived from the name if you omit
+  it; dropped silently on a collision inside your account, because it is a convenience and not an
+  identifier.</td></tr>
+<tr><td><code>forward_to</code></td><td>string</td><td>Optional address to forward the original message
+  to.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>curl -X POST "$MAILMINT_URL/v1/mailboxes" \
+  -H "Authorization: Bearer $MAILMINT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "name": "Invoices",
+        "webhook_url": "https://your-app.example/hooks/mailmint",
+        "schema": { "invoice_number": "string", "total": "number", "due_date": "date" } }'</code></pre>
+</div>
+
+<div class="code">
+<div class="cap">201 Created</div>
+<pre><code>{
+  "mailbox": {
+    "id": "mbx_01JQ8Y7X6W5V4U3T2S1R",
+    "name": "Invoices",
+    "address": "k7m2xq4h9bwz@parse.example.com",
+    "alias": "invoices.k7m2xq4h9bwz@parse.example.com",
+    "token": "k7m2xq4h9bwz",
+    "slug": "invoices",
+    "schema": [ … ],
+    "schema_version": 1,
+    "webhook_url": "https://your-app.example/hooks/mailmint",
+    "webhook_secret": "b3f1…",
+    "webhooks": [
+      { "id": "whe_4f1c…", "url": "https://your-app.example/hooks/mailmint",
+        "description": null, "active": true, "secret": "b3f1…",
+        "last_status": null, "last_delivered_at": null,
+        "consecutive_failures": 0, "disabled_reason": null }
+    ],
+    "forward_to": null,
+    "paused": false,
+    "created_at": "2026-08-25T09:10:00.000Z"
+  }
+}</code></pre>
+</div>
+
+<div class="note warn">
+<p><code>webhook_secret</code> is generated for you and returned on create, fetch and update. It is the only
+thing that lets you prove a delivery came from MailMint. <a href="#verify">Verify it.</a></p>
+</div>
+
+<h3><span class="pill get">GET</span><span class="path">/v1/mailboxes</span></h3>
+<p>Returns <code>{ "data": [ … ], "inbound_domain": "parse.example.com" }</code>. The
+<code>inbound_domain</code> is echoed so a client never has to hard-code it.</p>
+
+<h3><span class="pill get">GET</span><span class="path">/v1/mailboxes/{id}</span></h3>
+<p>One mailbox, including <code>webhook_secret</code>.</p>
+
+<h3><span class="pill put">PATCH</span><span class="path">/v1/mailboxes/{id}</span></h3>
+<p>Accepts <code>name</code>, <code>schema</code>, <code>webhook_url</code> and
+<code>webhook_secret</code>. Any change to the schema increments <code>schema_version</code>; the previous
+versions are kept, so a re-parse can name one.</p>
+
+<div class="note">
+<p><strong>This is the endpoint that makes the tuning loop possible.</strong> Parseur&rsquo;s own developer
+documentation states you cannot create or update templates programmatically, so
+<em>change&nbsp;schema&nbsp;&rarr;&nbsp;re-parse&nbsp;&rarr;&nbsp;compare</em> is not scriptable anywhere
+else in this category.</p>
+</div>
+
+<h3><span class="pill del">DELETE</span><span class="path">/v1/mailboxes/{id}</span></h3>
+<p>Soft-deletes the mailbox. The address stops accepting mail.</p>
+</section>
+
+<!-- ======================================================== EP: MESSAGES -->
+<section id="ep-messages">
+<h2><span class="pill get">GET</span><span class="path">/v1/messages</span> <a class="anchor" href="#ep-messages">#</a></h2>
+
+<p>Paged newest-first. Returns the <a href="#overview">summary</a> shape, not the full message object.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Query</th><th>Effect</th></tr></thead>
+<tbody>
+<tr><td><code>mailbox_id</code></td><td>Restrict to one mailbox.</td></tr>
+<tr><td><code>since</code></td><td>ISO-8601 timestamp. A value that is not a date is
+  <code>400 invalid_since</code>.</td></tr>
+<tr><td><code>status</code></td><td>Filter by message status.</td></tr>
+<tr><td><code>needs_review</code></td><td>Anything but <code>false</code> restricts to messages a human
+  should look at. Backed by its own partial index — this is a first-class query, not a client-side
+  scan.</td></tr>
+<tr><td><code>flag</code></td><td>Exactly one flag string, e.g. <code>arithmetic_mismatch</code> or
+  <code>low_confidence:total</code>.</td></tr>
+<tr><td><code>view=review</code></td><td>Adds an <code>issues</code> array per row: which flag, which field,
+  the value, the confidence and the evidence.</td></tr>
+<tr><td><code>limit</code></td><td>1–200, default 25.</td></tr>
+<tr><td><code>cursor</code></td><td><a href="#pagination">See pagination.</a></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>curl "$MAILMINT_URL/v1/messages?needs_review=true&view=review&limit=50" \
+  -H "Authorization: Bearer $MAILMINT_API_KEY"</code></pre>
+</div>
+
+<div class="code">
+<div class="cap">200 OK</div>
+<pre><code>{
+  "data": [
+    {
+      "id": "msg_01JQ8Z3K4M5N6P7Q8R9S",
+      "mailbox_id": "mbx_01JQ8Y7X6W5V4U3T2S1R",
+      "received_at": "2026-08-25T09:14:03.221Z",
+      "from": "billing@acme.example",
+      "subject": "Invoice INV-2291 from Acme Ltd",
+      "size": 48213,
+      "status": "parsed",
+      "needs_review": true,
+      "flags": ["low_confidence:due_date"],
+      "spam_score": 0.4,
+      "fields": { … },
+      "attachments": [
+        { "id": "att_…", "filename": "invoice-2291.pdf", "content_type": "application/pdf",
+          "size": 48213, "extracted": null }
+      ],
+      "issues": [
+        { "flag": "low_confidence:due_date", "field": "due_date", "value": "2026-09-08",
+          "confidence": 0.55, "source": "llm", "evidence": "08/09/2026" }
+      ]
+    }
+  ],
+  "next_cursor": "msg_01JQ8Z3K4M5N6P7Q8R9R"
+}</code></pre>
+</div>
+</section>
+
+<!-- ========================================================= EP: MESSAGE -->
+<section id="ep-message">
+<h2><span class="pill get">GET</span><span class="path">/v1/messages/{id}</span> <a class="anchor" href="#ep-message">#</a></h2>
+
+<p>The full <a href="#result">message object</a>. Takes <code>?include=attachments</code>,
+<code>?include=extracted_text</code> and <code>?exclude=extracted</code>, which may be combined as
+comma-separated lists.</p>
+
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>curl "$MAILMINT_URL/v1/messages/msg_01JQ8Z3K4M5N6P7Q8R9S?include=attachments" \
+  -H "Authorization: Bearer $MAILMINT_API_KEY"</code></pre>
+</div>
+
+<p><code>404 message_not_found</code> when the id does not exist <em>on this account</em> — a message
+belonging to somebody else is indistinguishable from one that never existed.</p>
+
+<h3 id="ep-raw"><span class="pill get">GET</span><span class="path">/v1/messages/{id}/raw</span>
+  <a class="anchor" href="#ep-raw">#</a></h3>
+
+<p>The original RFC822 bytes, exactly as they arrived, as <code>message/rfc822</code> with a
+<code>.eml</code> filename. This is the byte-for-byte input a <a href="#reparse">re-parse</a> replays, which
+is what makes a re-parse the real message rather than a re-reading of our own earlier output.</p>
+
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>curl "$MAILMINT_URL/v1/messages/msg_01JQ8Z3K4M5N6P7Q8R9S/raw" \
+  -H "Authorization: Bearer $MAILMINT_API_KEY" -o message.eml</code></pre>
+</div>
+
+<p><code>410 raw_unavailable</code> once the raw bytes have aged out, or if the message was over the size cap
+and never stored raw. The parsed JSON is still there either way.</p>
+</section>
+
+<!-- ====================================================== EP: ATTACHMENT -->
+<section id="ep-attachment">
+<h2><span class="pill get">GET</span><span class="path">/v1/attachments/{id}</span> <a class="anchor" href="#ep-attachment">#</a></h2>
+
+<p>The bytes, with the original <code>Content-Type</code> and filename. <code>410
+attachment_unavailable</code> once the blob has aged out or if it was over the 10&nbsp;MB storage cap — the
+attachment&rsquo;s metadata and SHA-256 remain in the message either way.</p>
+</section>
+
+<!-- ============================================================= REPARSE -->
+<section id="reparse">
+<h2>Re-parsing <a class="anchor" href="#reparse">#</a></h2>
+
+<p>The case this exists for: a sender changes their invoice layout, an automation quietly starts producing
+nulls, and somebody notices a fortnight later. Zapier&rsquo;s staff answer to the same situation is verbatim
+<em>&ldquo;there is no way to replay them&rdquo;</em>; Mailparser reaches back 300 messages and does not keep
+the original bytes at all. MailMint keeps the bytes, so the fix is a two-minute loop instead of a three-day
+incident.</p>
+
+<h3><span class="pill post">POST</span><span class="path">/v1/messages/{id}/reparse</span></h3>
+
+<div class="tw">
+<table>
+<thead><tr><th>Body</th><th>Effect</th></tr></thead>
+<tbody>
+<tr><td><code>schema</code></td><td>A one-off schema for this run. Nothing is saved to the mailbox — this is
+  how you try a change against yesterday&rsquo;s real mail before committing to it.</td></tr>
+<tr><td><code>schema_version</code></td><td>Re-run against a specific stored version, which is the only
+  honest way to reproduce a result a customer is asking about.</td></tr>
+<tr><td><code>deliver</code></td><td>Defaults to <code>false</code>. Set it to fire the webhook again.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>curl -X POST "$MAILMINT_URL/v1/messages/msg_01JQ8Z3K4M5N6P7Q8R9S/reparse" \
+  -H "Authorization: Bearer $MAILMINT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "schema": [ { "name": "total", "type": "number", "hint": "labelled Amount Due" } ] }'</code></pre>
+</div>
+
+<p>Returns the re-parsed <a href="#result">message object</a>. The event it emits is
+<code>message.reparsed</code>, not <code>message.parsed</code>, so a poller can tell the two apart.</p>
+
+<h3><span class="pill post">POST</span><span class="path">/v1/mailboxes/{id}/reparse</span></h3>
+
+<p>Re-runs a whole mailbox&rsquo;s stored history as a background job. Answers <code>202</code> immediately
+with a job id and a poll URL.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Body</th><th>Default</th><th>Effect</th></tr></thead>
+<tbody>
+<tr><td><code>dry_run</code></td><td><code>false</code></td><td>Writes nothing. Produces the diff list and
+  stops. <strong>Always do this first.</strong></td></tr>
+<tr><td><code>redeliver</code></td><td><code>false</code></td><td>Fire webhooks for every changed message.
+  Separate from re-parsing on purpose: a tuning session that quietly re-fires a month of deliveries is how
+  you get duplicate rows in somebody else&rsquo;s database.</td></tr>
+<tr><td><code>schema</code> / <code>schema_version</code></td><td>—</td><td>As above.</td></tr>
+<tr><td><code>since</code> / <code>until</code></td><td>—</td><td>ISO-8601 bounds on
+  <code>received_at</code>.</td></tr>
+<tr><td><code>status</code> · <code>needs_review</code> · <code>flag</code></td><td>—</td><td>Narrow the
+  selection the same way <code>GET /v1/messages</code> does.</td></tr>
+<tr><td><code>limit</code></td><td><code>500</code></td><td>Up to 5,000 messages per job.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code><span class="tok-c"># 1. See what would change, without changing anything.</span>
+curl -X POST "$MAILMINT_URL/v1/mailboxes/mbx_01JQ8Y7X6W5V4U3T2S1R/reparse" \
+  -H "Authorization: Bearer $MAILMINT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "dry_run": true, "since": "2026-08-01T00:00:00Z" }'</code></pre>
+</div>
+
+<div class="code">
+<div class="cap">202 Accepted</div>
+<pre><code>{
+  "job_id": "rpj_01JQ8Z…",
+  "mailbox_id": "mbx_01JQ8Y7X6W5V4U3T2S1R",
+  "status": "queued",
+  "dry_run": true,
+  "redeliver": false,
+  "total": 412,
+  "done": 0,
+  "changed": 0,
+  "failed": 0,
+  "diffs": [],
+  "diffs_truncated": false,
+  "poll": "https://…/v1/reparse/rpj_01JQ8Z…"
+}</code></pre>
+</div>
+
+<h3 id="ep-reparse-job"><span class="pill get">GET</span><span class="path">/v1/reparse/{job_id}</span>
+  <a class="anchor" href="#ep-reparse-job">#</a></h3>
+
+<p>Progress plus <code>diffs</code> — up to 200 entries saying which message changed and how.
+<code>diffs_truncated</code> tells you when the list hit that cap, so a short diff list can never be
+mistaken for a small change.</p>
+</section>
+
+<!-- =============================================================== PARSE -->
+<section id="parse">
+<h2><span class="pill post">POST</span><span class="path">/v1/parse</span> <a class="anchor" href="#parse">#</a></h2>
+
+<p>The stateless endpoint. Parse an email you already have, without an address and without storing anything
+— no message row, no raw bytes, no attachment blobs, nothing to delete afterwards. It is how you try MailMint
+before signing up for an address, and it is what the n8n <em>Parse&nbsp;&rarr;&nbsp;Parse Email</em>
+operation calls.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Body</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td><code>raw_mime</code></td><td>A whole RFC822 message, either as plain text or base64. Up to
+  25&nbsp;MB.</td></tr>
+<tr><td><code>subject</code> · <code>text</code> · <code>html</code></td><td>The alternative to
+  <code>raw_mime</code>, for when another node already split the message up.</td></tr>
+<tr><td><code>schema</code></td><td>The fields you want. Omit it and you still get
+  <code>detected</code>, <code>tables</code>, decoded headers and a cleaned body.</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Send neither form and you get <code>400 missing_input</code>, with an example in the hint.</p>
+
+<div class="tabs">
+  <button data-panel="p-parse-curl" aria-selected="true">curl</button>
+  <button data-panel="p-parse-node" aria-selected="false">Node.js</button>
+  <button data-panel="p-parse-py" aria-selected="false">Python</button>
+</div>
+
+<div class="panel" id="p-parse-curl">
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>curl -X POST "$MAILMINT_URL/v1/parse" \
+  -H "Authorization: Bearer $MAILMINT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "subject": "Invoice INV-2291 from Acme Ltd",
+    "text": "Invoice INV-2291\n\nTotal: $31.50\nDue: Sep 8, 2026\n",
+    "schema": [
+      { "name": "invoice_number", "type": "string", "description": "the invoice or reference number" },
+      { "name": "total",          "type": "number", "description": "grand total including tax" },
+      { "name": "due_date",       "type": "date",   "description": "when payment is due" }
+    ]
+  }'</code></pre>
+</div>
+</div>
+
+<div class="panel" id="p-parse-node" hidden>
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>import { readFile } from 'node:fs/promises';
+
+const raw = await readFile('message.eml');
+
+const res = await fetch(`${process.env.MAILMINT_URL}/v1/parse`, {
+  method: 'POST',
+  headers: {
+    Authorization: `Bearer ${process.env.MAILMINT_API_KEY}`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    raw_mime: raw.toString('base64'),
+    schema: [
+      { name: 'invoice_number', type: 'string' },
+      { name: 'total',          type: 'number' },
+      { name: 'line_items',     type: 'array',
+        items: { type: 'object', fields: [
+          { name: 'description', type: 'string' },
+          { name: 'qty',         type: 'integer' },
+          { name: 'amount',      type: 'number' },
+        ] } },
+    ],
+  }),
+});
+
+const result = await res.json();
+if (result.needs_review) {
+  console.warn('a human should look at this:', result.flags);
+}
+console.log(result.fields.total.value, result.fields.total.confidence);</code></pre>
+</div>
+</div>
+
+<div class="panel" id="p-parse-py" hidden>
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>import base64, os, pathlib, requests
+
+raw = pathlib.Path("message.eml").read_bytes()
+
+res = requests.post(
+    f"{os.environ['MAILMINT_URL']}/v1/parse",
+    headers={"Authorization": f"Bearer {os.environ['MAILMINT_API_KEY']}"},
+    json={
+        "raw_mime": base64.b64encode(raw).decode(),
+        "schema": [
+            {"name": "invoice_number", "type": "string"},
+            {"name": "total", "type": "number"},
+        ],
+    },
+    timeout=60,
+)
+res.raise_for_status()
+result = res.json()
+
+if result["needs_review"]:
+    print("a human should look at this:", result["flags"])
+
+total = result["fields"]["total"]
+print(total["value"], total["confidence"], total["evidence"])</code></pre>
+</div>
+</div>
+
+<p>The response is the <a href="#result">message object</a> with <code>id</code>, <code>mailbox</code> and
+<code>raw_url</code> all <code>null</code>, and every attachment&rsquo;s <code>url</code> <code>null</code>
+too — because nothing was stored, there is nothing to fetch later.</p>
+
+<div class="note">
+<p><strong>Set a generous client timeout.</strong> A schema that asks for an array roughly triples the
+model&rsquo;s output: on a measured real invoice the four scalar fields came back in about 2–3&nbsp;seconds
+and adding <code>line_items</code> took the same call to about 8.8&nbsp;seconds. Fields the deterministic
+layer can resolve on its own never reach a model at all, so a tighter schema is genuinely faster.</p>
+</div>
+</section>
+
+<!-- ============================================================== EVENTS -->
+<section id="events">
+<h2><span class="pill get">GET</span><span class="path">/v1/events</span> <a class="anchor" href="#events">#</a></h2>
+
+<p>The polling feed, and what the n8n trigger lives on when it cannot be reached by webhook.</p>
+
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>curl "$MAILMINT_URL/v1/events?cursor=1421&limit=50" \
+  -H "Authorization: Bearer $MAILMINT_API_KEY"</code></pre>
+</div>
+
+<div class="code">
+<div class="cap">200 OK</div>
+<pre><code>{
+  "events": [
+    {
+      "id": 1422,
+      "type": "message.parsed",
+      "cursor": "1422",
+      "created_at": "2026-08-25T09:14:03.400Z",
+      "message": { … the full message object … }
+    }
+  ],
+  "next_cursor": "1422",
+  "has_more": false
+}</code></pre>
+</div>
+
+<div class="tw">
+<table>
+<thead><tr><th>Query</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td><code>cursor</code></td><td>Pass back the previous <code>next_cursor</code>. Omit it to start at the
+  beginning of the retained window. Anything that is not a non-negative number is
+  <code>400 invalid_cursor</code>.</td></tr>
+<tr><td><code>mailbox_id</code></td><td>Restrict the feed to one mailbox.</td></tr>
+<tr><td><code>limit</code></td><td>1–200, default 50.</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>The cursor is a strictly monotonic integer, not a timestamp — a timestamp cursor silently skips the
+second of two events written in the same millisecond. It is opaque; treat it as a string you store and hand
+back.</p>
+
+<p><code>next_cursor</code> is returned unchanged when there is nothing new, so an idle poller does not have
+to special-case an empty page. <code>has_more</code> is true when the page was filled, which is your signal
+to poll again immediately rather than waiting for the next tick.</p>
+
+<p>Event types: <code>message.parsed</code> for new mail, <code>message.reparsed</code> when a re-parse
+produced it. Events are kept for <strong>7 days</strong>; a cursor older than that resumes at the start of
+the retained window rather than failing.</p>
+</section>
+
+<!-- ================================================================ TEST -->
+<section id="ep-test">
+<h2><span class="pill post">POST</span><span class="path">/v1/test/deliver</span> <a class="anchor" href="#ep-test">#</a></h2>
+
+<p>Injects a message into a mailbox exactly as if it had arrived from the internet — same code path as real
+inbound mail. It is stored, parsed, given an id, added to the event feed and delivered to your webhook. This
+is how you test the whole pipeline before any DNS exists.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Body</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td><code>mailbox_id</code></td><td>Required.</td></tr>
+<tr><td><code>raw_mime</code></td><td>A real message, plain or base64. The honest way to test something you
+  already have on disk.</td></tr>
+<tr><td><code>from</code> · <code>subject</code> · <code>text</code></td><td>Used to build a simple message
+  when you do not send <code>raw_mime</code>.</td></tr>
+<tr><td><code>deliver</code></td><td>Defaults to <code>true</code>. Set <code>false</code> to store and parse
+  without firing the webhook.</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>It answers synchronously — <code>201</code> with the full parsed message — because somebody who just
+clicked &ldquo;send a test&rdquo; wants the JSON on the screen, not a promise about it. Sending the same
+<code>Message-ID</code> twice returns <code>200</code> with the existing message rather than creating a
+duplicate, which is the same rule real inbound mail follows.</p>
+</section>
+
+<!-- =============================================================== USAGE -->
+<section id="ep-usage">
+<h2><span class="pill get">GET</span><span class="path">/v1/usage</span> <a class="anchor" href="#ep-usage">#</a></h2>
+
+<div class="code">
+<div class="cap">200 OK</div>
+<pre><code>{
+  "plan": { "id": "free", "name": "Free", "quota": 300, "price_usd": 0 },
+  "period_start": "2026-08-01T00:00:00.000Z",
+  "used": 41,
+  "remaining": 259,
+  "messages": { "this_month": 41, "last_24h": 6, "needs_review": 3, "stored": 41 },
+  "mailboxes": 2,
+  "retention_days": 30,
+  "key_mode": "live"
+}</code></pre>
+</div>
+
+<p>This is also the endpoint the n8n credential test calls, which is why a valid key gives you a green tick
+in n8n before you build anything.</p>
+</section>
+
+<!-- ============================================================== HEALTH -->
+<section id="ep-health">
+<h2><span class="pill get">GET</span><span class="path">/healthz</span> <a class="anchor" href="#ep-health">#</a></h2>
+
+<p>No authentication. Useful for exactly one thing besides uptime checks: finding out whether the deployment
+you are pointed at has an inbound domain configured.</p>
+
+<div class="code">
+<pre><code>{ "ok": true, "parser": true, "inbound_domain": "parse.example.com",
+  "internal_api": true, "billing": false }</code></pre>
+</div>
+</section>
+
+<!-- ============================================================ WEBHOOKS -->
+<section id="webhooks">
+<h2>Webhooks <a class="anchor" href="#webhooks">#</a></h2>
+
+<p>Set <code>webhook_url</code> on a mailbox and every parsed message is POSTed to it. The body is
+<strong>byte-for-byte the same <a href="#result">message object</a></strong> that
+<code>GET /v1/messages/{id}</code> returns — one function builds it, so that promise is actually true rather
+than aspirational.</p>
+
+<div class="code">
+<div class="cap">the request we send</div>
+<pre><code>POST /hooks/mailmint HTTP/1.1
+content-type: application/json
+user-agent: MailMint-Webhook/1
+x-mailmint-event: message.parsed
+x-mailmint-delivery: dlv_01JQ8Z3K4M5N6P7Q8R9S
+x-mailmint-timestamp: 1787648043
+x-mailmint-signature: t=1787648043,v1=6a1f…c07b
+
+{ "id": "msg_01JQ8Z3K4M5N6P7Q8R9S", … }</code></pre>
+</div>
+
+<div class="tw">
+<table>
+<thead><tr><th>Header</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td><code>x-mailmint-event</code></td><td><code>message.parsed</code></td></tr>
+<tr><td><code>x-mailmint-delivery</code></td><td>The delivery id. Stable across retries of the same
+  delivery, so it is the right idempotency key.</td></tr>
+<tr><td><code>x-mailmint-timestamp</code></td><td>The same unix timestamp that is inside the signature, for
+  convenience. <strong>Do not trust this one</strong> — verify against the <code>t=</code> inside the
+  signature header, which is the value that is actually signed.</td></tr>
+<tr><td><code>x-mailmint-endpoint</code></td><td>Which <a href="#webhook-endpoints">endpoint</a> this
+  delivery belongs to, when it was queued for one.</td></tr>
+<tr><td><code>x-mailmint-signature</code></td><td><code>t=&lt;unix&gt;,v1=&lt;hex&gt;</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="signature">The signature, exactly <a class="anchor" href="#signature">#</a></h3>
+
+<div class="code">
+<pre><code>signed_payload = "&lt;t&gt;" + "." + &lt;the raw request body, byte for byte&gt;
+v1             = hex( HMAC_SHA256( key = webhook_secret, message = signed_payload ) )
+header         = "t=" + &lt;t&gt; + ",v1=" + v1</code></pre>
+</div>
+
+<p>Three things decide whether your verification is correct:</p>
+
+<ol>
+  <li><strong>The raw body, not a re-serialisation.</strong> If your framework parses the JSON and you
+    re-encode it to verify, key order and whitespace will differ and every signature will fail. Capture the
+    bytes before parsing.</li>
+  <li><strong>The timestamp is inside the signed string.</strong> That is what makes a captured request
+    non-replayable: a receiver rejects anything older than its tolerance, and an attacker cannot re-stamp it
+    without the secret. Reject a <code>t</code> more than about 5 minutes from your own clock.</li>
+  <li><strong>Compare in constant time.</strong> <code>===</code> on a MAC leaks how far the attacker
+    got.</li>
+</ol>
+
+<h3 id="verify">A worked verification <a class="anchor" href="#verify">#</a></h3>
+
+<div class="tabs">
+  <button data-panel="p-hook-node" aria-selected="true">Node.js</button>
+  <button data-panel="p-hook-py" aria-selected="false">Python</button>
+</div>
+
+<div class="panel" id="p-hook-node">
+<div class="code">
+<div class="cap">Express — note express.raw, not express.json</div>
+<button class="copy" type="button">Copy</button>
+<pre><code>const crypto = require('node:crypto');
+const express = require('express');
+
+const app = express();
+const SECRET = process.env.MAILMINT_WEBHOOK_SECRET;   // from the mailbox object
+const TOLERANCE_SECONDS = 300;
+
+// express.raw gives req.body as a Buffer — the exact bytes we sent.
+// Parsing the JSON first and re-encoding it will NOT verify.
+app.post('/hooks/mailmint', express.raw({ type: 'application/json' }), (req, res) => {
+  const header = req.get('x-mailmint-signature') || '';
+
+  // "t=1787648043,v1=6a1f…"  ->  { t: '1787648043', v1: '6a1f…' }
+  const parts = Object.fromEntries(
+    header.split(',').map((p) => p.split('=').map((s) => s.trim())),
+  );
+  if (!parts.t || !parts.v1) return res.status(400).send('malformed signature');
+
+  // 1. Freshness. The timestamp is signed, so this is not decoration.
+  const age = Math.abs(Math.floor(Date.now() / 1000) - Number(parts.t));
+  if (!Number.isFinite(age) || age > TOLERANCE_SECONDS) {
+    return res.status(400).send('stale signature');
+  }
+
+  // 2. Recompute over "&lt;t&gt;.&lt;raw body&gt;".
+  const expected = crypto
+    .createHmac('sha256', SECRET)
+    .update(`${parts.t}.${req.body.toString('utf8')}`)
+    .digest('hex');
+
+  // 3. Constant-time compare.
+  const a = Buffer.from(expected, 'hex');
+  const b = Buffer.from(parts.v1, 'hex');
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    return res.status(401).send('bad signature');
+  }
+
+  const message = JSON.parse(req.body.toString('utf8'));
+
+  // Answer fast. Anything slow belongs on a queue — we time out at 10s.
+  res.sendStatus(200);
+
+  if (message.needs_review) {
+    console.warn(message.id, 'needs review:', message.flags);
+  } else {
+    save(message.fields.invoice_number.value, message.fields.total.value);
+  }
+});</code></pre>
+</div>
+</div>
+
+<div class="panel" id="p-hook-py" hidden>
+<div class="code">
+<div class="cap">Flask — request.get_data() is the raw body</div>
+<button class="copy" type="button">Copy</button>
+<pre><code>import hmac, hashlib, os, time
+from flask import Flask, request, abort
+
+app = Flask(__name__)
+SECRET = os.environ["MAILMINT_WEBHOOK_SECRET"].encode()   # from the mailbox object
+TOLERANCE_SECONDS = 300
+
+
+@app.post("/hooks/mailmint")
+def mailmint_webhook():
+    header = request.headers.get("X-MailMint-Signature", "")
+
+    # "t=1787648043,v1=6a1f…"  ->  {"t": "1787648043", "v1": "6a1f…"}
+    parts = dict(p.split("=", 1) for p in header.split(",") if "=" in p)
+    t, v1 = parts.get("t"), parts.get("v1")
+    if not t or not v1:
+        abort(400, "malformed signature")
+
+    # 1. Freshness. The timestamp is signed, so this is not decoration.
+    try:
+        if abs(time.time() - int(t)) &gt; TOLERANCE_SECONDS:
+            abort(400, "stale signature")
+    except ValueError:
+        abort(400, "malformed timestamp")
+
+    # 2. Recompute over "&lt;t&gt;.&lt;raw body&gt;". get_data() is the exact bytes we
+    #    sent — do NOT use request.json here and re-serialise it.
+    body = request.get_data()
+    expected = hmac.new(SECRET, t.encode() + b"." + body, hashlib.sha256).hexdigest()
+
+    # 3. Constant-time compare.
+    if not hmac.compare_digest(expected, v1):
+        abort(401, "bad signature")
+
+    message = request.get_json()
+
+    if message["needs_review"]:
+        app.logger.warning("%s needs review: %s", message["id"], message["flags"])
+    else:
+        save(message["fields"]["invoice_number"]["value"],
+             message["fields"]["total"]["value"])
+
+    # Answer fast. Anything slow belongs on a queue — we time out at 10s.
+    return "", 200</code></pre>
+</div>
+</div>
+
+<div class="note">
+<p>To check your implementation without waiting for mail, create a mailbox, point its
+<code>webhook_url</code> at your endpoint and call
+<a href="#ep-test"><code>POST /v1/test/deliver</code></a>. That is a real delivery through the real signing
+path.</p>
+</div>
+
+<h3 id="retries">Retries <a class="anchor" href="#retries">#</a></h3>
+
+<div class="tw">
+<table>
+<thead><tr><th>Attempt</th><th>Delay after the previous failure</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>immediately</td></tr>
+<tr><td>2</td><td>30 seconds</td></tr>
+<tr><td>3</td><td>2 minutes</td></tr>
+<tr><td>4</td><td>10 minutes</td></tr>
+<tr><td>5</td><td>1 hour</td></tr>
+<tr><td>6</td><td>6 hours</td></tr>
+</tbody>
+</table>
+</div>
+
+<ul>
+  <li>Six attempts, then the delivery is marked failed. Each attempt has a <strong>10-second</strong>
+    timeout.</li>
+  <li>Any <strong>2xx</strong> is success. Anything else, or a timeout, retries — <strong>except</strong> a
+    4xx, which means you understood us and said no. Retrying cannot change that, and hammering a 404 for six
+    hours only fills your logs with our noise. <code>408</code> and <code>429</code> are the two 4xx codes
+    that genuinely mean &ldquo;later&rdquo;, so those <em>do</em> retry.</li>
+  <li>The queue lives in the database, not in memory, so a redeploy mid-flight does not lose a delivery.</li>
+  <li>The body is rebuilt at each attempt from the current stored result — so if you re-parsed and fixed a
+    field between attempts, the retry carries the corrected version rather than the one that failed.</li>
+  <li><code>x-mailmint-delivery</code> is stable across attempts. Use it to make your handler
+    idempotent.</li>
+</ul>
+
+<div class="note">
+<p>Retrying a failed webhook is a <strong>paid add-on</strong> at Mailparser — $2.91–$3.49 a month, and not
+included at all below their Business plan. It is not an add-on here.</p>
+</div>
+
+<h3 id="webhook-endpoints">Several endpoints on one mailbox <a class="anchor" href="#webhook-endpoints">#</a></h3>
+
+<p>A single <code>webhook_url</code> is a shared mutable global. Two n8n MailMint Trigger nodes pointed at
+the same mailbox would overwrite each other&rsquo;s URL on registration, and deactivating one workflow would
+silently delete the other&rsquo;s delivery. So a mailbox carries a <strong>list</strong> of endpoints, each
+with its own id, its own secret and its own health.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Route</th><th>Does</th></tr></thead>
+<tbody>
+<tr><td><span class="pill post">POST</span><span class="path">/v1/mailboxes/{id}/webhooks</span></td>
+    <td>Add one. Body: <code>url</code> (required), <code>description</code>, <code>secret</code> (optional
+      &mdash; one is generated if you omit it, and must be at least 16 characters if you supply it).
+      <strong>The secret is returned here and never again</strong>, like an API key.</td></tr>
+<tr><td><span class="pill get">GET</span><span class="path">/v1/mailboxes/{id}/webhooks</span></td>
+    <td>List them, with health. Secrets are not included.</td></tr>
+<tr><td><span class="pill get">GET</span><span class="path">/v1/webhooks/{id}</span></td>
+    <td>One endpoint.</td></tr>
+<tr><td><span class="pill put">PATCH</span><span class="path">/v1/webhooks/{id}</span></td>
+    <td><code>url</code>, <code>description</code>, <code>secret</code>, <code>active</code>. Setting
+      <code>"active": true</code> also clears an auto-disable and resets its counter.</td></tr>
+<tr><td><span class="pill del">DELETE</span><span class="path">/v1/webhooks/{id}</span></td>
+    <td>Remove it. Deleting one cannot touch another.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>curl -X POST "$MAILMINT_URL/v1/mailboxes/mbx_01JQ8Y7X6W5V4U3T2S1R/webhooks" \
+  -H "Authorization: Bearer $MAILMINT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "url": "https://your-app.example/hooks/mailmint", "description": "billing pipeline" }'</code></pre>
+</div>
+
+<div class="code">
+<div class="cap">201 Created</div>
+<pre><code>{
+  "webhook": {
+    "id": "whe_4f1c...",
+    "mailbox_id": "mbx_01JQ8Y7X6W5V4U3T2S1R",
+    "url": "https://your-app.example/hooks/mailmint",
+    "description": "billing pipeline",
+    "active": true,
+    "secret": "b3f1...",            // shown once, like an API key
+    "created_at": "2026-08-25T09:10:00.000Z",
+    "last_status": null,
+    "last_delivered_at": null,
+    "last_error": null,
+    "consecutive_failures": 0,
+    "disabled_at": null,
+    "disabled_reason": null
+  }
+}</code></pre>
+</div>
+
+<ul>
+  <li><strong>Every active endpoint gets its own delivery row</strong>, with its own retry schedule. A
+    receiver that is down does not hold up one that is up.</li>
+  <li><strong>Each endpoint signs with its own secret</strong>, so rotating one workflow&rsquo;s secret cannot
+    invalidate another&rsquo;s.</li>
+  <li><strong>An endpoint that keeps failing is switched off.</strong> After 10 consecutive deliveries have
+    exhausted all six of their attempts &mdash; a receiver that has been gone for days, not a hiccup &mdash;
+    the endpoint is disabled, and <code>disabled_at</code> and <code>disabled_reason</code> say so. Re-enable
+    it with <code>PATCH {"active": true}</code>.</li>
+  <li><code>mailbox.webhook_url</code> still works: it reads and writes the <em>first</em> endpoint, so
+    anything already written against it keeps working. The list is the model; the column is the
+    convenience.</li>
+</ul>
+</section>
+
+<!-- ========================================================== PAGINATION -->
+<section id="pagination">
+<h2>Pagination &amp; cursors <a class="anchor" href="#pagination">#</a></h2>
+
+<p>Two cursors, and they are not the same kind of thing.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th></th><th><code>GET /v1/messages</code></th><th><code>GET /v1/events</code></th></tr></thead>
+<tbody>
+<tr><td>Order</td><td>newest first</td><td>oldest first</td></tr>
+<tr><td>Cursor is</td><td>the last message id on the page</td><td>a monotonic integer event id</td></tr>
+<tr><td>Default <code>limit</code></td><td>25</td><td>50</td></tr>
+<tr><td>Maximum <code>limit</code></td><td>200</td><td>200</td></tr>
+<tr><td>End of data</td><td><code>next_cursor</code> is <code>null</code></td>
+    <td><code>has_more</code> is <code>false</code>; <code>next_cursor</code> comes back
+      unchanged</td></tr>
+<tr><td>Use it for</td><td>browsing and back-filling</td><td>a durable subscription</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Message ids are sortable, so <code>?cursor=</code> is a strict &ldquo;older than this id&rdquo; condition
+with no numeric offset to drift as new mail arrives mid-page. Both cursors are opaque: store the string, hand
+it back, do not parse it.</p>
+
+<div class="code">
+<div class="cap">draining a page at a time</div>
+<button class="copy" type="button">Copy</button>
+<pre><code>cursor=""
+while :; do
+  page=$(curl -s "$MAILMINT_URL/v1/messages?limit=100&cursor=$cursor" \
+           -H "Authorization: Bearer $MAILMINT_API_KEY")
+  echo "$page" | jq -c '.data[]'
+  cursor=$(echo "$page" | jq -r '.next_cursor // empty')
+  [ -z "$cursor" ] && break
+done</code></pre>
+</div>
+</section>
+
+<!-- ============================================================== ERRORS -->
+<section id="errors">
+<h2>Errors <a class="anchor" href="#errors">#</a></h2>
+
+<p>Every error is a JSON object with a stable machine <code>code</code>, a one-line human
+<code>message</code>, usually a <code>hint</code> that says what to change, sometimes a link to the exact
+docs anchor, and always the <code>request_id</code>.</p>
+
+<div class="code">
+<pre><code>{
+  "error": {
+    "code": "invalid_schema",
+    "message": "schema[1].type \"nummber\" is not a field type.",
+    "hint": "Accepted types: string, number, integer, boolean, date, datetime, email, url, phone, currency, enum, array, object.",
+    "docs": "https://…/docs#schema",
+    "request_id": "req_9f2c8b…"
+  }
+}</code></pre>
+</div>
+
+<p><strong>Branch on <code>code</code>, never on the message text.</strong> Codes are stable; the sentences
+are not.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Status</th><th>Code</th><th>Means</th></tr></thead>
+<tbody>
+<tr><td class="t">400</td><td><code>invalid_json</code></td><td>The body is not valid JSON.</td></tr>
+<tr><td class="t">400</td><td><code>invalid_schema</code></td><td>A field definition is wrong. The message
+  names the path.</td></tr>
+<tr><td class="t">400</td><td><code>missing_input</code></td><td><code>POST /v1/parse</code> with neither
+  <code>raw_mime</code> nor <code>subject</code>/<code>text</code>/<code>html</code>.</td></tr>
+<tr><td class="t">400</td><td><code>too_large</code></td><td>The message exceeds the 25&nbsp;MB raw cap.</td></tr>
+<tr><td class="t">400</td><td><code>invalid_webhook_url</code></td><td>Not absolute, or not
+  <code>http</code>/<code>https</code>.</td></tr>
+<tr><td class="t">400</td><td><code>invalid_cursor</code> · <code>invalid_since</code> ·
+  <code>invalid_date</code></td><td>A cursor that is not a cursor, or a date that is not a date.</td></tr>
+<tr><td class="t">400</td><td><code>weak_webhook_secret</code></td><td>The secret you supplied is too short
+  to be worth signing with.</td></tr>
+<tr><td class="t">401</td><td><code>missing_api_key</code></td><td>No key on the request.</td></tr>
+<tr><td class="t">401</td><td><code>invalid_api_key</code></td><td>Wrong shape, unknown, or revoked.</td></tr>
+<tr><td class="t">402</td><td><code>quota_exceeded</code></td><td>Out of parses for the month.
+  <code>details</code> carries the plan, the usage and the limit. Inbound mail is unaffected.</td></tr>
+<tr><td class="t">404</td><td><code>message_not_found</code> · <code>mailbox_not_found</code> ·
+  <code>attachment_not_found</code> · <code>reparse_job_not_found</code> ·
+  <code>schema_version_not_found</code> &middot; <code>webhook_not_found</code></td>
+    <td>No such object <em>on this account</em>.</td></tr>
+<tr><td class="t">400</td><td><code>missing_url</code></td><td>A webhook endpoint was created without a
+  <code>url</code>.</td></tr>
+<tr><td class="t">404</td><td><code>unknown_endpoint</code></td><td>No such route. The hint points here.</td></tr>
+<tr><td class="t">409</td><td><code>too_many_mailboxes</code></td><td>100 per account.</td></tr>
+<tr><td class="t">409</td><td><code>last_key</code></td><td>Revoking your only key would lock you out.</td></tr>
+<tr><td class="t">410</td><td><code>raw_unavailable</code> · <code>attachment_unavailable</code></td>
+    <td>Those bytes have aged out, or were never stored because they were over the cap. The parsed JSON
+      remains.</td></tr>
+<tr><td class="t">413</td><td><code>request_too_large</code></td><td>The HTTP body is over 40&nbsp;MB.</td></tr>
+<tr><td class="t">429</td><td><code>rate_limited</code></td><td>See <a href="#limits">limits</a>.
+  <code>Retry-After</code> says how long.</td></tr>
+<tr><td class="t">502</td><td><code>parse_failed</code></td><td>Parsing threw. On a re-parse the stored
+  message is untouched and keeps its previous result.</td></tr>
+<tr><td class="t">500</td><td><code>internal_error</code></td><td>Ours. Quote the
+  <code>request_id</code>.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="note">
+<p><strong>A failed parse is not an error response.</strong> A message that could not be extracted cleanly
+still arrives, with <code>needs_review: true</code> and flags naming what went wrong. HTTP errors are for
+requests we could not carry out; <a href="#flags">flags</a> are for results you should not trust. Do not
+conflate them.</p>
+</div>
+</section>
+
+<!-- ============================================================== LIMITS -->
+<section id="limits">
+<h2>Limits &amp; rate limits <a class="anchor" href="#limits">#</a></h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>Limit</th><th>Value</th><th>What happens at the edge</th></tr></thead>
+<tbody>
+<tr><td>API requests</td><td>240/minute per account, burst 40</td><td><code>429 rate_limited</code> with
+  <code>Retry-After</code></td></tr>
+<tr><td>HTTP request body</td><td>40 MB</td><td><code>413 request_too_large</code></td></tr>
+<tr><td>Raw message</td><td>25 MB</td><td><code>400 too_large</code> on the API; inbound mail over the cap is
+  received but not stored raw</td></tr>
+<tr><td>Stored attachment</td><td>10 MB</td><td>Metadata and SHA-256 kept, bytes not stored, flag
+  <code>attachment_too_large</code></td></tr>
+<tr><td>Schema width</td><td>60 fields</td><td><code>400 invalid_schema</code></td></tr>
+<tr><td>Schema depth</td><td>2 levels of objects</td><td><code>400 invalid_schema</code></td></tr>
+<tr><td>Enum options</td><td>200</td><td>Truncated</td></tr>
+<tr><td>Table rows</td><td>5,000</td><td><code>truncated: true</code> plus flag
+  <code>table_truncated</code></td></tr>
+<tr><td>Mailboxes</td><td>100 per account</td><td><code>409 too_many_mailboxes</code></td></tr>
+<tr><td>Page size</td><td>200</td><td>Clamped, not refused</td></tr>
+<tr><td>Re-parse job</td><td>5,000 messages, 200 diffs returned</td><td><code>diffs_truncated: true</code></td></tr>
+<tr><td>Webhook timeout</td><td>10 s per attempt</td><td>Counts as a failure and retries</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Rate-limit state is reported on every response:</p>
+
+<div class="code">
+<pre><code>X-RateLimit-Limit: 240
+X-RateLimit-Burst: 40
+X-RateLimit-Remaining: 37
+Retry-After: 3          # only on a 429</code></pre>
+</div>
+
+<div class="note">
+<p><strong>Inbound mail is never rate limited.</strong> The sender is a stranger&rsquo;s mail server, and
+refusing their message because a customer was busy is a bounce we would have to explain to somebody who has
+no relationship with us. The limit above guards the API only.</p>
+</div>
+</section>
+
+<!-- =========================================================== RETENTION -->
+<section id="retention">
+<h2>Retention <a class="anchor" href="#retention">#</a></h2>
+
+<p>Three different things are kept for three different lengths of time, deliberately.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>What</th><th>Kept for</th><th>Why that long</th></tr></thead>
+<tbody>
+<tr><td>The parsed message and its metadata</td><td>30 days by default</td>
+    <td>Long enough to notice something went wrong and page back through it.</td></tr>
+<tr><td>The original RFC822 bytes</td><td>Longer, and set per plan</td>
+    <td>A <a href="#reparse">re-parse</a> replays these, so they have to outlive the moment somebody notices
+      a sender changed a layout. That is weeks, not days.</td></tr>
+<tr><td>Attachment bytes</td><td>Shorter, and set per plan</td>
+    <td>They are the bulk of the storage and are not needed to re-parse a body, so they go first.</td></tr>
+<tr><td>Events</td><td>7 days</td><td>A polling window, not an archive.</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><code>GET /v1/usage</code> reports the <code>retention_days</code> in force for your account. Once raw
+bytes are gone, <code>raw_url</code> is <code>null</code> and
+<code>GET /v1/messages/{id}/raw</code> answers <code>410 raw_unavailable</code> — the parsed JSON remains
+either way.</p>
+
+<div class="note">
+<p><strong><code>POST /v1/parse</code> stores nothing at all.</strong> No message row, no raw bytes, no
+attachment blobs, no event. If retaining mail is a problem for you, that is the endpoint to use, and its
+statelessness is a promise rather than a default we might change.</p>
+</div>
+</section>
+
+<!-- ================================================================= N8N -->
+<section id="n8n">
+<h2>n8n node <a class="anchor" href="#n8n">#</a></h2>
+
+<p><code>n8n-nodes-mailmint</code> ships two nodes — <strong>MailMint</strong> (11 actions) and
+<strong>MailMint Trigger</strong> — under MIT, with zero runtime dependencies. The full walkthrough, with
+screenshots of it running in a real n8n, is on <a href="/n8n">the n8n page</a>.</p>
+
+<div class="note warn">
+<p><strong>It is not published to npm yet</strong>, so it cannot be installed from
+<em>Settings&nbsp;&rarr;&nbsp;Community&nbsp;Nodes</em>, and n8n Cloud will not accept it until it is also
+verified. An <strong>HTTP Request</strong> node pointed at <code>POST /v1/parse</code> does the same job from
+any n8n today, Cloud included.</p>
+</div>
+
+<div class="tw">
+<table>
+<thead><tr><th>Resource</th><th>Operation</th><th>Calls</th></tr></thead>
+<tbody>
+<tr><td>Parse</td><td>Parse Email</td><td><code>POST /v1/parse</code></td></tr>
+<tr><td rowspan="5">Message</td><td>Get</td><td><code>GET /v1/messages/{id}</code></td></tr>
+<tr><td>Get Many</td><td><code>GET /v1/messages</code></td></tr>
+<tr><td>Get Raw</td><td><code>GET /v1/messages/{id}/raw</code></td></tr>
+<tr><td>Download Attachment</td><td><code>GET /v1/attachments/{id}</code></td></tr>
+<tr><td>Reparse</td><td><code>POST /v1/messages/{id}/reparse</code></td></tr>
+<tr><td rowspan="5">Mailbox</td><td>Create</td><td><code>POST /v1/mailboxes</code></td></tr>
+<tr><td>Get Many</td><td><code>GET /v1/mailboxes</code></td></tr>
+<tr><td>Update</td><td><code>PATCH /v1/mailboxes/{id}</code></td></tr>
+<tr><td>Reparse Messages</td><td><code>POST /v1/mailboxes/{id}/reparse</code></td></tr>
+<tr><td>Delete</td><td><code>DELETE /v1/mailboxes/{id}</code></td></tr>
+<tr><td>Trigger</td><td>Webhook mode</td><td>Sets the mailbox <code>webhook_url</code> on activation and
+  verifies every <code>x-mailmint-signature</code></td></tr>
+<tr><td>Trigger</td><td>Polling mode</td><td><code>GET /v1/events</code></td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ============================================================== HONEST -->
+<section id="honest">
+<h2>What is not built yet <a class="anchor" href="#honest">#</a></h2>
+
+<p>Kept here rather than left for you to discover.</p>
+
+<ul>
+  <li><strong>The hosted inbound address is not live.</strong> No domain has been bought. Addresses are
+    minted and reserved, and nothing external can reach them yet.
+    <a href="#parse"><code>POST /v1/parse</code></a> and
+    <a href="#ep-test"><code>POST /v1/test/deliver</code></a> both work today, and neither needs DNS.</li>
+  <li><strong>Attachment content extraction is not wired into the parse pipeline.</strong> The extractor
+    package is written; <code>attachments[].extracted</code> is reserved for its output and is not
+    populated yet.</li>
+  <li><strong><code>n8n-nodes-mailmint</code> is not on npm.</strong></li>
+  <li><strong>The confidence calibration curve is measured but small.</strong> The published table covers 95
+    labelled field slots across 41 messages, and it is enough to show the pipeline is not over-confident —
+    nothing in the 0.9+ bucket was wrong — and nowhere near enough to fit a reliability curve. That needs a
+    corpus an order of magnitude larger, with deliberately hard cases.</li>
+  <li><strong>Non-Latin scripts have no deterministic rules.</strong> The label synonym tables cover
+    English, German, French, Spanish, Italian, Dutch and Portuguese. A Japanese receipt needs the model for
+    everything, which is slower and carries a lower ceiling on confidence.</li>
+  <li><strong>Truly ambiguous dates stay ambiguous.</strong> <code>08/09/2026</code> from a sender with no
+    other date in the document resolves day-first at a confidence around 0.55. That is a coin flip with an
+    honest number on it, not a solution — and it is exactly what <code>needs_review</code> is for.</li>
+  <li><strong>Prompt injection is not solved.</strong> Any product that pipes attacker-controlled email
+    bodies into a model has this problem. The evidence-substring rule, the rule/model agreement check and the
+    arithmetic reconciliation are partial structural mitigations — an instruction embedded in a body cannot
+    manufacture any of them — but they are not a control. Treat parsed output as data and check
+    <code>needs_review</code> before acting on it.</li>
+  <li><strong>There is no pricing, no SLA and no uptime history.</strong></li>
+</ul>
+</section>
+
+  </main>
+</div>
+
+<footer style="border-top:1px solid var(--rule);padding:1.6rem 1.25rem;text-align:center;font-size:.86rem;color:var(--muted)">
+  <a href="/">MailMint</a> &middot;
+  <a href="/quickstart">Quickstart</a> &middot;
+  <a href="/n8n">n8n</a> &middot;
+  <a href="/dashboard">Dashboard</a>
+</footer>
+
+<script src="/docs.js"></script>
+</body>
+</html>

@@ -15,7 +15,7 @@ import { NodeApiError, NodeOperationError } from 'n8n-workflow';
 
 export const CREDENTIAL_NAME = 'mailMintApi';
 
-const DEFAULT_BASE_URL = 'https://api.mailmint.dev';
+
 
 export type MailMintContext =
 	| IExecuteFunctions
@@ -32,7 +32,13 @@ export interface MailMintResponse {
 
 export async function mailMintBaseUrl(context: MailMintContext): Promise<string> {
 	const credentials = await context.getCredentials(CREDENTIAL_NAME);
-	const raw = (credentials?.baseUrl as string) || DEFAULT_BASE_URL;
+	const raw = ((credentials?.baseUrl as string) ?? '').trim();
+	if (!raw) {
+		throw new NodeOperationError(context.getNode(), 'No MailMint API URL is set', {
+			description:
+				'Open the MailMint credential and fill in Base URL — the root URL of the MailMint API you are talking to.',
+		});
+	}
 	return raw.replace(/\/+$/, '');
 }
 
@@ -529,14 +535,21 @@ export function findLineItems(message: IDataObject, preferred?: string): LineIte
 	const flags = (message.flags ?? []) as string[];
 	const wanted = (preferred ?? '').trim();
 
-	const fromField = (name: string, field: IDataObject | undefined): LineItems | undefined => {
+	const isRecord = (row: unknown): row is IDataObject =>
+		Boolean(row) && typeof row === 'object' && !Array.isArray(row);
+
+	const fromField = (
+		name: string,
+		field: IDataObject | undefined,
+		requireObjects: boolean,
+	): LineItems | undefined => {
 		const value = field?.value;
 		if (!Array.isArray(value) || !value.length) return undefined;
-		const rows = value.map((row) =>
-			row && typeof row === 'object' && !Array.isArray(row)
-				? (row as IDataObject)
-				: ({ value: row } as IDataObject),
-		);
+		// A `tags` or `skus` field is a list, but it is not the line items. Only
+		// an array of objects is taken automatically; a list of scalars is a last
+		// resort, and only when nothing better exists anywhere in the message.
+		if (requireObjects && !value.every(isRecord)) return undefined;
+		const rows = value.map((row) => (isRecord(row) ? row : ({ value: row } as IDataObject)));
 		return {
 			rows,
 			source: `fields.${name}`,
@@ -556,8 +569,14 @@ export function findLineItems(message: IDataObject, preferred?: string): LineIte
 		};
 	};
 
+	const tables = () =>
+		tablesOf(message)
+			.map((entry) => ({ entry, size: (entry.table.records ?? []).length }))
+			.sort((a, b) => b.size - a.size);
+
 	if (wanted) {
-		const named = fromField(wanted, fields[wanted]);
+		// An explicitly named source is used as given, objects or not.
+		const named = fromField(wanted, fields[wanted], false);
 		if (named) return named;
 		const table = tablesOf(message).find(
 			(entry) => entry.table.name === wanted || entry.origin === wanted,
@@ -570,15 +589,17 @@ export function findLineItems(message: IDataObject, preferred?: string): LineIte
 	}
 
 	for (const [name, field] of Object.entries(fields)) {
-		const found = fromField(name, field);
+		const found = fromField(name, field, true);
 		if (found) return found;
 	}
 
-	const tables = tablesOf(message)
-		.map((entry) => ({ entry, size: (entry.table.records ?? []).length }))
-		.sort((a, b) => b.size - a.size);
-	for (const { entry } of tables) {
+	for (const { entry } of tables()) {
 		const found = fromTable(entry);
+		if (found) return found;
+	}
+
+	for (const [name, field] of Object.entries(fields)) {
+		const found = fromField(name, field, false);
 		if (found) return found;
 	}
 
@@ -695,8 +716,22 @@ export function shapeItems(
 	// "the table silently came back short".
 	if (!items.rows.length) {
 		const json: IDataObject = shape.simplify
-			? { ...header, _row_index: null, _row_count: 0, _line_items_source: items.source }
-			: { ...header, line_item: null, line_item_index: null, line_item_count: 0 };
+			? {
+					...header,
+					_row_index: null,
+					_row_count: 0,
+					_line_items_source: items.source,
+					_line_items_truncated: items.truncated,
+				}
+			: {
+					...header,
+					line_item: null,
+					line_item_index: null,
+					line_item_count: 0,
+					_row_count: 0,
+					line_items_source: items.source,
+					line_items_truncated: items.truncated,
+				};
 		return [{ json, pairedItem }];
 	}
 
@@ -714,16 +749,23 @@ export function shapeItems(
 				pairedItem,
 			};
 		}
-		return {
-			json: {
-				...header,
-				...row,
-				_row_index: index,
-				_row_count: items.rowCount,
-				_line_items_source: items.source,
-				_line_items_truncated: items.truncated,
-			},
-			pairedItem,
+		// The row wins on a name the header also uses — a per-row `total` is
+		// what that row's `total` means. The message-level value is not thrown
+		// away though: it is kept under _shadowed, and named, so nothing is
+		// quietly lost.
+		const shadowed: IDataObject = {};
+		for (const key of Object.keys(row)) {
+			if (key in header) shadowed[key] = header[key];
+		}
+		const json: IDataObject = {
+			...header,
+			...row,
+			_row_index: index,
+			_row_count: items.rowCount,
+			_line_items_source: items.source,
+			_line_items_truncated: items.truncated,
 		};
+		if (Object.keys(shadowed).length) json._shadowed = shadowed;
+		return { json, pairedItem };
 	});
 }

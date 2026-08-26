@@ -1,0 +1,27 @@
+[Unit]
+Description=MailMint SMTP intake (port 25)
+Documentation=https://github.com/fstandhartinger/mailmint
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=flori
+WorkingDirectory=/home/flori/Dev/pdfnode/mailmint/packages/smtpd
+EnvironmentFile=/etc/mailmint-smtpd.env
+ExecStart=/usr/bin/node src/index.js
+# Binding :25 needs the capability, not the whole of root.
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/var/lib/mailmint
+Restart=always
+RestartSec=3
+StandardOutput=append:/var/log/mailmint-smtpd.log
+StandardError=append:/var/log/mailmint-smtpd.log
+
+[Install]
+WantedBy=multi-user.target

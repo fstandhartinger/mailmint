@@ -67,7 +67,10 @@ own service, where CPU is ours to spend.
 the escape hatch. It is what a self-hosting or air-gapped customer runs, it is what we
 switch to if Cloudflare ever changes terms, and building it is what forced us to
 implement real SPF, DKIM and DMARC verification, which we now report on every message
-whichever intake delivered it. It has never accepted mail from the public internet.
+whichever intake delivered it. **Since 2026-08-26 it also runs live**: the MX for
+`smooth-operator.online` points at it, and it has accepted, parsed and
+authenticated real mail delivered straight from Google's outbound MTA. See
+[LIVE-INTAKE.md](LIVE-INTAKE.md) for the log lines.
 
 **We also ship adapters** for Mailgun, CloudMailin and a generic webhook, because a
 customer who already runs one of those should not have to move.
@@ -113,6 +116,17 @@ cannot know, which is the only defensible choice.
 If a customer needs SPF, they run our SMTP server. That is a real reason for the
 self-host path to exist beyond ideology.
 
+**This is now measured, not argued.** A Gmail message delivered to our live MX on
+2026-08-26 came back `spf: "pass"` for `gmail.com`, naming the mechanism that
+matched — `ip4:209.85.128.0/17 at _spf.google.com`, one DNS lookup — alongside
+`dkim: pass` and `dmarc: pass`. The same message through the Worker would have
+carried `spf: "none"`, because the sending IP never reaches the handler. The row
+in the table above is the difference between those two runs.
+
+One thing the table does not cover: this host cannot send. Hetzner blocks
+outbound 25 and 465, so the SMTP path emits no bounces or DSNs of its own —
+rejections happen in-session with a 5xx and the sender's MTA bounces instead.
+
 ## What the DKIM verifier is actually worth
 
 This is the one auth claim that is fully proven, and it was proven the hard way. The
@@ -137,15 +151,68 @@ Two things fell out of that work worth recording:
   routinely fail `bh=` while being perfectly legitimate, so a body-hash failure is
   reported distinctly and does not on its own raise the spam score.
 
+## What is now proven, 2026-08-25
+
+**The intake path has handled real mail from the public internet.** A message was
+sent from a Gmail account to a live disposable mailbox on `emalupe.com` — a
+different provider, across the public internet — and `packages/intake` pulled it
+and handed it to `/internal/deliver`:
+
+    event: connector.delivered
+    from: florian.standhartinger@gmail.com
+    message_id: <CAH9Y4-ifw78_G=J0vNmt_Lxnkxcg2-5m1ue3yY_Lq4oT0H6r8Q@mail.gmail.com>
+    bytes: 5057   deliver_ms: 2   status: received
+
+That Message-ID is Gmail's own, so the message genuinely traversed the internet
+rather than being replayed from a fixture. `npm run test:live` passes 3/3,
+including the Rebex third-party IMAP server.
+
+**Be precise about what this does not prove.** It says nothing about the SMTP
+server, and the delivery target in the live test is `FakeApi`, so the parser and
+the real API were not in the loop. Two separate claims, one of them still open:
+
+| Claim | Status |
+| --- | --- |
+| The intake connector handles real internet mail | **proven** as above |
+| The parser handles that message end to end into the real API | **proven** — see below |
+| **The SMTP server has accepted mail from the public internet** | **still never** |
+
 ## Honest gaps
 
 - I have not run a message through Cloudflare Email Routing, because that requires the
   domain from step 1. The Worker is written against the documented `ForwardableEmailMessage`
   API and tested against a faithful replay of that object, which is not the same thing.
-- **Our SMTP server has never accepted mail from the public internet.** Everything
+- **Our SMTP server has never accepted mail from the public internet** (still true
+  as of 2026-08-25; the intake path above is a different component). Everything
   measured about it — 182 passing tests, 117 msg/sec durable, 39 KB RSS per idle
   session, a 20 MB message accepted in 618 ms — comes from real TCP against a real
   listener on loopback, driven by a hand-written client. That is real engineering
   evidence and it is not evidence of working in production. Until a stranger's mail
   server delivers to it, nobody should call the SMTP path production-proven.
 - The per-message cost of $0.00 is Cloudflare's published position today, not a contract.
+
+### Parser end to end, 2026-08-25
+
+The same real Gmail message — fetched as raw RFC822, complete with its `Received:`
+chain from `mail-pg1-x529.google.com` — was posted to a locally running instance
+of the real API at `POST /v1/parse` with a real `mm_live_` key. HTTP 200, and it
+came back correct:
+
+    headers.message_id  <CAH9Y4-ifw78_G=J0vNmt_Lxnkxcg2-5m1ue3yY_Lq4oT0H6r8Q@mail.gmail.com>
+    headers.subject     MailMint intake proof - real internet mail
+    body.text           the message body, extracted
+    parse.timings_ms    total 15 (mime 6), llm_used false
+
+**A gap this exposed.** The response carried `auth: {spf: null, dkim: null,
+dmarc: null}` even though the message carries **two valid Gmail DKIM
+signatures**, and DKIM is verifiable from raw MIME plus DNS with no envelope at
+all. The reason is structural: SPF, DKIM and DMARC verification live in
+`packages/smtpd/src/auth/`, so `/v1/parse` never runs them — it can only relay
+what a receiving edge already reported.
+
+That is defensible for SPF, which genuinely needs the connecting IP. It is not
+defensible for DKIM, and `/docs#auth` describes `auth` as part of the parse
+output without saying it is always null on this endpoint. Either wire the DKIM
+verifier into the parse path or say plainly in the docs that `/v1/parse` does not
+authenticate senders. Right now a customer pasting raw MIME would reasonably
+expect a `dkim` verdict and silently get nothing.

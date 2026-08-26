@@ -51,6 +51,10 @@ jobs:
             grep -qx "$f" /tmp/files || { echo "::error::missing $f from the published package"; exit 1; }
           done
 
+      - name: The published files must not include a stub entry point
+        run: |
+          tar tzf n8n-nodes-mailmint-*.tgz | grep -qx 'package/index.js' && { echo "::error::index.js should not ship"; exit 1; } || true
+
       - name: Both nodes must load and describe themselves
         run: |
           node -e "
