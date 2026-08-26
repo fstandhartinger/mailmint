@@ -7,6 +7,15 @@ FROM node:20-bookworm-slim
 
 ENV NODE_ENV=production
 
+# curl is not in node:*-slim, and Coolify's rolling-update health gate shells out
+# to curl or wget INSIDE the container. Without it the gate reports
+# "curl: not found", marks a perfectly healthy container unhealthy and rolls the
+# deployment back - the app's own HEALTHCHECK below (which uses node's fetch)
+# never gets a say. This cost one failed deploy on 2026-08-26.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends curl \
+ && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 # The workspace manifests first, so a change to source code does not invalidate
