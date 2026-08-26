@@ -1,0 +1,29 @@
+[Unit]
+# The MailMint API was running as a hand-started `node` process with no unit:
+# it would not have survived a reboot. That matters more than it looks, because
+# the smtpd on port 25 delivers into it at API_URL=http://127.0.0.1:3100 - if
+# this process is gone, mail is accepted on 25 and then has nowhere to go, and
+# the proven intake chain breaks silently.
+#
+# It also inherited the whole developer shell environment (Stripe live keys,
+# GitHub PATs, an Anthropic admin key, the Hetzner token). EnvironmentFile below
+# gives it only the six variables it actually reads, plus SESSION_SECRET.
+Description=MailMint API (intake, mailboxes, webhooks) on :3100
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=flori
+Group=flori
+WorkingDirectory=/home/flori/Dev/pdfnode/mailmint/packages/api
+EnvironmentFile=/home/flori/Dev/pdfnode/mailmint/packages/api/.env
+ExecStart=/usr/bin/node src/server.js
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mailmint-api
+
+[Install]
+WantedBy=multi-user.target

@@ -7,6 +7,15 @@ FROM node:20-bookworm-slim
 
 ENV NODE_ENV=production
 
+# curl is not in node:*-slim, and Coolify's rolling-update health gate shells out
+# to curl or wget INSIDE the container. Without it the gate reports
+# "curl: not found", marks a perfectly healthy container unhealthy and rolls the
+# deployment back - the app's own HEALTHCHECK below (which uses node's fetch)
+# never gets a say. This cost one failed deploy on 2026-08-26.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends curl \
+ && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 # The workspace manifests first, so a change to source code does not invalidate
@@ -18,6 +27,14 @@ COPY packages/parser/package.json ./packages/parser/
 RUN npm ci --omit=dev --workspace mailmint-api --include-workspace-root \
  && rm -rf /root/.npm
 
+# The parser resolves its LLM client from ../../../shared/llm relative to
+# packages/parser/src, i.e. /app/shared/llm. That file used to live only in the
+# pdfnode monorepo ONE LEVEL ABOVE this repository, so it resolved on the dev box
+# and was absent in the image. The parser then threw 'no LLM client available',
+# the error was swallowed, and /v1/parse answered 200 with every field null and
+# no flags - the documented quickstart example returned nothing. It is vendored
+# into this repository now so the container has what the dev box has.
+COPY shared ./shared
 COPY packages/parser ./packages/parser
 COPY packages/api ./packages/api
 
