@@ -89,7 +89,14 @@ async function authenticate(raw, envelope, opts = {}) {
 
   const flags = [];
   if (spfRes.result === 'fail') flags.push('auth_fail:spf');
-  if (dkimRes.result === 'fail') flags.push('auth_fail:dkim');
+  // Same rule as the headline below, and it has to be applied HERE too: this
+  // list is built from the raw verifier result, so a forwarded message was
+  // getting BOTH dkim_body_altered and auth_fail:dkim — the headline said "not a
+  // failure" while the flags next to it said "authentication failed". Proven on a
+  // real Gmail message delivered over port 25 on 2026-08-26.
+  if (dkimRes.result === 'fail') {
+    flags.push(dkimRes.bodyAltered ? 'dkim_body_altered' : 'auth_fail:dkim');
+  }
   if (dmarcRes.result === 'fail') flags.push('auth_fail:dmarc');
   if (spamRes.suspected) flags.push('spam_suspected');
 

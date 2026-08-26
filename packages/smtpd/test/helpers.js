@@ -50,6 +50,13 @@ function startFakeApi({ mailboxes = [], onDeliver = null, failWith = null } = {}
       });
     }
     if (url.pathname === '/internal/deliver') {
+      // §3a auth, checked here on purpose: this stub used to accept any headers,
+      // so deliver.js sent x-mailmint-internal-secret for who knows how long and
+      // every test passed while real deliveries 401'd.
+      if ((req.headers['x-mailmint-internal'] || '') !== 'test-secret') {
+        res.writeHead(401, { 'content-type': 'application/json' });
+        return res.end(JSON.stringify({ error: { code: 'unauthorized', message: 'x-mailmint-internal missing or wrong' } }));
+      }
       calls.deliver++;
       const chunks = [];
       req.on('data', (c) => chunks.push(c));
@@ -58,7 +65,13 @@ function startFakeApi({ mailboxes = [], onDeliver = null, failWith = null } = {}
         let body;
         try { body = JSON.parse(Buffer.concat(chunks).toString('utf8')); }
         catch (e) { res.writeHead(400); return res.end(String(e)); }
-        body.raw_mime = Buffer.from(body.raw_mime_base64 || '', 'base64');
+        // §3a: the field is raw_mime, base64 unless encoding says utf8. This
+        // stub decoded raw_mime_base64, which is the name the real API never
+        // accepted — so the tests kept passing while live delivery 400'd.
+        body.raw_mime = Buffer.from(
+          body.raw_mime || body.raw_mime_base64 || '',
+          body.encoding === 'utf8' ? 'utf8' : 'base64',
+        );
         delivered.push(body);
         if (onDeliver) onDeliver(body);
         res.writeHead(200, { 'content-type': 'application/json' });

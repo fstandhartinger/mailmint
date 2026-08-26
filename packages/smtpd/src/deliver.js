@@ -87,7 +87,17 @@ class Deliverer {
       flags: meta.flags,
       auth_details: meta.auth_details,
       size: raw.length,
-      raw_mime_base64: raw.toString('base64'),
+      // CONTRACT §3a, in as many words: "raw_mime" — NOT raw_mime_base64. §3a was
+      // written after this exact drift cost the product, resolver.js was fixed,
+      // and this path was left sending the old name. The API answers 400
+      // missing_raw_mime, which is permanent, so the message is never retried.
+      raw_mime: raw.toString('base64'),
+      // Also named by §3a and previously absent. The API falls back to
+      // envelope.to, but the contract asks for these and idempotency needs the id.
+      mailbox_token: meta.mailbox_token
+        || (meta.recipients && meta.recipients[0] && meta.recipients[0].token)
+        || null,
+      message_id: meta.message_id || null,
     });
     const started = Date.now();
     try {
@@ -95,7 +105,12 @@ class Deliverer {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
-          'x-mailmint-internal-secret': this.secret || '',
+          // CONTRACT §3a: the header is x-mailmint-internal. No `-secret`
+          // suffix — resolver.js says so in as many words. This path still
+          // sent the old name, so every delivery to the real API 401'd while
+          // recipient resolution worked fine. The stub never checked the
+          // header, so the whole suite stayed green over it.
+          'x-mailmint-internal': this.secret || '',
           'x-mailmint-request-id': requestId || '',
         },
         body,
