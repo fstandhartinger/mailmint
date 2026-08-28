@@ -75,15 +75,13 @@ whole thing on the canvas: name a field, give it a type and a sentence of descri
 <section id="status">
 <h2>Publication status <a class="anchor" href="#status">#</a></h2>
 
-<div class="note warn">
-<p><strong><code>n8n-nodes-mailmint</code> has never been published to npm.</strong> <code>npm view
-n8n-nodes-mailmint</code> returns a 404 today. That means the <em>Settings &rarr; Community Nodes &rarr;
-Install</em> route below <strong>does not work yet</strong>, and n8n Cloud — which only accepts verified
-community nodes — cannot install it at all.</p>
-<p>Every screenshot on this page is the node running in a real n8n instance from a local build, not a
-mock-up. The install instructions are here because they are what will be true the moment it is published,
-and they are marked as not-yet rather than quietly presented as working. <a href="#cloud">What to do
-instead, today.</a></p>
+<div class="note">
+<p><strong><code>n8n-nodes-mailmint</code> is published on npm.</strong> <code>npm view
+n8n-nodes-mailmint version</code> returns <code>0.1.0</code>. On <strong>self-hosted n8n</strong> the
+<em>Settings &rarr; Community Nodes &rarr; Install</em> route below works today. <strong>n8n Cloud only
+accepts nodes n8n has verified</strong>, and this one is not verified yet, so it cannot be installed
+there — <a href="#cloud">what to do instead on Cloud</a>.</p>
+<p>Every screenshot on this page is the node running in a real n8n instance, not a mock-up.</p>
 </div>
 </section>
 
@@ -91,27 +89,22 @@ instead, today.</a></p>
 <section id="install">
 <h2>Install <a class="anchor" href="#install">#</a></h2>
 
-<h3>Today &mdash; build the tarball and install that</h3>
+<h3>Self-hosted n8n</h3>
 
-<p>Until the package is published this is the honest route, and it is the one every screenshot on this page
-was taken through:</p>
+<p><em>Settings &rarr; Community Nodes &rarr; Install</em>, then enter <code>n8n-nodes-mailmint</code>. Or
+from the command line:</p>
 
 <div class="code">
-<div class="cap">in packages/n8n-node</div>
 <button class="copy" type="button">Copy</button>
-<pre><code>npm install --ignore-scripts
-npm run build
-npm pack                       # -> n8n-nodes-mailmint-&lt;version&gt;.tgz
-
-cd ~/.n8n/nodes
-npm install /path/to/n8n-nodes-mailmint-&lt;version&gt;.tgz</code></pre>
+<pre><code>cd ~/.n8n/nodes
+npm install n8n-nodes-mailmint</code></pre>
 </div>
-<p>Then restart n8n.</p>
+<p>Then restart n8n. The package has zero runtime dependencies and is published from GitHub Actions with an
+npm provenance attestation, so <code>npm audit signatures</code> can verify which commit built it.</p>
 
-<h3>Once it is published</h3>
-<p><em>Settings &rarr; Community Nodes &rarr; Install</em>, then enter <code>n8n-nodes-mailmint</code>; or
-<code>cd ~/.n8n/nodes &amp;&amp; npm install n8n-nodes-mailmint</code> from the CLI. Neither works yet &mdash; see
-<a href="#status">above</a>.</p>
+<h3>n8n Cloud</h3>
+<p>Not yet — Cloud only installs nodes n8n has verified. See <a href="#cloud">below</a> for the HTTP Request
+route that works there today.
 
 <p>Once installed, both nodes appear in the node panel under their own names. The trigger is found by
 searching the trigger panel for <em>MailMint</em>:</p>
@@ -159,8 +152,7 @@ build anything rather than an &ldquo;untested&rdquo; badge:</p>
 <section id="first">
 <h2>First workflow — mail you already have <a class="anchor" href="#first">#</a></h2>
 
-<p>You do not need a MailMint address to start, which matters, because
-<a href="/quickstart#address">the hosted address is not live yet</a>. If mail is already reaching n8n —
+<p>You do not need a MailMint address to start. If mail is already reaching n8n —
 through the built-in <strong>Email Trigger (IMAP)</strong>, through Gmail, through anything — put a
 <strong>MailMint</strong> node after it and it parses what arrives.</p>
 
@@ -452,9 +444,8 @@ full code list is in <a href="/docs#errors">the API reference</a>.</p>
 <section id="cloud">
 <h2>What works on n8n Cloud today <a class="anchor" href="#cloud">#</a></h2>
 
-<p>n8n Cloud only accepts verified community nodes, and <code>n8n-nodes-mailmint</code> is not published at
-all yet, let alone verified. Until it is, an <strong>HTTP Request</strong> node does the same job from any
-n8n:</p>
+<p>n8n Cloud only accepts verified community nodes. <code>n8n-nodes-mailmint</code> is on npm but not
+verified yet, so on Cloud an <strong>HTTP Request</strong> node does the same job:</p>
 
 <div class="code">
 <button class="copy" type="button">Copy</button>

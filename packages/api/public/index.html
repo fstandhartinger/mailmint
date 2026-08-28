@@ -31,6 +31,7 @@
       <a href="#compare" class="hide-sm">Compare</a>
       <a href="/quickstart" class="hide-sm">Quickstart</a>
       <a href="/n8n">n8n</a>
+      <a href="#pricing" class="hide-sm">Pricing</a>
       <a href="/docs">Docs</a>
       <a href="/signup" class="l-btn l-btn-primary">Get a key</a>
     </nav>
@@ -719,11 +720,13 @@ curl -X POST <span class="tok-n">$MAILMINT_URL</span>/v1/mailboxes/mbx_01JQ8Y…
           <a class="l-btn l-btn-primary" href="/n8n">The n8n guide</a>
         </div>
         <div class="provisional" style="margin-top:1.6rem">
-          <p class="tagline">Not published yet</p>
-          <p><b><code>n8n-nodes-mailmint</code> is not on npm.</b> The screenshots on this page are the node
-            running in a real n8n instance, installed from a local build. Until it is published you cannot
-            install it from <em>Settings &rarr; Community Nodes</em>, and n8n Cloud will not take it at all
-            until it also passes n8n&rsquo;s verification.</p>
+          <p class="tagline">On npm, not yet verified by n8n</p>
+          <p><b><code>n8n-nodes-mailmint</code> is published.</b> On self-hosted n8n you can install it
+            today from <em>Settings &rarr; Community Nodes</em>, or with
+            <code>npm&nbsp;install&nbsp;n8n-nodes-mailmint</code> in <code>~/.n8n/nodes</code>. It has zero
+            runtime dependencies and ships with an npm provenance attestation. <b>n8n Cloud will not take
+            it until it passes n8n&rsquo;s own verification</b>, which is n8n&rsquo;s decision and not
+            ours.</p>
         </div>
       </div>
 
@@ -816,7 +819,7 @@ curl -X POST <span class="tok-n">$MAILMINT_URL</span>/v1/mailboxes/mbx_01JQ8Y…
           </tr>
           <tr>
             <td>Entry price</td>
-            <td class="us">Not decided yet — see below</td>
+            <td class="us">Free for 300/mo, then $9 for 5,000 — <strong>$0.0018 each</strong></td>
             <td>$29.95/mo for 250 emails — <strong>$0.1198 each</strong>, their own figure</td>
             <td>€49/mo for 100 emails — <strong>€0.49 each</strong></td>
             <td>$39/mo for 100 documents — <strong>$0.39 each</strong></td>
@@ -824,7 +827,7 @@ curl -X POST <span class="tok-n">$MAILMINT_URL</span>/v1/mailboxes/mbx_01JQ8Y…
           </tr>
           <tr>
             <td>n8n node</td>
-            <td class="us">Yes — 11 actions + a trigger <em>(not yet on npm)</em></td>
+            <td class="us">Yes — 11 actions + a trigger, <a href="https://www.npmjs.com/package/n8n-nodes-mailmint">on npm</a></td>
             <td>None</td>
             <td>Official, published 21 Aug 2026 — upload + webhook only</td>
             <td>None</td>
@@ -851,21 +854,81 @@ curl -X POST <span class="tok-n">$MAILMINT_URL</span>/v1/mailboxes/mbx_01JQ8Y…
   <div class="wrap">
     <div class="sec-head center">
       <p class="eyebrow">Pricing</p>
-      <h2 class="sec-title">Not decided yet</h2>
+      <h2 class="sec-title">Per parsed email, not per seat</h2>
+      <p class="lead">A parsed email is one message MailMint accepted and returned JSON for. A message
+        that arrives flagged still counts; a message that never reached us does not. The free plan needs
+        no card, and every plan can be cancelled from the dashboard in two clicks.</p>
     </div>
-    <div class="provisional" style="max-width:46rem;margin:0 auto">
-      <p class="tagline">Placeholder — do not plan against these numbers</p>
-      <p>There is <b>no pricing decision</b> for MailMint, and no tiers to show you. Nothing on this page
-        is an offer.</p>
-      <p>What is decided is the <b>shape</b> of it. Inbound mail on the production path costs us
-        <b>$0.00 per message</b> — Cloudflare Email Routing is free at any volume we will plausibly reach —
-        and the only variable cost is one model call, on a chain headed by a model measured at a fraction of
-        a cent per invoice. Meanwhile Mailparser charges <b>$0.1198 per email</b> by its own arithmetic and
-        does no AI at all, and Postmark delivers parsed inbound JSON with base64 attachments at
-        <b>$0.00165 per email</b>. MIME handling is not a moat. Whatever we charge will be for the
-        extraction layer and its trust signals, and it will not look like $29.95 for 250 emails.</p>
-      <p>When there is a number, it will appear here and nowhere before.</p>
+
+    <div class="price-grid">
+      <div class="pcard">
+        <p class="pname">Free</p>
+        <p class="amt">$0<small> /month</small></p>
+        <p class="per">300 parsed emails a month</p>
+        <ul>
+          <li>Inbound address and <code>POST /v1/parse</code></li>
+          <li>Webhooks, polling and the n8n node</li>
+          <li>Raw message kept 30 days</li>
+          <li>Attachment bytes kept 7 days</li>
+          <li>No card</li>
+        </ul>
+        <p class="plan-for">Enough to run a real low-volume workflow rather than only to look at one.</p>
+        <a class="l-btn l-btn-ghost" href="/signup">Create an account</a>
+      </div>
+
+      <div class="pcard feat">
+        <p class="pname">Starter</p>
+        <p class="amt">$9<small> /month</small></p>
+        <p class="per">5,000 parsed emails a month</p>
+        <ul>
+          <li>Everything in Free</li>
+          <li>Raw message kept 90 days</li>
+          <li>Attachment bytes kept 30 days</li>
+          <li>Re-parse anything still inside the window</li>
+        </ul>
+        <p class="plan-for">Mailparser&rsquo;s entry plan is $29.95 for 250 emails. This is twenty times
+          the volume for less than a third of the price.</p>
+        <a class="l-btn l-btn-primary" href="/signup">Start on Starter</a>
+      </div>
+
+      <div class="pcard">
+        <p class="pname">Pro</p>
+        <p class="amt">$29<small> /month</small></p>
+        <p class="per">25,000 parsed emails a month</p>
+        <ul>
+          <li>Everything in Starter</li>
+          <li>Raw message kept 180 days</li>
+          <li>Attachment bytes kept 60 days</li>
+        </ul>
+        <p class="plan-for">When several senders feed several mailboxes and a layout change has to be
+          replayable months later.</p>
+        <a class="l-btn l-btn-ghost" href="/signup">Start on Pro</a>
+      </div>
+
+      <div class="pcard">
+        <p class="pname">Scale</p>
+        <p class="amt">$99<small> /month</small></p>
+        <p class="per">150,000 parsed emails a month</p>
+        <ul>
+          <li>Everything in Pro</li>
+          <li>Raw message kept 365 days</li>
+          <li>Attachment bytes kept 90 days</li>
+        </ul>
+        <p class="plan-for">Production volume, and a retention window that outlives an audit.</p>
+        <a class="l-btn l-btn-ghost" href="/signup">Start on Scale</a>
+      </div>
     </div>
+
+    <div class="plan-all">
+      <b>Every plan, including Free:</b> per-field confidence with the evidence span, SPF, DKIM and DMARC
+      verdicts on the message as received, signed webhooks with retries, re-parse of stored mail, the
+      <a href="/n8n">n8n node</a>, and the same parser &mdash; the paid plans buy volume and a longer
+      retention window, never a better answer. You sign up free and pick a plan in the dashboard;
+      the card is only asked for at that point, and cancelling returns the account to Free at the end
+      of the period.
+    </div>
+
+    <p class="price-foot">Prices in US dollars, billed monthly by Stripe. VAT is added where it applies.</p>
   </div>
 </section>
 
@@ -911,10 +974,13 @@ curl -X POST <span class="tok-n">$MAILMINT_URL</span>/v1/mailboxes/mbx_01JQ8Y…
       </details>
       <details>
         <summary>Is any of this live?</summary>
-        <p>Not yet, and we would rather say so than imply otherwise. No domain has been bought, so no hosted
-          inbound address exists; the n8n node is not on npm; there is no uptime history, no customers and no
-          SLA. What does exist is the code, the parser, the node, and the measurements quoted on this page,
-          all of which you can reproduce from the repository.</p>
+        <p>Yes, with two things still missing and named. The API is live at
+          <code>mailmint.app.mintapis.com</code>, the hosted inbound address works — mail sent to your
+          <code>@smooth-operator.online</code> address is received, authenticated and parsed — the n8n node
+          is on npm, and paid plans are live through Stripe. What does <em>not</em> exist yet: n8n
+          verification, so the node cannot be installed on n8n Cloud; and any uptime history, SLA or
+          customer worth quoting to you. Nobody outside this project has paid for it yet, and we would
+          rather say so than imply otherwise.</p>
       </details>
       <details>
         <summary>What about prompt injection from a hostile email?</summary>
@@ -951,12 +1017,11 @@ curl -X POST <span class="tok-n">$MAILMINT_URL</span>/v1/mailboxes/mbx_01JQ8Y…
       testimonials and no uptime history on this page — and there will not be any invented ones. Every
       number here is either measured on real email and named as such, or fetched from a competitor&rsquo;s
       own page and attributed.</p>
-    <p><strong>What is not true yet, in one list.</strong> No domain has been bought, so the hosted inbound
-      address does not exist; the paths that work today are <code>POST /v1/parse</code>,
-      <code>POST /v1/test/deliver</code>, and putting the n8n node after a mailbox you already own.
-      <code>n8n-nodes-mailmint</code> is not published to npm. Attachment content is not extracted into
-      <code>attachments[].extracted</code> yet, though the extractor exists. There
-      is no pricing, no SLA and no SOC&nbsp;2 report.</p>
+    <p><strong>What is not true yet, in one list.</strong> The n8n node is on npm but has
+      <b>not passed n8n&rsquo;s verification</b>, so it cannot be installed on n8n Cloud. Attachment content
+      is not extracted into <code>attachments[].extracted</code> yet, though the extractor exists. There is
+      <b>no SLA and no SOC&nbsp;2 report</b>, and no uptime history worth quoting. Nobody outside this
+      project has paid for MailMint yet.</p>
     <p>The measurement method behind the numbers in the hero is in <code>docs/MODEL-BENCH.md</code>, the
       competitor research with every source URL is in <code>docs/COMPETITORS.md</code>, and the frozen
       output contract is in <code>docs/CONTRACT.md</code>.</p>

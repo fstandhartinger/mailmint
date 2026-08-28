@@ -319,12 +319,12 @@ address, no DNS, no forwarding rule.</p>
   <li><strong>Execute step.</strong></li>
 </ol>
 
-<div class="note warn">
-<p><strong><code>n8n-nodes-mailmint</code> is not published to npm yet</strong>, so it cannot be installed
-from <em>Settings &rarr; Community Nodes</em> today, and n8n Cloud will not accept it until it is also
-verified. Until then, an <strong>HTTP Request</strong> node pointed at <code>POST /v1/parse</code> does the
-same job from any n8n, Cloud included. The full walkthrough, with screenshots of the node running in a real
-n8n, is on <a href="/n8n">the n8n page</a>.</p>
+<div class="note">
+<p><strong><code>n8n-nodes-mailmint</code> is on npm.</strong> On self-hosted n8n, install it from
+<em>Settings &rarr; Community Nodes</em> or with <code>npm install n8n-nodes-mailmint</code> in
+<code>~/.n8n/nodes</code>. <strong>n8n Cloud will not accept it until n8n verifies it</strong>; there, an
+<strong>HTTP Request</strong> node pointed at <code>POST /v1/parse</code> does the same job. The full
+walkthrough, with screenshots of the node running in a real n8n, is on <a href="/n8n">the n8n page</a>.</p>
 </div>
 </section>
 
@@ -332,26 +332,25 @@ n8n, is on <a href="/n8n">the n8n page</a>.</p>
 <section id="address">
 <h2>The hosted inbound address <a class="anchor" href="#address">#</a></h2>
 
-<p>This is the feature the product is named for, and it is the one thing on this page that is not available
-yet. Being precise about why:</p>
+<p>This is the feature the product is named for, and it works. Sign up, and the address on your
+dashboard — <code>&lt;token&gt;@smooth-operator.online</code> — is live immediately.</p>
 
-<p>Inbound mail arrives through <strong>Cloudflare Email Routing</strong> into an Email Worker that streams
-the raw message to the API. That is free at any volume we will plausibly reach, accepts messages up to
-25&nbsp;MiB, and a single catch-all rule covers every customer address. But it requires a domain whose
-nameservers point at Cloudflare, and <strong>no domain has been bought</strong>. Until one is:</p>
+<p>Inbound mail is taken by MailMint&rsquo;s own SMTP server (<code>packages/smtpd</code>), which is what
+<code>mx.smooth-operator.online</code> points at. Because it sees the envelope and the raw RFC822 bytes, the
+SPF, DKIM and DMARC verdicts in <code>auth</code> are computed on the message as received rather than
+inferred afterwards. A check that cannot be evaluated says <code>none</code> rather than guessing.</p>
 
 <ul>
   <li><code>GET /healthz</code> reports the configured <code>inbound_domain</code>, and mailbox addresses are
-    built from it. The address in a <code>POST /v1/mailboxes</code> response is well-formed and reserved for
-    you; it just has no MX behind it yet.</li>
-  <li>Nothing else changes when it does. The message that arrives through the real MX is parsed by the same
-    code, returns the same object, and fires the same webhook as
-    <code>POST /v1/test/deliver</code> does today.</li>
+    built from it.</li>
+  <li>The path is the same either way: a message that arrives through the real MX is parsed by the same
+    code, returns the same object and fires the same webhook as
+    <code>POST /v1/test/deliver</code> does.</li>
 </ul>
 
-<p>MailMint also ships its own SMTP server (<code>packages/smtpd</code>) as the escape hatch for a
-self-hosting or air-gapped deployment, and adapters for Mailgun, CloudMailin and a generic webhook, so a
-customer already running one of those does not have to move. Neither is the default path.</p>
+<p>For a self-hosting or air-gapped deployment, <code>packages/smtpd</code> is the same server you can run
+yourself, and there are adapters for Mailgun, CloudMailin and a generic webhook, so a customer already
+running one of those does not have to move.</p>
 </section>
 
 <!-- ================================================================ IMAP -->

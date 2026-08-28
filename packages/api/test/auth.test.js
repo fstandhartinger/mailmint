@@ -71,11 +71,16 @@ describe('the internal API', () => {
     assert.equal(res.status, 401);
   });
 
+  // CONTRACT §3a: unknown is a 404 with the reason in `details`, never a 200
+  // with a falsy `ok` and never a batch `results` array. This test asserted the
+  // batch shape the endpoint deliberately dropped, so it failed against a
+  // correct server.
   test('rejects mail for a domain it does not host', async () => {
     const mb = await H.newMailbox(key);
-    const { json } = await H.internal('/internal/resolve', { to: `${mb.token}@somewhere-else.example` });
-    assert.equal(json.ok, false);
-    assert.equal(json.results[0].reason, 'wrong_domain');
+    const { res, json } = await H.internal('/internal/resolve', { to: `${mb.token}@somewhere-else.example` });
+    assert.equal(res.status, 404);
+    assert.equal(json.error.code, 'unknown_mailbox');
+    assert.equal(json.error.details.reason, 'wrong_domain');
   });
 });
 

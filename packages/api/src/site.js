@@ -53,6 +53,11 @@ for (const [url, file] of Object.entries(PAGES)) {
   });
 }
 
+// Pricing lives in a section of the landing page rather than on a page of its
+// own, but "/pricing" is what people type and what other pages link to, so it
+// has to lead somewhere rather than 404.
+router.get('/pricing', (req, res) => res.redirect(302, '/#pricing'));
+
 // The .html forms redirect to the canonical pretty URL, so only one of the two
 // ever ends up in a search index or in somebody's bookmark.
 for (const [url, file] of Object.entries(PAGES)) {

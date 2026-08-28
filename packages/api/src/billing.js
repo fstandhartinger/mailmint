@@ -36,7 +36,7 @@ const asyncRoute = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next
 
 const unavailable = () => new ApiError(503, 'billing_unavailable',
   'Billing is not switched on for this deployment.', {
-    hint: 'The free plan is 100 emails a month and needs no card. Paid plans open when MAILMINT_BILLING is enabled.',
+    hint: `The free plan is ${PLANS.free.quota} emails a month and needs no card. Paid plans open when MAILMINT_BILLING is enabled.`,
   });
 
 /**

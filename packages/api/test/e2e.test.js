@@ -21,25 +21,31 @@ describe('a real message, end to end', () => {
   let listener;
   let hookUrl;
 
+  // CONTRACT §3a: one address per call, a hit is a flat 200 and a miss is a
+  // 404. These assertions used to speak the batch shape the endpoint dropped.
   test('the mail server can resolve the address before it accepts the mail', async () => {
     const { res, json } = await H.internal('/internal/resolve', { to: mailbox.address });
     assert.equal(res.status, 200);
-    assert.equal(json.ok, true);
-    assert.equal(json.results[0].mailbox.id, mailbox.id);
+    assert.equal(json.mailbox_id, mailbox.id);
 
     // The three spellings of one address all have to land on the same mailbox,
     // or sub-addressing silently drops mail.
-    const alias = await H.internal('/internal/resolve', {
-      to: [`${mailbox.token}+urgent@${H.config.inboundDomain}`, `invoices.${mailbox.token}@${H.config.inboundDomain}`],
-    });
-    assert.equal(alias.json.results.every((r) => r.ok && r.mailbox.id === mailbox.id), true, JSON.stringify(alias.json));
-    assert.equal(alias.json.results[0].tag, 'urgent');
+    const tagged = await H.internal('/internal/resolve', { to: `${mailbox.token}+urgent@${H.config.inboundDomain}` });
+    assert.equal(tagged.json.mailbox_id, mailbox.id, JSON.stringify(tagged.json));
+    assert.equal(tagged.json.tag, 'urgent');
+    const slugged = await H.internal('/internal/resolve', { to: `invoices.${mailbox.token}@${H.config.inboundDomain}` });
+    assert.equal(slugged.json.mailbox_id, mailbox.id, JSON.stringify(slugged.json));
+
+    // And the batch form really is gone rather than quietly half-supported.
+    const batch = await H.internal('/internal/resolve', { to: [mailbox.address] });
+    assert.equal(batch.res.status, 400);
+    assert.equal(batch.json.error.code, 'missing_recipient');
   });
 
   test('an unknown recipient is refused, and a known one is never refused for quota', async () => {
-    const { json } = await H.internal('/internal/resolve', { to: `zzzzzzzzzzzz@${H.config.inboundDomain}` });
-    assert.equal(json.ok, false);
-    assert.equal(json.results[0].reason, 'unknown_mailbox');
+    const { res, json } = await H.internal('/internal/resolve', { to: `zzzzzzzzzzzz@${H.config.inboundDomain}` });
+    assert.equal(res.status, 404);
+    assert.equal(json.error.details.reason, 'unknown_mailbox');
   });
 
   test('POST /internal/deliver stores the message and answers with its id', async () => {

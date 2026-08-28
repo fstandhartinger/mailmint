@@ -186,9 +186,10 @@ first request after the month turns. <code>GET /v1/usage</code> reports where yo
 </ul>
 
 <div class="note">
-<p><strong>There is no pricing decision yet.</strong> Plan names and quotas exist in the service so that
-quota accounting has something to count against, and they are not an offer. When there is a price it will
-appear on the <a href="/#pricing">home page</a> first.</p>
+<p><strong>Plans are live.</strong> Free is 300 parsed emails a month with no card; Starter is $9 for
+5,000, Pro $29 for 25,000, Scale $99 for 150,000, each with a longer retention window. The quotas the
+service enforces are the quotas on the <a href="/#pricing">pricing section</a>; you pick a plan in the
+dashboard and pay by Stripe Checkout.</p>
 </div>
 </section>
 
@@ -1809,11 +1810,12 @@ statelessness is a promise rather than a default we might change.</p>
 <strong>MailMint Trigger</strong> — under MIT, with zero runtime dependencies. The full walkthrough, with
 screenshots of it running in a real n8n, is on <a href="/n8n">the n8n page</a>.</p>
 
-<div class="note warn">
-<p><strong>It is not published to npm yet</strong>, so it cannot be installed from
-<em>Settings&nbsp;&rarr;&nbsp;Community&nbsp;Nodes</em>, and n8n Cloud will not accept it until it is also
-verified. An <strong>HTTP Request</strong> node pointed at <code>POST /v1/parse</code> does the same job from
-any n8n today, Cloud included.</p>
+<div class="note">
+<p><strong>It is on npm</strong>, so on self-hosted n8n it installs from
+<em>Settings&nbsp;&rarr;&nbsp;Community&nbsp;Nodes</em> or with
+<code>npm install n8n-nodes-mailmint</code> in <code>~/.n8n/nodes</code>.
+<strong>n8n Cloud will not accept it until n8n verifies it</strong>; there, an <strong>HTTP Request</strong>
+node pointed at <code>POST /v1/parse</code> does the same job.</p>
 </div>
 
 <div class="tw">
@@ -1846,14 +1848,12 @@ any n8n today, Cloud included.</p>
 <p>Kept here rather than left for you to discover.</p>
 
 <ul>
-  <li><strong>The hosted inbound address is not live.</strong> No domain has been bought. Addresses are
-    minted and reserved, and nothing external can reach them yet.
-    <a href="#parse"><code>POST /v1/parse</code></a> and
-    <a href="#ep-test"><code>POST /v1/test/deliver</code></a> both work today, and neither needs DNS.</li>
+  <li><strong>The n8n node is not verified by n8n.</strong> It is published on npm and installs on
+    self-hosted n8n, but n8n Cloud only accepts verified community nodes, and that decision is n8n's.
+    <a href="#parse"><code>POST /v1/parse</code></a> works from any n8n through an HTTP Request node.</li>
   <li><strong>Attachment content extraction is not wired into the parse pipeline.</strong> The extractor
     package is written; <code>attachments[].extracted</code> is reserved for its output and is not
     populated yet.</li>
-  <li><strong><code>n8n-nodes-mailmint</code> is not on npm.</strong></li>
   <li><strong>The confidence calibration curve is measured but small.</strong> The published table covers 95
     labelled field slots across 41 messages, and it is enough to show the pipeline is not over-confident —
     nothing in the 0.9+ bucket was wrong — and nowhere near enough to fit a reliability curve. That needs a
@@ -1869,7 +1869,10 @@ any n8n today, Cloud included.</p>
     arithmetic reconciliation are partial structural mitigations — an instruction embedded in a body cannot
     manufacture any of them — but they are not a control. Treat parsed output as data and check
     <code>needs_review</code> before acting on it.</li>
-  <li><strong>There is no pricing, no SLA and no uptime history.</strong></li>
+  <li><strong>There is no SLA and no uptime history.</strong> Plans and prices exist and are charged;
+    an availability commitment does not.</li>
+  <li><strong>Nobody outside this project has paid for MailMint.</strong> There are no customer numbers to
+    quote, and none will be invented here.</li>
 </ul>
 </section>
 

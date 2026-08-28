@@ -10,43 +10,39 @@ type and a sentence of description, execute, see the value.
 
 MailMint is the API behind it.
 
-> ### Status: not released yet
+> ### Status
 >
-> **This package has not been published to npm**, so `npm install n8n-nodes-mailmint` and
-> n8n's *Settings → Community Nodes → Install* will not find it. **MailMint is not a hosted
-> service yet either** — there is no public API URL and no signup page, which is why the
-> credential's Base URL has no default. Everything below describes a node that is built and
-> tested against a MailMint API you point it at yourself.
+> Published on npm as [`n8n-nodes-mailmint`](https://www.npmjs.com/package/n8n-nodes-mailmint),
+> and the API behind it is hosted at **https://mailmint.app.mintapis.com** — sign up there,
+> copy the `mm_live_…` key from the dashboard, and the credential's Base URL default already
+> points at it. You can also point it at a MailMint you run yourself.
 
 ---
 
 ## Install
 
-Until the package is published, build it and install the tarball:
+In n8n: **Settings → Community Nodes → Install**, enter `n8n-nodes-mailmint`, confirm.
+
+Self-hosted, from the command line:
 
 ```bash
-npm install --ignore-scripts
-npm run build
-npm pack                       # -> n8n-nodes-mailmint-<version>.tgz
-
 cd ~/.n8n/nodes
-npm install /path/to/n8n-nodes-mailmint-<version>.tgz
+npm install n8n-nodes-mailmint
 ```
 
 Then restart n8n.
 
 The package has **zero runtime dependencies** — it uses n8n's own HTTP helper and nothing
-else. When it is published it will go out from
+else. It is published from
 [this repository's GitHub Actions workflow](.github/workflows/publish.yml) with an npm
-provenance attestation, so `npm audit signatures` will be able to verify which commit built
-it.
+provenance attestation, so `npm audit signatures` verifies which commit built it.
 
 ## Credential
 
 1. In n8n, add a **MailMint API** credential.
 2. **API Key** — the key for your MailMint account. It starts with `mm_live_`.
-3. **Base URL** — the root URL of the MailMint API you are talking to, with no trailing
-   slash. There is no default, because there is no hosted MailMint to default to.
+3. **Base URL** — already filled in with `https://mailmint.app.mintapis.com`, the hosted
+   service. Change it only if you run MailMint yourself; no trailing slash.
 4. Save. The credential tests itself against `GET /v1/usage`, so you get a green tick before
    you build anything.
 

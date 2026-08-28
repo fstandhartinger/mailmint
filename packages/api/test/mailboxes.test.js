@@ -109,8 +109,8 @@ describe('mailboxes and schema versions', () => {
     await H.req(`/v1/mailboxes/${mb.id}`, { method: 'DELETE', key });
 
     const resolved = await H.internal('/internal/resolve', { to: mb.address });
-    assert.equal(resolved.json.ok, false);
-    assert.equal(resolved.json.results[0].reason, 'unknown_mailbox');
+    assert.equal(resolved.res.status, 404);
+    assert.equal(resolved.json.error.details.reason, 'unknown_mailbox');
 
     const still = await H.req(`/v1/messages/${json.message_id}`, { key });
     assert.equal(still.res.status, 200);

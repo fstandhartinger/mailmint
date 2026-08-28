@@ -80,7 +80,7 @@ function authForm(kind, error, values = {}) {
   <a class="logo" href="/">Mail<span>Mint</span></a>
   <h1>${isSignup ? 'Create your account' : 'Sign in'}</h1>
   <p class="sub">${isSignup
-    ? 'You get an inbound email address straight away. 100 parsed emails a month, free, no card.'
+    ? `You get an inbound email address straight away. ${PLANS.free.quota} parsed emails a month, free, no card.`
     : 'Welcome back.'}</p>
   ${isSignup ? '<p class="warnbox">There is no password reset and no confirmation email yet, so nothing can be sent to you if you forget it. Put the password in your password manager now.</p>' : ''}
   ${error ? `<div class="error">${escapeHtml(error)}</div>` : ''}
@@ -108,7 +108,7 @@ router.get('/', asyncRoute(async (req, res) => {
     <li>Send it an email. The parsed JSON is on the page.</li>
   </ol>
   <form method="get" action="/signup"><button>Get an address</button></form>
-  <p class="alt">100 parsed emails a month, free, no card. <a href="/login">Sign in</a></p>
+  <p class="alt">${PLANS.free.quota} parsed emails a month, free, no card. <a href="/login">Sign in</a></p>
 </main>`, { description: 'MailMint gives you an inbound email address and turns the mail sent to it into structured JSON.' }));
 }));
 
