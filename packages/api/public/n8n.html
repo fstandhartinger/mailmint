@@ -61,6 +61,7 @@
       <h2>Reference</h2>
       <ul>
         <li><a href="#errors">Errors</a></li>
+        <li><a href="#templates">A workflow to import</a></li>
         <li><a href="#cloud">n8n Cloud today</a></li>
       </ul>
     </div>
@@ -450,6 +451,36 @@ full code list is in <a href="/docs#errors">the API reference</a>.</p>
 </section>
 
 <!-- =============================================================== CLOUD -->
+<!-- =========================================================== TEMPLATES -->
+<section id="templates">
+<h2>A workflow you can import right now <a class="anchor" href="#templates">#</a></h2>
+
+<p>Rather than building from an empty canvas: <strong>Screen invoice emails and hold the doubtful
+ones for review</strong> is a finished workflow that takes an invoice email as JSON, reads the
+fields out of it, and answers <code>approved</code>, <code>review</code> with the reasons, or a
+<code>422</code> with the failure text. Twelve nodes, annotated, with both failure paths wired.</p>
+
+<p><a class="l-btn l-btn-primary" href="/templates/mailmint-invoice-screening.json" download>Download the workflow JSON</a></p>
+
+<p>In n8n: <strong>Workflows &rarr; Import from File</strong>, pick the file, then add your MailMint
+credential to the <em>Read the invoice fields</em> node and activate it. Nothing else needs editing —
+the policy values live in one Set node at the front.</p>
+
+<p>It was executed before it was published here, against this API: an invoice at 1,284.00 EUR came
+back <code>approved</code> with the lowest field confidence at <strong>0.97</strong> and 31 days until
+due; 9,900.00 EUR came back <code>review</code> — <em>&ldquo;9900 is above the 2500 ceiling&rdquo;</em>;
+a message with no invoice in it left by the node&rsquo;s <em>Needs Review</em> output carrying
+<code>missing_required:invoice_number, amount_due, due_date</code>; and with MailMint pointed at a
+closed port the caller still got <em>&ldquo;The service refused the connection&rdquo;</em> rather than a
+hung request.</p>
+
+<div class="note">
+<p><strong>Not yet on n8n&rsquo;s template gallery.</strong> It has been built and run, but n8n allows one
+template per creator in review at a time and that slot is currently taken by another submission. The
+file above is the same workflow, and it works today on self-hosted n8n.</p>
+</div>
+</section>
+
 <section id="cloud">
 <h2>What works on n8n Cloud today <a class="anchor" href="#cloud">#</a></h2>
 

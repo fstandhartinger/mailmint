@@ -1,0 +1,576 @@
+{
+  "name": "Screen invoice emails and hold the doubtful ones for review with MailMint",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## What this does\n\nAn invoice email arrives as JSON. MailMint reads the fields you name **out of the message**, and returns a confidence, the layer it came from and the **verbatim text each value was read from**.\n\nThis workflow turns that into a decision: pay it automatically, or hand it to a human — and it always says why.",
+        "height": 380,
+        "width": 340,
+        "color": 4
+      },
+      "id": "n0",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        -700
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 1. Your policy\n\nEverything you would otherwise hard-code sits here: the confidence you insist on, the amount a machine may approve on its own, and the currency you expect.\n\n**Sender authentication is off by default**, because a message posted to this webhook has no envelope to check. Switch it on when the mail arrives through a MailMint inbound address — there SPF, DKIM and DMARC are verdicts on the message as received, not guesses.",
+        "height": 380,
+        "width": 340,
+        "color": 7
+      },
+      "id": "n1",
+      "name": "Sticky Note 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -60,
+        -700
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 2. The parse\n\nThe fields are defined **here, on the canvas** — name, type, `required`, one line of description. No second web app, no clicking on a sample.\n\n**Route Messages Needing Review Separately** gives the node a second output: a required field the parser could not find, a value it could not coerce, or evidence it could not locate leaves by the lower branch — without an IF node, and carrying the flag that says which.",
+        "height": 400,
+        "width": 360,
+        "color": 7
+      },
+      "id": "n2",
+      "name": "Sticky Note 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        700,
+        -700
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 3. The decision\n\nNot a coin flip: the score is built from things that can be checked — the lowest per-field confidence, whether the evidence is really in the message, whether SPF/DKIM/DMARC passed, and whether the amount is inside your ceiling.\n\nEvery answer carries the reasons, so a human sees what the machine saw.",
+        "height": 380,
+        "width": 360,
+        "color": 7
+      },
+      "id": "n3",
+      "name": "Sticky Note 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1300,
+        -700
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 4. Three honest answers\n\n**approved** — inside policy, pay it.\n**review** — a human has to look, and the reasons say why.\n**422** — the request or the parse failed, with the failure text.\n\nNothing is ever silently dropped.",
+        "height": 340,
+        "width": 340,
+        "color": 7
+      },
+      "id": "n4",
+      "name": "Sticky Note 4",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1940,
+        -700
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Try it\n\n```\ncurl -X POST <this webhook URL> \\\n  -H 'content-type: application/json' \\\n  -d '{\"subject\":\"Invoice INV-7781 from Nordwind Logistics\",\n       \"text\":\"Amount due: 1,284.00 EUR\\nDue date: 2026-09-30\\nIBAN: DE02120300000000202051\"}'\n```\n\nYou do **not** need an inbound address for this. `POST /v1/parse` takes the message you already have — from Gmail, from IMAP, from a webhook — and stores nothing.",
+        "height": 400,
+        "width": 460,
+        "color": 5
+      },
+      "id": "n5",
+      "name": "Sticky Note 5",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mailmint-invoice-screening",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "w1",
+      "name": "Receive the invoice email",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -40,
+        0
+      ],
+      "webhookId": "b2c9d0e1-4a55-4f21-9d0e-mm01invoice01"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "p1",
+              "name": "min_confidence",
+              "value": 0.9,
+              "type": "number"
+            },
+            {
+              "id": "p2",
+              "name": "auto_approve_up_to",
+              "value": 2500,
+              "type": "number"
+            },
+            {
+              "id": "p3",
+              "name": "require_sender_auth",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "p4",
+              "name": "expected_currency",
+              "value": "EUR",
+              "type": "string"
+            },
+            {
+              "id": "p5",
+              "name": "subject",
+              "value": "={{ $json.body.subject || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "p6",
+              "name": "text",
+              "value": "={{ $json.body.text || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "p7",
+              "name": "html",
+              "value": "={{ $json.body.html || '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": false,
+        "options": {}
+      },
+      "id": "s1",
+      "name": "Set your approval policy",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        280,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "v1",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              },
+              "leftValue": "={{ ($json.text || '') + ($json.html || '') + ($json.subject || '') }}",
+              "rightValue": ""
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "i1",
+      "name": "Is there an email to read?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        600,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "parse",
+        "operation": "parse",
+        "inputSource": "fields",
+        "subject": "={{ $json.subject }}",
+        "text": "={{ $json.text }}",
+        "html": "={{ $json.html }}",
+        "schemaSource": "json",
+        "schemaJson": "=[\n  { \"name\": \"invoice_number\", \"type\": \"string\", \"required\": true, \"description\": \"The invoice or reference number\" },\n  { \"name\": \"amount_due\", \"type\": \"number\", \"required\": true, \"description\": \"The total amount to be paid\" },\n  { \"name\": \"currency\", \"type\": \"string\", \"description\": \"ISO currency code of the amount due\" },\n  { \"name\": \"due_date\", \"type\": \"date\", \"required\": true, \"description\": \"The date the payment is due\" },\n  { \"name\": \"iban\", \"type\": \"string\", \"description\": \"The IBAN the invoice should be paid to\" }\n]",
+        "simplify": true,
+        "output": "message",
+        "splitNeedsReview": true,
+        "options": {
+          "includeConfidence": true
+        }
+      },
+      "id": "m1",
+      "name": "Read the invoice fields",
+      "type": "n8n-nodes-mailmint.mailMint",
+      "typeVersion": 1,
+      "position": [
+        920,
+        0
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "r1",
+              "operator": {
+                "type": "object",
+                "operation": "notExists",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.error }}",
+              "rightValue": ""
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "i2",
+      "name": "Did MailMint answer?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1240,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Turn MailMint's signals into one decision, and keep the reasons.\n//\n// Nothing here is invented: every input is something MailMint reports and a\n// human could check by hand — the per-field confidence, the verbatim evidence\n// span, and the SPF/DKIM/DMARC verdicts on the message as it was received.\nconst policy = $('Set your approval policy').first().json;\nconst out = [];\n\nfor (const item of $input.all()) {\n  const inv = item.json;\n  const conf = inv._confidence || {};\n  const meta = inv._meta || {};\n  const reasons = [];\n\n  // 1. The weakest field decides. An invoice is only as trustworthy as the\n  //    least certain number on it.\n  const scores = Object.values(conf)\n    .map((f) => (f && typeof f.confidence === 'number' ? f.confidence : null))\n    .filter((n) => n !== null);\n  const lowest = scores.length ? Math.min(...scores) : 0;\n  if (!scores.length) reasons.push('no confidence was reported for any field');\n  if (lowest < policy.min_confidence) {\n    const weakest = Object.entries(conf)\n      .filter(([, f]) => f && f.confidence === lowest)\n      .map(([name]) => name);\n    reasons.push(`confidence ${lowest} is below ${policy.min_confidence} (${weakest.join(', ')})`);\n  }\n\n  // 2. A value with no evidence was not read out of the message.\n  const unevidenced = Object.entries(conf)\n    .filter(([, f]) => f && !f.evidence)\n    .map(([name]) => name);\n  if (unevidenced.length) reasons.push(`no evidence span for ${unevidenced.join(', ')}`);\n\n  // 3. Required values must actually be there.\n  const missing = ['invoice_number', 'amount_due', 'due_date']\n    .filter((k) => inv[k] === null || inv[k] === undefined || inv[k] === '');\n  if (missing.length) reasons.push(`missing ${missing.join(', ')}`);\n\n  // 4. Sender authentication. `none` means it could not be evaluated, which is\n  //    not the same as a failure — both are reported as they are.\n  const auth = { spf: meta.spf, dkim: meta.dkim, dmarc: meta.dmarc };\n  const authenticated = auth.spf === 'pass' || auth.dkim === 'pass' || auth.dmarc === 'pass';\n  if (policy.require_sender_auth && !authenticated) {\n    reasons.push(`sender not authenticated (spf ${auth.spf ?? 'none'}, dkim ${auth.dkim ?? 'none'}, dmarc ${auth.dmarc ?? 'none'})`);\n  }\n\n  // 5. Money and time, computed rather than trusted.\n  // Number(null) is 0, and an invoice with no amount is not an invoice for\n  // nothing — a missing value has to stay missing all the way to the answer.\n  const raw = inv.amount_due;\n  const hasAmount = raw !== null && raw !== undefined && raw !== '';\n  const amount = hasAmount ? Number(raw) : null;\n  if (hasAmount && !Number.isFinite(amount)) reasons.push(`amount ${raw} is not a number`);\n  if (amount !== null && Number.isFinite(amount) && amount > policy.auto_approve_up_to) {\n    reasons.push(`${amount} is above the ${policy.auto_approve_up_to} ceiling`);\n  }\n  if (inv.currency && policy.expected_currency && inv.currency !== policy.expected_currency) {\n    reasons.push(`currency ${inv.currency} is not ${policy.expected_currency}`);\n  }\n  let daysUntilDue = null;\n  if (inv.due_date) {\n    const due = new Date(inv.due_date);\n    if (!Number.isNaN(due.valueOf())) {\n      daysUntilDue = Math.round((due - new Date($now.toISO())) / 86400000);\n      if (daysUntilDue < 0) reasons.push(`already overdue by ${Math.abs(daysUntilDue)} days`);\n    }\n  }\n\n  out.push({\n    json: {\n      decision: reasons.length ? 'review' : 'approved',\n      reasons,\n      lowest_confidence: scores.length ? lowest : null,\n      days_until_due: daysUntilDue,\n      sender_authenticated: authenticated,\n      invoice: {\n        invoice_number: inv.invoice_number ?? null,\n        amount_due: amount !== null && Number.isFinite(amount) ? amount : null,\n        currency: inv.currency ?? null,\n        due_date: inv.due_date ?? null,\n        iban: inv.iban ?? null,\n      },\n      evidence: conf,\n      auth,\n      parsed_by: meta.model ?? null,\n      request_id: meta.request_id ?? null,\n    },\n    pairedItem: item.pairedItem,\n  });\n}\n\nreturn out;"
+      },
+      "id": "c1",
+      "name": "Score it against your policy",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d1",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "approved"
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "i3",
+      "name": "Inside your policy?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1840,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"status\": \"approved\", \"invoice\": $json.invoice, \"lowest_confidence\": $json.lowest_confidence, \"days_until_due\": $json.days_until_due, \"sender_authenticated\": $json.sender_authenticated, \"request_id\": $json.request_id } }}",
+        "options": {}
+      },
+      "id": "a1",
+      "name": "Return it as approved",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2160,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "h1",
+              "name": "status",
+              "value": "review",
+              "type": "string"
+            },
+            {
+              "id": "h2",
+              "name": "reasons",
+              "value": "={{ $json.reasons || ((($json._meta || {}).flags || []).length ? ($json._meta.flags) : ['the parser flagged this message for review']) }}",
+              "type": "array"
+            },
+            {
+              "id": "h3",
+              "name": "invoice",
+              "value": "={{ $json.invoice || { \"invoice_number\": $json.invoice_number ?? null, \"amount_due\": $json.amount_due ?? null, \"currency\": $json.currency ?? null, \"due_date\": $json.due_date ?? null, \"iban\": $json.iban ?? null } }}",
+              "type": "object"
+            },
+            {
+              "id": "h4",
+              "name": "evidence",
+              "value": "={{ $json.evidence || $json._confidence || {} }}",
+              "type": "object"
+            },
+            {
+              "id": "h5",
+              "name": "flags",
+              "value": "={{ ($json._meta && $json._meta.flags) || [] }}",
+              "type": "array"
+            }
+          ]
+        },
+        "includeOtherFields": false,
+        "options": {}
+      },
+      "id": "s2",
+      "name": "Say why a human is needed",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2160,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"status\": \"review\", \"reasons\": $json.reasons, \"invoice\": $json.invoice, \"evidence\": $json.evidence, \"flags\": $json.flags } }}",
+        "options": {
+          "responseCode": 202
+        }
+      },
+      "id": "a2",
+      "name": "Return it for human review",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2460,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e1",
+              "name": "error",
+              "value": "={{ $json.error ? ('The email could not be parsed: ' + ($json.error.message || $json.error)) : 'Send a subject, a text body or an html body to parse.' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": false,
+        "options": {}
+      },
+      "id": "s3",
+      "name": "Explain what went wrong",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1560,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"error\": $json.error } }}",
+        "options": {
+          "responseCode": 422
+        }
+      },
+      "id": "a3",
+      "name": "Return the error as JSON",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1880,
+        200
+      ]
+    }
+  ],
+  "connections": {
+    "Receive the invoice email": {
+      "main": [
+        [
+          {
+            "node": "Set your approval policy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set your approval policy": {
+      "main": [
+        [
+          {
+            "node": "Is there an email to read?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is there an email to read?": {
+      "main": [
+        [
+          {
+            "node": "Read the invoice fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Explain what went wrong",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read the invoice fields": {
+      "main": [
+        [
+          {
+            "node": "Did MailMint answer?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Say why a human is needed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Did MailMint answer?": {
+      "main": [
+        [
+          {
+            "node": "Score it against your policy",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Explain what went wrong",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Score it against your policy": {
+      "main": [
+        [
+          {
+            "node": "Inside your policy?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inside your policy?": {
+      "main": [
+        [
+          {
+            "node": "Return it as approved",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Say why a human is needed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Say why a human is needed": {
+      "main": [
+        [
+          {
+            "node": "Return it for human review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Explain what went wrong": {
+      "main": [
+        [
+          {
+            "node": "Return the error as JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
