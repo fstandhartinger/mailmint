@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mailparser alternative &mdash; $0.0018 an email, with a confidence on every field</title>
+<meta name="description" content="Mailparser charges $0.1198 per email by their own figure and bills webhook retries as an add-on. MailMint parses 5,000 emails for $9, returns a confidence and the evidence span for every field, and re-parses stored mail from the original bytes. Every number sourced.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://mailmint.app.mintapis.com/mailparser-alternative">
+<meta property="og:title" content="Mailparser alternative &mdash; $0.0018 an email, with a confidence on every field">
+<meta property="og:description" content="Mailparser charges $0.1198 per email by their own figure and bills webhook retries as an add-on. MailMint parses 5,000 emails for $9, returns a confidence and the evidence span for every field, and re-parses stored mail from the original bytes. Every number sourced.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://mailmint.app.mintapis.com/mailparser-alternative">
+<meta property="og:site_name" content="MailMint">
+<meta property="og:image" content="https://mailmint.app.mintapis.com/og-image.png">
+<meta property="og:image:alt" content="MailMint: an inbound email address on the left, the structured JSON it returns on the right, each field carrying its confidence.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="/docs.css">
+</head>
+<body class="docs">
+
+<header class="docs-top">
+  <a class="logo" href="/">Mail<span>Mint</span></a>
+  <nav>
+    <a href="/docs">API reference</a>
+    <a href="/quickstart">Quickstart</a>
+    <a href="/n8n">n8n</a>
+    <a class="cta" href="/signup">Get an API key</a>
+  </nav>
+</header>
+
+<div class="layout">
+
+  <aside class="toc">
+    <button class="toc-toggle" id="tocToggle" aria-expanded="false" aria-controls="tocBody">On this page</button>
+    <div class="toc-body" id="tocBody">
+      <h2>Mailparser</h2>
+      <ul>
+        <li><a href="#price">What it costs, both ways</a></li>
+        <li><a href="#addons">The add-on table</a></li>
+        <li><a href="#table">Side by side</a></li>
+      </ul>
+      <h2>The differences that decide it</h2>
+      <ul>
+        <li><a href="#rules">Rule chains vs. a described schema</a></li>
+        <li><a href="#confidence">Knowing a field is wrong</a></li>
+        <li><a href="#rows">Line items</a></li>
+        <li><a href="#replay">Changing your mind</a></li>
+      </ul>
+      <h2>Then</h2>
+      <ul>
+        <li><a href="#code">The same job, here</a></li>
+        <li><a href="#stay">When to stay</a></li>
+        <li><a href="#honest">What we cannot claim</a></li>
+        <li><a href="#try">Try it</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <main class="content">
+<h1>Mailparser alternative</h1>
+<p class="lede">Mailparser charges <strong>$0.1198 per email</strong> &mdash; their number, printed on
+their own pricing page. MailMint&rsquo;s $9 plan works out at <strong>$0.0018</strong>. That is the
+headline, but it is not the reason to switch. The reason is that a Mailparser field is a chain of
+positional rules that either fires or silently does not, and a MailMint field arrives with a
+confidence and the verbatim text it was read from.</p>
+
+<div class="note">
+<p><strong>Where these numbers come from.</strong> Every figure in the Mailparser column was read from
+<code>mailparser.io/pricing</code> and from Mailparser&rsquo;s own help centre &mdash; the pricing page
+on <strong>29 August 2026</strong>, the 183 help-centre articles on 25 August 2026 through the public
+Zendesk Help Center API. Where they publish no figure, the cell is empty rather than guessed. Rate
+cards change; check both before you decide.</p>
+</div>
+
+<section id="price">
+<h2>What it costs, both ways <a class="anchor" href="#price">#</a></h2>
+
+<p>Mailparser sells credits, one credit per email, in two shapes. Monthly plans grant credits per
+month; annual plans are about 20% cheaper but grant credits <em>per year</em>, which matters if your
+volume is lumpy &mdash; 3,000 a year is not 250 a month when 900 of them arrive in December.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Mailparser plan</th><th>Monthly billing</th><th>Emails</th><th>Per email</th></tr></thead>
+<tbody>
+<tr><td>Starter</td><td>$29.95/mo</td><td>250 / month</td><td>$0.1198 <span class="t">their own figure</span></td></tr>
+<tr><td>Professional</td><td>$39.95/mo</td><td>500 / month</td><td>$0.0799</td></tr>
+<tr><td>Business</td><td>$99.95/mo</td><td>2,000 / month</td><td>$0.0500</td></tr>
+<tr><td>Premium</td><td>$299.95/mo</td><td>10,000 / month</td><td>$0.0300</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="tw">
+<table>
+<thead><tr><th>MailMint plan</th><th>Monthly billing</th><th>Emails</th><th>Per email</th></tr></thead>
+<tbody>
+<tr><td>Free</td><td>$0</td><td>300 / month, no card</td><td>&mdash;</td></tr>
+<tr><td>Starter</td><td>$9/mo</td><td>5,000 / month</td><td>$0.0018</td></tr>
+<tr><td>Pro</td><td>$29/mo</td><td>25,000 / month</td><td>$0.00116</td></tr>
+<tr><td>Scale</td><td>$99/mo</td><td>150,000 / month</td><td>$0.00066</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Read the two tables against each other and the shape of the difference is clearer than any
+percentage: <strong>$29.95 buys 250 parsed emails at Mailparser and 25,000 here</strong>, and the free
+plan is 300 a month for as long as you want it rather than 30 credits for 30 days.</p>
+</section>
+
+<section id="addons">
+<h2>The add-on table, because this is the part people find out later <a class="anchor" href="#addons">#</a></h2>
+
+<p>Several things a developer would assume are part of a parsing product are separately priced
+add-ons at Mailparser, and they cost <em>more</em> on monthly billing than on annual. These labels are
+verbatim from their pricing page.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Mailparser add-on</th><th>Annual plans</th><th>Monthly plans</th><th>Included from</th><th>At MailMint</th></tr></thead>
+<tbody>
+<tr><td class="wrap">Auto-Retry Failed Webhooks</td><td>$2.91/mo</td><td>$3.49/mo</td><td>Business</td><td class="wrap">Included on Free</td></tr>
+<tr><td class="wrap">Detect Duplicate Emails</td><td>$2.91/mo</td><td>$3.49/mo</td><td>Business</td><td class="wrap">Not offered as a feature</td></tr>
+<tr><td class="wrap">Multifactor Authentication</td><td>$4.99/mo</td><td>$5.95/mo</td><td>Professional</td><td class="wrap">Not offered yet</td></tr>
+<tr><td class="wrap">Modify Extracted Data Points</td><td>$6.71/mo</td><td>$8.49/mo</td><td>Premium</td><td class="wrap">Re-parse, included on Free</td></tr>
+<tr><td class="wrap">Parsing Assistant (a person builds your layout)</td><td>$99.00/layout</td><td>$99.00/layout</td><td>never</td><td class="wrap">&mdash;</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><strong>One correction, because it is easy to get this wrong and we would rather be accurate than
+damning:</strong> webhooks themselves are included on every Mailparser plan. What costs extra is
+<em>retrying</em> one when your endpoint was down. On the entry plan, a deploy that takes your
+receiver offline for ninety seconds loses those deliveries.</p>
+
+<p>MailMint signs every delivery &mdash; <code>x-mailmint-signature: t=&lt;unix&gt;,v1=&lt;hex&gt;</code>,
+where the hex is <code>hmac_sha256(secret, t + "." + rawBody)</code> with the timestamp inside the signed
+string so a captured request cannot be replayed &mdash; and retries it, on the free plan, at no charge.
+The <a href="/docs#webhooks">exact construction is documented</a> with worked verification in Node and
+Python.</p>
+</section>
+
+<section id="table">
+<h2>Side by side <a class="anchor" href="#table">#</a></h2>
+
+<div class="tw">
+<table>
+<thead><tr><th></th><th>MailMint</th><th>Mailparser</th></tr></thead>
+<tbody>
+<tr><td class="wrap">How a field is defined</td><td class="wrap">A name, a type and a sentence describing it, sent as JSON</td><td class="wrap">A chain of positional filters built in the UI</td></tr>
+<tr><td class="wrap">Per-field confidence</td><td class="wrap">Yes &mdash; computed, with the evidence span</td><td class="wrap">None</td></tr>
+<tr><td class="wrap">Where a value came from</td><td class="wrap"><code>source</code> plus the verbatim <code>evidence</code> substring</td><td class="wrap">&mdash;</td></tr>
+<tr><td class="wrap">Variable-row line items</td><td class="wrap">Typed array with <code>row_count</code> and <code>truncated</code></td><td class="wrap">One rule per column, then &ldquo;explode&rdquo; &mdash; a flat cross-product</td></tr>
+<tr><td class="wrap">Reads the email body</td><td>Yes</td><td>Yes</td></tr>
+<tr><td class="wrap">Reads PDF attachment contents</td><td class="wrap">Not yet &mdash; extractor built, not wired in</td><td class="wrap">No &mdash; their help centre points you at Docparser, a second subscription</td></tr>
+<tr><td class="wrap">Re-parse mail already received</td><td class="wrap">Any stored message, any schema, from the original bytes</td><td class="wrap">Last 300 only; the original bytes are not kept</td></tr>
+<tr><td class="wrap">Change the schema over the API</td><td class="wrap"><code>PATCH /v1/mailboxes/:id</code></td><td class="wrap">&mdash;</td></tr>
+<tr><td class="wrap">Message authentication</td><td class="wrap">SPF, DKIM and DMARC verdicts on the message as received</td><td class="wrap">&mdash;</td></tr>
+<tr><td class="wrap">n8n node</td><td class="wrap">Yes &mdash; 11 actions and a trigger, <a href="https://www.npmjs.com/package/n8n-nodes-mailmint">on npm</a></td><td class="wrap">None</td></tr>
+<tr><td class="wrap">Entry price</td><td class="wrap">Free for 300/mo, then $9 for 5,000</td><td class="wrap">$29.95/mo for 250</td></tr>
+</tbody>
+</table>
+</div>
+<p class="t">Scroll the table sideways on a narrow screen.</p>
+</section>
+
+<section id="rules">
+<h2>Rule chains against a described schema <a class="anchor" href="#rules">#</a></h2>
+
+<p>This is the real architectural difference, and it cuts both ways. Mailparser has
+<strong>no AI in it at all</strong> &mdash; not a marketing absence, a measured one: across all 183 of
+their help-centre articles there is not one mention of AI, LLM or machine learning. A field is
+defined by a chain of filters that find text between two markers, trim it, and coerce it. Their own
+premium answer to a hard layout is a human being at $99 per layout.</p>
+
+<p>For an email that always arrives from one system in exactly one format, that determinism is a
+genuine strength, and it is why we are not going to tell you Mailparser is a bad product. It does
+the same thing every time and it will never hallucinate.</p>
+
+<p>The cost appears the day the sender changes their template. A positional rule does not report that
+the layout moved; it returns the wrong substring, or nothing, and the Zap or webhook downstream
+carries on. MailMint describes the field instead &mdash; <code>{ "name": "invoice_number", "type":
+"string", "description": "the invoice or reference number" }</code> &mdash; so a moved label is still
+found, and the fields that <em>did</em> get harder to read say so in their confidence.</p>
+</section>
+
+<section id="confidence">
+<h2>The difference that actually matters: knowing a field is wrong <a class="anchor" href="#confidence">#</a></h2>
+
+<p>Neither Mailparser nor any of the other three mainstream products returns a per-field confidence or
+tells you which characters of the message a value came from. That is not a claim we read on a
+competitor&rsquo;s comparison page; it is an absence we went looking for, by grepping 363 vendor
+help-centre articles and two published API schemas.</p>
+
+<p>Every MailMint field carries three things next to its value: a <code>confidence</code>, the
+<code>source</code> layer that produced it, and <code>evidence</code> &mdash; the verbatim substring of
+the message the value was read out of. The confidence is <a href="/docs#confidence">not the
+model&rsquo;s opinion of itself</a>. It is computed from things that can be checked: whether the quoted
+evidence really is a substring of the message, whether the deterministic layer and the model agreed
+independently, whether the arithmetic on an invoice reconciles, and whether the value coerced cleanly
+to its declared type. The model&rsquo;s own self-report is one input, with the smallest weight, and it
+can only lower a score.</p>
+
+<p>What that buys you operationally is a branch. A message with anything doubtful on it still arrives
+&mdash; nothing is ever silently dropped &mdash; but it arrives with <code>needs_review: true</code>
+and flags naming the field. One <code>if</code> in your workflow sends those to a human and books the
+rest. With a rule chain there is nothing to branch on.</p>
+</section>
+
+<section id="rows">
+<h2>Line items <a class="anchor" href="#rows">#</a></h2>
+
+<p>An invoice with a variable number of rows is where email parsers stop being interchangeable.
+Mailparser&rsquo;s approach is one parsing rule per column and then an &ldquo;explode&rdquo; step; the
+result is a flat cross-product of values rather than a list of rows, and reassembling rows from it is
+your problem.</p>
+
+<p>MailMint takes an array field with typed sub-fields and returns rows, plus a
+<code>row_count</code> and a <code>truncated</code> flag so a 400-line invoice does not quietly become a
+30-line one. Detected tables also come back separately in <code>tables[]</code>, with headers and
+records, whether or not you asked for them in your schema.</p>
+</section>
+
+<section id="replay">
+<h2>Changing your mind, three weeks later <a class="anchor" href="#replay">#</a></h2>
+
+<p>You will get a schema wrong. The question is what happens to the mail that already went through it.
+Mailparser keeps your last 300 emails for re-processing and does not keep the original bytes, so
+beyond that window the answer is that the data is gone.</p>
+
+<p>MailMint stores the raw message for the retention window of your plan &mdash; 30 days on Free, 90 on
+Starter, 180 on Pro, 365 on Scale &mdash; and re-parses from those original bytes with any schema you
+like. There is a dry run, so you can see what the new schema <em>would</em> have produced before you
+commit to it. <a href="/docs#reparse">How re-parsing works.</a></p>
+</section>
+
+<section id="code">
+<h2>The same job, here <a class="anchor" href="#code">#</a></h2>
+
+<p>No mailbox, no DNS record, nothing stored. This runs as-is against the live service:</p>
+
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>curl -X POST https://mailmint.app.mintapis.com/v1/parse \
+  -H "Authorization: Bearer $MAILMINT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "subject": "Invoice INV-2291 from Acme Ltd",
+    "text": "Invoice INV-2291\n\nItem      Qty  Amount\nWidget      3  $27.00\nShipping    1   $4.50\n\nTotal: $31.50\nDue: Sep 8, 2026\n",
+    "schema": [
+      { "name": "invoice_number", "type": "string", "description": "the invoice or reference number" },
+      { "name": "total",          "type": "number", "description": "grand total including tax" },
+      { "name": "due_date",       "type": "date",   "description": "when payment is due" },
+      { "name": "line_items",     "type": "array",  "items": { "type": "object", "fields": [
+          { "name": "description", "type": "string" },
+          { "name": "qty",         "type": "integer" },
+          { "name": "amount",      "type": "number" } ] } }
+    ]
+  }'</code></pre>
+</div>
+
+<p>Each returned field looks like this &mdash; the value, and everything you need to decide whether to
+trust it:</p>
+
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>"invoice_number": {
+  "value": "INV-2291",
+  "confidence": 0.98,
+  "source": "rules+model",
+  "evidence": "Invoice INV-2291"
+}</code></pre>
+</div>
+
+<p>If you are moving an existing Mailparser inbox, the migration is not a rewrite: take the labels you
+already named in their UI, write each as a <code>{ name, type, description }</code>, and point the
+sender at your MailMint address. There is no template to teach and no sample email to upload.</p>
+</section>
+
+<section id="stay">
+<h2>When you should stay on Mailparser <a class="anchor" href="#stay">#</a></h2>
+
+<p>Three cases, and we would rather say them than have you find out after you migrate:</p>
+<ul>
+<li><strong>Your data is inside PDF attachments.</strong> MailMint does not read attachment contents
+yet. Mailparser does not either &mdash; it points you at Docparser &mdash; but if you already run that
+pair, the pair works and we do not replace it.</li>
+<li><strong>You need many inboxes on a cheap plan.</strong> Mailparser&rsquo;s entry plan includes 20
+inboxes. Ours is priced on parsed emails, not on mailbox count, but if inbox count is your axis, check
+both.</li>
+<li><strong>You have years of working rule chains and stable senders.</strong> A parser that has been
+right every day for three years is worth more than a better architecture. Do not migrate a system that
+is not hurting.</li>
+</ul>
+<p>And one case where neither of us is the answer: if your mail is single-sender plain text, you already
+pay for an LLM, and you run n8n, n8n&rsquo;s own <em>Information Extractor</em> node is free and
+genuinely sufficient. We would rather tell you that than sell you a plan you cancel in a month.</p>
+</section>
+
+<section id="honest">
+<h2>What we cannot claim <a class="anchor" href="#honest">#</a></h2>
+<p>Nobody outside this project has paid for MailMint yet, so there is no customer, no case study
+and no uptime history to quote you. Two things are missing and named rather than glossed over:
+<strong>the contents of PDF attachments are not read yet</strong> (the extractor exists, it is not
+wired into the pipeline), and the n8n node is <strong>not yet verified by n8n</strong>, so on n8n
+Cloud it has to be installed as a community node rather than found in the built-in list. Everything
+else on this page is live and can be checked with one <code>curl</code> before you spend anything.</p>
+</section>
+
+<section id="try">
+<h2>Try it against your own email <a class="anchor" href="#try">#</a></h2>
+<p>The honest test is not a feature table, it is your own worst email. Take the message that your
+current parser gets wrong, paste its subject and body into <code>POST /v1/parse</code>, and look at
+the confidence numbers and the evidence spans on the fields it returns. It stores nothing, it needs
+no address and no DNS record, and the free plan &mdash; 300 parsed emails a month, no card &mdash;
+is enough to run a real low-volume workflow rather than only to look at one.</p>
+<p><a class="cta" href="/signup">Get an API key</a> &nbsp; <a href="/quickstart">Read the quickstart</a>
+&nbsp; <a href="/docs">API reference</a></p>
+</section>
+
+<section id="more">
+<h2>Other comparisons <a class="anchor" href="#more">#</a></h2>
+<div class="cards">
+  <div class="c"><strong><a href="/email-parsing-api">Email parsing API</a></strong><span>What an email parsing API has to get right, and the four products that do it.</span></div>
+  <div class="c"><strong><a href="/parseur-alternative">vs Parseur</a></strong><span>The strongest of the four. Where it wins, and the &euro;0.49-an-email floor.</span></div>
+  <div class="c"><strong><a href="/zapier-email-parser-alternative">vs Zapier Parser</a></strong><span>Free, positional, 15 templates, and it cannot re-parse. Zapier staff say so.</span></div>
+  <div class="c"><strong><a href="/docparser-alternative">vs Docparser</a></strong><span>It cannot read an email body at all &mdash; their own help centre says it.</span></div>
+</div>
+</section>
+
+  </main>
+</div>
+
+<footer style="border-top:1px solid var(--rule);padding:1.6rem 1.25rem;text-align:center;font-size:.86rem;color:var(--muted)">
+  <a href="/">MailMint</a> &middot;
+  <a href="/docs">API reference</a> &middot;
+  <a href="/quickstart">Quickstart</a> &middot;
+  <a href="/n8n">n8n</a> &middot;
+  <a href="/email-parsing-api">Email parsing API</a> &middot;
+  <a href="/dashboard">Dashboard</a>
+</footer>
+
+<script src="/docs.js"></script>
+</body>
+</html>

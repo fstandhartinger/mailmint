@@ -32,6 +32,13 @@ const PAGES = {
   '/docs': 'docs.html',
   '/quickstart': 'quickstart.html',
   '/n8n': 'n8n.html',
+  // Comparison and category pages. Same chrome, same CSS, no build step: the
+  // file name is the slug with `.html` on the end, exactly like the four above.
+  '/email-parsing-api': 'email-parsing-api.html',
+  '/mailparser-alternative': 'mailparser-alternative.html',
+  '/parseur-alternative': 'parseur-alternative.html',
+  '/zapier-email-parser-alternative': 'zapier-email-parser-alternative.html',
+  '/docparser-alternative': 'docparser-alternative.html',
 };
 
 const hasSession = (req) => new RegExp(`(?:^|;\\s*)${SESSION_COOKIE}=`).test(req.headers.cookie || '');

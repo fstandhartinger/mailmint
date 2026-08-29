@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Zapier Email Parser alternative &mdash; when 15 blended templates stop being enough</title>
+<meta name="description" content="Zapier's Email Parser is free, positional, capped at 15 templates that are blended rather than routed, cannot read attachment contents and cannot re-parse. MailMint returns a confidence and an evidence span per field and re-parses from the original bytes.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://mailmint.app.mintapis.com/zapier-email-parser-alternative">
+<meta property="og:title" content="Zapier Email Parser alternative &mdash; when 15 blended templates stop being enough">
+<meta property="og:description" content="Zapier's Email Parser is free, positional, capped at 15 templates that are blended rather than routed, cannot read attachment contents and cannot re-parse. MailMint returns a confidence and an evidence span per field and re-parses from the original bytes.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://mailmint.app.mintapis.com/zapier-email-parser-alternative">
+<meta property="og:site_name" content="MailMint">
+<meta property="og:image" content="https://mailmint.app.mintapis.com/og-image.png">
+<meta property="og:image:alt" content="MailMint: an inbound email address on the left, the structured JSON it returns on the right, each field carrying its confidence.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="/docs.css">
+</head>
+<body class="docs">
+
+<header class="docs-top">
+  <a class="logo" href="/">Mail<span>Mint</span></a>
+  <nav>
+    <a href="/docs">API reference</a>
+    <a href="/quickstart">Quickstart</a>
+    <a href="/n8n">n8n</a>
+    <a class="cta" href="/signup">Get an API key</a>
+  </nav>
+</header>
+
+<div class="layout">
+
+  <aside class="toc">
+    <button class="toc-toggle" id="tocToggle" aria-expanded="false" aria-controls="tocBody">On this page</button>
+    <div class="toc-body" id="tocBody">
+      <h2>Zapier&rsquo;s parser</h2>
+      <ul>
+        <li><a href="#free">It is free, and that is real</a></li>
+        <li><a href="#walls">The four walls people hit</a></li>
+        <li><a href="#table">Side by side</a></li>
+      </ul>
+      <h2>Moving off it</h2>
+      <ul>
+        <li><a href="#code">The same job, here</a></li>
+        <li><a href="#zapier">Staying inside Zapier</a></li>
+        <li><a href="#stay">When to stay</a></li>
+        <li><a href="#honest">What we cannot claim</a></li>
+        <li><a href="#try">Try it</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <main class="content">
+<h1>Zapier Email Parser alternative</h1>
+<p class="lede">Zapier&rsquo;s Email Parser is free, and for a single sender with a fixed layout it is
+often the right answer. People come looking for an alternative when they hit one of four specific
+walls: it cannot read what is inside an attachment, it blends templates instead of routing them, it
+gives no signal when a field comes out wrong, and &mdash; confirmed by Zapier&rsquo;s own staff &mdash;
+it cannot re-parse mail it has already processed.</p>
+
+<div class="note">
+<p><strong>Where these claims come from.</strong> Every limit below is from Zapier&rsquo;s own help
+centre, blog or community forum, including a verbatim staff reply, read on 25 August 2026. Links are
+in the text so you can check each one rather than take our word for it.</p>
+</div>
+
+<section id="free">
+<h2>It is free, and that is real <a class="anchor" href="#free">#</a></h2>
+<p>The parser itself costs nothing. The catch is not hidden: the Zaps it triggers consume your Zapier
+task quota, so it is free if you already pay Zapier, and it is an odd dependency if you do not &mdash;
+mail has to travel through a <code>@robot.zapier.com</code> address on a platform you otherwise are not
+using.</p>
+<p>MailMint&rsquo;s free plan is 300 parsed emails a month with no card, and it does not meter anything
+downstream, because there is no downstream to meter: the JSON goes to your webhook.</p>
+</section>
+
+<section id="walls">
+<h2>The four walls <a class="anchor" href="#walls">#</a></h2>
+
+<h3>1. Attachments are passed through, never read</h3>
+<p>Zapier&rsquo;s own 2017 announcement is still the whole feature: &ldquo;all attachments are zipped
+together and sent along with the other data in your message&rdquo;. If more than one file arrives you
+get a zip. Nothing looks inside any of them. Any invoice-as-PDF workflow is out.</p>
+<p>Honesty demands the symmetric admission: <strong>MailMint does not read attachment contents
+either</strong> yet. What it does is address them individually with metadata and content type rather
+than zip them together, and the extractor exists but is not wired in. If your data is only inside a
+PDF, use <a href="/parseur-alternative">Parseur</a> today &mdash; neither of us is your answer.</p>
+
+<h3>2. Fifteen templates, blended rather than routed</h3>
+<p>Zapier&rsquo;s setup article states plainly that &ldquo;Email Parser only accepts 15
+templates&rdquo;. The more important detail is in a community thread, from Zapier staff member
+Danvers, verbatim: <em>&ldquo;The different templates aren&rsquo;t applied in a specific order,
+they&rsquo;re combined to better train the Parser on what it should be looking for.&rdquo;</em></p>
+<p>Read that carefully, because it explains the failure mode people report. Templates are not routed;
+they are blended. There is no answer to &ldquo;which template matched this email&rdquo;, because none
+did &mdash; all of them did, fuzzily. So a second sender format does not produce a clean error, it
+degrades the first one.</p>
+<p>MailMint has no templates. A mailbox has a schema &mdash; field names, types and one-sentence
+descriptions &mdash; and each sender format is read against that same schema. Adding a sender does not
+disturb an existing one.</p>
+
+<h3>3. No confidence, so no way to know it went wrong</h3>
+<p>A missed field in Zapier&rsquo;s parser is an empty string in a Zap step. Nothing raises a hand. The
+documented remedy is that you notice the bad row yourself, find the email in Mailbox History, and add
+another template to reinforce the learning &mdash; a design that has been unchanged since a 2015 blog
+post.</p>
+<p>Every MailMint field carries a <code>confidence</code>, the <code>source</code> layer it came from,
+and <code>evidence</code>: the verbatim substring the value was read out of. Anything doubtful still
+arrives &mdash; nothing is silently dropped &mdash; but with <code>needs_review: true</code> and flags
+naming the field, so one branch in your workflow can send those to a human.</p>
+
+<h3>4. It cannot re-parse</h3>
+<p>This is the one that costs real money, and it comes straight from the Zapier community: there is no
+way to replay mail that has already been processed. Fix your template today and yesterday&rsquo;s
+extractions stay wrong forever.</p>
+<p>MailMint keeps the raw message for the retention window of your plan &mdash; 30 days on Free, up to
+365 on Scale &mdash; and re-parses from the original bytes with any schema, with a dry run first so you
+can see what the new schema <em>would</em> have produced. <a href="/docs#reparse">How that works.</a></p>
+</section>
+
+<section id="table">
+<h2>Side by side <a class="anchor" href="#table">#</a></h2>
+<div class="tw">
+<table>
+<thead><tr><th></th><th>MailMint</th><th>Zapier Email Parser</th></tr></thead>
+<tbody>
+<tr><td class="wrap">Price</td><td class="wrap">Free for 300/mo; $9 for 5,000</td><td class="wrap">Free &mdash; but the Zaps it triggers use your task quota</td></tr>
+<tr><td class="wrap">How a field is defined</td><td class="wrap">Name, type and a sentence, sent as JSON</td><td class="wrap">Highlight text in a sample email; extraction is positional</td></tr>
+<tr><td class="wrap">Multiple sender formats</td><td class="wrap">One schema, any layout</td><td class="wrap">15 templates, blended not routed</td></tr>
+<tr><td class="wrap">Per-field confidence</td><td class="wrap">Yes, with the evidence span</td><td class="wrap">None</td></tr>
+<tr><td class="wrap">Attachments</td><td class="wrap">Addressed individually; contents not read yet</td><td class="wrap">Zipped together and passed through; never read</td></tr>
+<tr><td class="wrap">Re-parse</td><td class="wrap">Yes, from the original bytes, with a dry run</td><td class="wrap">No</td></tr>
+<tr><td class="wrap">Variable-row line items</td><td class="wrap">Typed array with <code>row_count</code></td><td class="wrap">Not supported</td></tr>
+<tr><td class="wrap">The address</td><td class="wrap">Your token on <code>smooth-operator.online</code>, created over the API</td><td class="wrap"><code>@robot.zapier.com</code>, cannot be changed after creation</td></tr>
+<tr><td class="wrap">Message authentication</td><td class="wrap">SPF, DKIM, DMARC verdicts as received</td><td class="wrap">&mdash;</td></tr>
+<tr><td class="wrap">Where the output goes</td><td class="wrap">Signed webhook, polling cursor, or the n8n node</td><td class="wrap">A Zap</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<section id="code">
+<h2>The same job, here <a class="anchor" href="#code">#</a></h2>
+<p>Instead of highlighting text in a sample email, you describe the field once:</p>
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>curl -X POST https://mailmint.app.mintapis.com/v1/parse \
+  -H "Authorization: Bearer $MAILMINT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "subject": "New enquiry from the website",
+    "text": "Name: Dana Ruiz\nCompany: Northwind\nPhone: +44 7700 900812\nBudget: 12,000 GBP\nMessage: We need 40 seats by October.",
+    "schema": [
+      { "name": "name",    "type": "string", "description": "the person who enquired" },
+      { "name": "company", "type": "string", "description": "their company" },
+      { "name": "phone",   "type": "string", "description": "contact phone number" },
+      { "name": "budget",  "type": "number", "description": "stated budget, numeric only" }
+    ]
+  }'</code></pre>
+</div>
+<p>The same schema reads a second sender&rsquo;s completely different layout without a new template,
+because nothing about it is positional.</p>
+</section>
+
+<section id="zapier">
+<h2>If you want to stay inside Zapier <a class="anchor" href="#zapier">#</a></h2>
+<p><strong>MailMint has no Zapier app yet</strong> &mdash; that is a plain gap, not a positioning
+choice. You can still use it from a Zap today: a <em>Webhooks by Zapier</em> action posting to
+<code>POST /v1/parse</code> gives you the parsed fields inside the Zap, and a MailMint webhook can
+trigger a Zap through <em>Webhooks by Zapier</em> in catch mode. If your automation platform is n8n
+rather than Zapier, the <a href="/n8n">n8n node</a> has 11 actions and a trigger and is on npm.</p>
+</section>
+
+<section id="stay">
+<h2>When you should stay on Zapier&rsquo;s parser <a class="anchor" href="#stay">#</a></h2>
+<ul>
+<li><strong>One sender, one layout, and it works.</strong> It is free and it is already wired into your
+Zaps. Do not migrate a thing that is not hurting.</li>
+<li><strong>Everything you do lives in Zapier.</strong> Until we ship a Zapier app, we are an HTTP call
+inside your Zap rather than a native step, and that is a real ergonomic cost.</li>
+<li><strong>You do not care whether a field is wrong.</strong> If nothing downstream is money or a
+customer promise, a confidence number is overhead.</li>
+</ul>
+</section>
+
+<section id="honest">
+<h2>What we cannot claim <a class="anchor" href="#honest">#</a></h2>
+<p>Nobody outside this project has paid for MailMint yet, so there is no customer, no case study
+and no uptime history to quote you. Two things are missing and named rather than glossed over:
+<strong>the contents of PDF attachments are not read yet</strong> (the extractor exists, it is not
+wired into the pipeline), and the n8n node is <strong>not yet verified by n8n</strong>, so on n8n
+Cloud it has to be installed as a community node rather than found in the built-in list. Everything
+else on this page is live and can be checked with one <code>curl</code> before you spend anything.</p>
+</section>
+
+<section id="try">
+<h2>Try it against your own email <a class="anchor" href="#try">#</a></h2>
+<p>The honest test is not a feature table, it is your own worst email. Take the message that your
+current parser gets wrong, paste its subject and body into <code>POST /v1/parse</code>, and look at
+the confidence numbers and the evidence spans on the fields it returns. It stores nothing, it needs
+no address and no DNS record, and the free plan &mdash; 300 parsed emails a month, no card &mdash;
+is enough to run a real low-volume workflow rather than only to look at one.</p>
+<p><a class="cta" href="/signup">Get an API key</a> &nbsp; <a href="/quickstart">Read the quickstart</a>
+&nbsp; <a href="/docs">API reference</a></p>
+</section>
+
+<section id="more">
+<h2>Other comparisons <a class="anchor" href="#more">#</a></h2>
+<div class="cards">
+  <div class="c"><strong><a href="/email-parsing-api">Email parsing API</a></strong><span>What an email parsing API has to get right, and the four products that do it.</span></div>
+  <div class="c"><strong><a href="/mailparser-alternative">vs Mailparser</a></strong><span>$0.1198 an email, and webhook retries cost extra. The full add-on table.</span></div>
+  <div class="c"><strong><a href="/parseur-alternative">vs Parseur</a></strong><span>The strongest of the four. Where it wins, and the &euro;0.49-an-email floor.</span></div>
+  <div class="c"><strong><a href="/docparser-alternative">vs Docparser</a></strong><span>It cannot read an email body at all &mdash; their own help centre says it.</span></div>
+</div>
+</section>
+
+  </main>
+</div>
+
+<footer style="border-top:1px solid var(--rule);padding:1.6rem 1.25rem;text-align:center;font-size:.86rem;color:var(--muted)">
+  <a href="/">MailMint</a> &middot;
+  <a href="/docs">API reference</a> &middot;
+  <a href="/quickstart">Quickstart</a> &middot;
+  <a href="/n8n">n8n</a> &middot;
+  <a href="/email-parsing-api">Email parsing API</a> &middot;
+  <a href="/dashboard">Dashboard</a>
+</footer>
+
+<script src="/docs.js"></script>
+</body>
+</html>

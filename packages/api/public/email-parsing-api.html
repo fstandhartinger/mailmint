@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Email parsing API &mdash; turn inbound email into JSON, with a confidence per field</title>
+<meta name="description" content="What an email parsing API has to get right, what the four established products each cost and cannot do, and where MailMint fits: $0.0018 an email, a confidence and a verbatim evidence span on every field. Every competitor figure sourced and dated.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://mailmint.app.mintapis.com/email-parsing-api">
+<meta property="og:title" content="Email parsing API &mdash; turn inbound email into JSON, with a confidence per field">
+<meta property="og:description" content="What an email parsing API has to get right, what the four established products each cost and cannot do, and where MailMint fits: $0.0018 an email, a confidence and a verbatim evidence span on every field. Every competitor figure sourced and dated.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://mailmint.app.mintapis.com/email-parsing-api">
+<meta property="og:site_name" content="MailMint">
+<meta property="og:image" content="https://mailmint.app.mintapis.com/og-image.png">
+<meta property="og:image:alt" content="MailMint: an inbound email address on the left, the structured JSON it returns on the right, each field carrying its confidence.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="/docs.css">
+</head>
+<body class="docs">
+
+<header class="docs-top">
+  <a class="logo" href="/">Mail<span>Mint</span></a>
+  <nav>
+    <a href="/docs">API reference</a>
+    <a href="/quickstart">Quickstart</a>
+    <a href="/n8n">n8n</a>
+    <a class="cta" href="/signup">Get an API key</a>
+  </nav>
+</header>
+
+<div class="layout">
+
+  <aside class="toc">
+    <button class="toc-toggle" id="tocToggle" aria-expanded="false" aria-controls="tocBody">On this page</button>
+    <div class="toc-body" id="tocBody">
+      <h2>The problem</h2>
+      <ul>
+        <li><a href="#what">What the job actually is</a></li>
+        <li><a href="#hard">The five hard parts</a></li>
+      </ul>
+      <h2>The options</h2>
+      <ul>
+        <li><a href="#field">Who sells what</a></li>
+        <li><a href="#roll">Rolling your own</a></li>
+      </ul>
+      <h2>MailMint</h2>
+      <ul>
+        <li><a href="#shape">The response shape</a></li>
+        <li><a href="#delivery">Three ways to receive it</a></li>
+        <li><a href="#price">Price</a></li>
+        <li><a href="#honest">What we cannot claim</a></li>
+        <li><a href="#try">Try it</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <main class="content">
+<h1>Email parsing API</h1>
+<p class="lede">An email parsing API turns a message a machine sent to a human &mdash; an order
+confirmation, an invoice, an enquiry, an alert &mdash; into the JSON your system actually wanted.
+This page is about what that job really involves, which parts are harder than they look, and what
+the four established products and MailMint each do about it. Every competitor figure on this page
+is sourced and dated.</p>
+
+<section id="what">
+<h2>What the job actually is <a class="anchor" href="#what">#</a></h2>
+<p>&ldquo;Parse an email&rdquo; sounds like one step. In practice it is six, and the API you choose is
+really a decision about how many of them you want to own:</p>
+<ol>
+<li><strong>Receive it.</strong> An address that accepts mail from the public internet, with an MX
+record, TLS and a queue that does not lose messages.</li>
+<li><strong>Decode it.</strong> MIME, nested multiparts, quoted-printable, eight character sets, an
+HTML part that disagrees with the text part, and a quoted reply chain underneath the new content.</li>
+<li><strong>Decide whether to trust it.</strong> SPF, DKIM and DMARC, computed on the message as
+received &mdash; not inferred afterwards from headers a forwarder rewrote.</li>
+<li><strong>Extract the fields.</strong> The part everyone thinks is the whole job.</li>
+<li><strong>Know when extraction went wrong.</strong> The part that decides whether you can automate
+the result or have to eyeball it.</li>
+<li><strong>Deliver it, reliably.</strong> A signed webhook that retries, or a cursor you can poll
+without missing or double-processing anything.</li>
+</ol>
+<p>Steps 1 to 3 and step 6 are unglamorous and largely solved &mdash; inbound-email vendors sell them
+cheaply, and one of them, Postmark, prices inbound email with base64 attachments at about $0.00165 a
+message. That number is worth holding on to, because it tells you what the market thinks MIME handling
+is worth. Anything a parsing vendor charges above it is being charged for steps 4 and 5.</p>
+</section>
+
+<section id="hard">
+<h2>The five parts that are harder than they look <a class="anchor" href="#hard">#</a></h2>
+<ul>
+<li><strong>Layout drift.</strong> Positional rules &mdash; &ldquo;the value between <em>Total:</em>
+and the newline&rdquo; &mdash; work until the sender ships a new template, and then they fail
+silently.</li>
+<li><strong>Variable-row tables.</strong> An invoice with three line items and one with forty are the
+same email to a human and completely different to a parser. Ask what happens to row 26.</li>
+<li><strong>Numbers with a nationality.</strong> <code>1.180,50</code> is one thousand one hundred and
+eighty euros and fifty cents in Germany and something else entirely to a naive parser.</li>
+<li><strong>Knowing a value is wrong.</strong> An empty string and a confidently wrong string look
+identical downstream. This is the single most useful thing an API can tell you and almost nobody
+returns it.</li>
+<li><strong>Prompt injection.</strong> Any product that pipes an attacker-controlled email body into a
+language model inherits this. Nobody has solved it; ask what structural mitigations exist, and treat
+parsed output as data rather than instructions.</li>
+</ul>
+</section>
+
+<section id="field">
+<h2>Who sells what <a class="anchor" href="#field">#</a></h2>
+<p>The four established products, and the one honest free option. Prices read from each vendor&rsquo;s
+own pricing page or pricing endpoint on <strong>29 August 2026</strong>; capability findings from their
+own help centres and published API schemas, 25 August 2026. Where a vendor publishes no figure, the
+cell is empty rather than guessed.</p>
+<div class="tw">
+<table>
+<thead><tr><th>Product</th><th>Entry price</th><th>Per unit</th><th>Reads email body</th><th>Reads PDF contents</th><th>Per-field confidence</th></tr></thead>
+<tbody>
+<tr><td><strong>MailMint</strong></td><td class="wrap">Free for 300/mo, then $9 for 5,000</td><td>$0.0018</td><td>Yes</td><td class="wrap">Not yet</td><td class="wrap">Yes, with evidence</td></tr>
+<tr><td><a href="/mailparser-alternative">Mailparser</a></td><td>$29.95/mo</td><td class="wrap">$0.1198 per email</td><td>Yes</td><td>No</td><td>None</td></tr>
+<tr><td><a href="/parseur-alternative">Parseur</a></td><td class="wrap">Free for 20/mo, then &euro;49</td><td class="wrap">&euro;0.49 per page</td><td>Yes</td><td>Yes</td><td class="wrap">Document-level only</td></tr>
+<tr><td><a href="/docparser-alternative">Docparser</a></td><td>$39.00/mo</td><td class="wrap">$0.39 per document</td><td>No</td><td>Yes</td><td class="wrap">One arithmetic preset</td></tr>
+<tr><td><a href="/zapier-email-parser-alternative">Zapier Parser</a></td><td>Free</td><td class="wrap">Uses Zap tasks</td><td>Yes</td><td>No</td><td>None</td></tr>
+</tbody>
+</table>
+</div>
+<p>The pattern in the last column is the interesting one, and we went looking for it rather than
+assuming it: across 363 vendor help-centre articles and two published API schemas, <strong>not one of
+the four returns a per-field confidence or a pointer to the text a value came from</strong>. That
+absence is what MailMint was built around.</p>
+</section>
+
+<section id="roll">
+<h2>Rolling your own <a class="anchor" href="#roll">#</a></h2>
+<p>This is a real option and it deserves a straight answer rather than fear. An inbound-email vendor
+plus a language model plus fifty lines of glue will parse emails, and if you run n8n, its own
+<em>Information Extractor</em> node does it with no code at all. <strong>For a single sender of plain
+text with no attachments, that is genuinely sufficient and free, and we will not win you.</strong></p>
+<p>What you take on is steps 2, 3, 5 and 6 above, forever: charset and multipart edge cases, quoted
+replies bleeding into fields, auth verdicts, retries and idempotency, and above all the calibration
+question &mdash; a model asked how confident it is will happily answer 0.95 about a purchase-order
+number it invented. A self-reported number is not a confidence. That is why ours is computed from
+checkable facts instead: whether the quoted evidence really appears in the message, whether an
+independent deterministic layer agreed, whether the arithmetic reconciles, whether the value coerced to
+its declared type. The model&rsquo;s own opinion is one input, weighted least, and it can only lower a
+score.</p>
+</section>
+
+<section id="shape">
+<h2>The response shape <a class="anchor" href="#shape">#</a></h2>
+<p>One frozen shape for every message, whether it arrived at your inbound address or was posted to
+<code>POST /v1/parse</code>: <code>headers</code>, <code>body</code> (text, HTML, stripped of the quoted
+reply chain, with a detected language), <code>attachments</code>, <code>auth</code> with the SPF, DKIM
+and DMARC verdicts, <code>tables</code> detected in the message, and <code>fields</code> &mdash; your
+schema, filled in. Each field looks like this:</p>
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>"total": {
+  "value": 31.50,
+  "confidence": 0.97,
+  "source": "rules+model",
+  "evidence": "Total: $31.50"
+}</code></pre>
+</div>
+<p>A field that could not be found is <code>null</code> &mdash; never invented, never a placeholder
+string. A message with anything doubtful still arrives, with <code>needs_review: true</code> and flags
+naming the field, so nothing is ever silently dropped. There are
+<a href="/docs#field-types">thirteen field types</a> and each one documents exactly what it coerces
+to.</p>
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>curl -X POST https://mailmint.app.mintapis.com/v1/parse \
+  -H "Authorization: Bearer $MAILMINT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "subject": "Invoice INV-2291 from Acme Ltd",
+        "text": "Invoice INV-2291\nTotal: $31.50\nDue: Sep 8, 2026\n",
+        "schema": [ { "name": "invoice_number", "type": "string", "description": "the invoice number" },
+                    { "name": "total", "type": "number", "description": "grand total including tax" },
+                    { "name": "due_date", "type": "date", "description": "when payment is due" } ] }'</code></pre>
+</div>
+<p>That call needs no inbound address, no DNS record and no account beyond a key, and it stores
+nothing.</p>
+</section>
+
+<section id="delivery">
+<h2>Three ways to receive it <a class="anchor" href="#delivery">#</a></h2>
+<ul>
+<li><strong>A signed webhook.</strong> <code>x-mailmint-signature: t=&lt;unix&gt;,v1=&lt;hex&gt;</code>
+where the hex is <code>hmac_sha256(secret, t + "." + rawBody)</code>. The timestamp is inside the signed
+string, so a captured request cannot be replayed. Retries are included on every plan, including Free.
+<a href="/docs#webhooks">Worked verification in Node and Python.</a></li>
+<li><strong>A cursor you poll.</strong> The same feed the n8n trigger runs on, so you cannot miss or
+double-process a message.</li>
+<li><strong>The <a href="/n8n">n8n node</a></strong> &mdash; 11 actions and a trigger,
+<a href="https://www.npmjs.com/package/n8n-nodes-mailmint">on npm</a>.</li>
+</ul>
+</section>
+
+<section id="price">
+<h2>Price <a class="anchor" href="#price">#</a></h2>
+<div class="tw">
+<table>
+<thead><tr><th>Plan</th><th>Price</th><th>Parsed emails / month</th><th>Per email</th><th>Raw message kept</th></tr></thead>
+<tbody>
+<tr><td>Free</td><td>$0, no card</td><td>300</td><td>&mdash;</td><td>30 days</td></tr>
+<tr><td>Starter</td><td>$9/mo</td><td>5,000</td><td>$0.0018</td><td>90 days</td></tr>
+<tr><td>Pro</td><td>$29/mo</td><td>25,000</td><td>$0.00116</td><td>180 days</td></tr>
+<tr><td>Scale</td><td>$99/mo</td><td>150,000</td><td>$0.00066</td><td>365 days</td></tr>
+</tbody>
+</table>
+</div>
+<p>Every plan, including Free, gets per-field confidence with the evidence span, the SPF/DKIM/DMARC
+verdicts, signed webhooks with retries, re-parse of stored mail and the n8n node. The paid plans buy
+volume and a longer retention window &mdash; never a better answer.</p>
+</section>
+
+<section id="honest">
+<h2>What we cannot claim <a class="anchor" href="#honest">#</a></h2>
+<p>Nobody outside this project has paid for MailMint yet, so there is no customer, no case study
+and no uptime history to quote you. Two things are missing and named rather than glossed over:
+<strong>the contents of PDF attachments are not read yet</strong> (the extractor exists, it is not
+wired into the pipeline), and the n8n node is <strong>not yet verified by n8n</strong>, so on n8n
+Cloud it has to be installed as a community node rather than found in the built-in list. Everything
+else on this page is live and can be checked with one <code>curl</code> before you spend anything.</p>
+</section>
+
+<section id="try">
+<h2>Try it against your own email <a class="anchor" href="#try">#</a></h2>
+<p>The honest test is not a feature table, it is your own worst email. Take the message that your
+current parser gets wrong, paste its subject and body into <code>POST /v1/parse</code>, and look at
+the confidence numbers and the evidence spans on the fields it returns. It stores nothing, it needs
+no address and no DNS record, and the free plan &mdash; 300 parsed emails a month, no card &mdash;
+is enough to run a real low-volume workflow rather than only to look at one.</p>
+<p><a class="cta" href="/signup">Get an API key</a> &nbsp; <a href="/quickstart">Read the quickstart</a>
+&nbsp; <a href="/docs">API reference</a></p>
+</section>
+
+<section id="more">
+<h2>Other comparisons <a class="anchor" href="#more">#</a></h2>
+<div class="cards">
+  <div class="c"><strong><a href="/mailparser-alternative">vs Mailparser</a></strong><span>$0.1198 an email, and webhook retries cost extra. The full add-on table.</span></div>
+  <div class="c"><strong><a href="/parseur-alternative">vs Parseur</a></strong><span>The strongest of the four. Where it wins, and the &euro;0.49-an-email floor.</span></div>
+  <div class="c"><strong><a href="/zapier-email-parser-alternative">vs Zapier Parser</a></strong><span>Free, positional, 15 templates, and it cannot re-parse. Zapier staff say so.</span></div>
+  <div class="c"><strong><a href="/docparser-alternative">vs Docparser</a></strong><span>It cannot read an email body at all &mdash; their own help centre says it.</span></div>
+</div>
+</section>
+
+  </main>
+</div>
+
+<footer style="border-top:1px solid var(--rule);padding:1.6rem 1.25rem;text-align:center;font-size:.86rem;color:var(--muted)">
+  <a href="/">MailMint</a> &middot;
+  <a href="/docs">API reference</a> &middot;
+  <a href="/quickstart">Quickstart</a> &middot;
+  <a href="/n8n">n8n</a> &middot;
+  <a href="/email-parsing-api">Email parsing API</a> &middot;
+  <a href="/dashboard">Dashboard</a>
+</footer>
+
+<script src="/docs.js"></script>
+</body>
+</html>

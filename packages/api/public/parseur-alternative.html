@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Parseur alternative &mdash; per-field confidence, and $0.0018 an email</title>
+<meta name="description" content="Parseur starts at &euro;49/month for 100 pages and returns one verdict per document. MailMint parses 5,000 emails for $9 and returns a confidence, a source and the verbatim evidence span for every field. Prices read from Parseur's own pricing endpoint on 29 August 2026.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://mailmint.app.mintapis.com/parseur-alternative">
+<meta property="og:title" content="Parseur alternative &mdash; per-field confidence, and $0.0018 an email">
+<meta property="og:description" content="Parseur starts at &euro;49/month for 100 pages and returns one verdict per document. MailMint parses 5,000 emails for $9 and returns a confidence, a source and the verbatim evidence span for every field. Prices read from Parseur's own pricing endpoint on 29 August 2026.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://mailmint.app.mintapis.com/parseur-alternative">
+<meta property="og:site_name" content="MailMint">
+<meta property="og:image" content="https://mailmint.app.mintapis.com/og-image.png">
+<meta property="og:image:alt" content="MailMint: an inbound email address on the left, the structured JSON it returns on the right, each field carrying its confidence.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="/docs.css">
+</head>
+<body class="docs">
+
+<header class="docs-top">
+  <a class="logo" href="/">Mail<span>Mint</span></a>
+  <nav>
+    <a href="/docs">API reference</a>
+    <a href="/quickstart">Quickstart</a>
+    <a href="/n8n">n8n</a>
+    <a class="cta" href="/signup">Get an API key</a>
+  </nav>
+</header>
+
+<div class="layout">
+
+  <aside class="toc">
+    <button class="toc-toggle" id="tocToggle" aria-expanded="false" aria-controls="tocBody">On this page</button>
+    <div class="toc-body" id="tocBody">
+      <h2>Parseur</h2>
+      <ul>
+        <li><a href="#credit">What a credit costs</a></li>
+        <li><a href="#good">What Parseur does better</a></li>
+        <li><a href="#table">Side by side</a></li>
+      </ul>
+      <h2>The differences that decide it</h2>
+      <ul>
+        <li><a href="#confidence">Per-field confidence</a></li>
+        <li><a href="#api">Schema over the API</a></li>
+        <li><a href="#price">The volume curve</a></li>
+      </ul>
+      <h2>Then</h2>
+      <ul>
+        <li><a href="#code">The same job, here</a></li>
+        <li><a href="#stay">When to stay</a></li>
+        <li><a href="#honest">What we cannot claim</a></li>
+        <li><a href="#try">Try it</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <main class="content">
+<h1>Parseur alternative</h1>
+<p class="lede">Parseur is the strongest product in this category and we are going to say so before we
+say anything else: real AI extraction, a published OpenAPI 3.1 schema, table fields as first-class
+arrays, a re-parse endpoint, and an official n8n node. Two things separate MailMint from it. Parseur
+counts <strong>a PDF page as a credit and starts at &euro;49 a month for 100</strong>; and no Parseur
+field tells you how sure it is or which characters it was read from.</p>
+
+<div class="note">
+<p><strong>Where these numbers come from.</strong> Parseur&rsquo;s pricing page is a slider, so the
+figures below were read on <strong>29 August 2026</strong> from the endpoint the page itself calls,
+<code>parseur.com/api/price_set</code>. They came back in <strong>euros</strong> because that endpoint
+geolocates; their own response reports <code>default_currency_code: USD</code>, so a visitor in the US
+sees dollar figures at different absolute values. Compare like for like before you decide.</p>
+</div>
+
+<section id="credit">
+<h2>What a credit costs <a class="anchor" href="#credit">#</a></h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>Parseur plan</th><th>Price</th><th>Pages / month</th><th>Per page</th></tr></thead>
+<tbody>
+<tr><td>Free</td><td>&euro;0</td><td>20</td><td>&mdash;</td></tr>
+<tr><td>Micro</td><td>&euro;49/mo</td><td>100</td><td>&euro;0.49</td></tr>
+<tr><td>Mini</td><td>&euro;89/mo</td><td>300</td><td>&euro;0.297</td></tr>
+<tr><td>Starter</td><td>&euro;129/mo</td><td>1,000</td><td>&euro;0.129</td></tr>
+<tr><td>Premium</td><td>&euro;269/mo</td><td>3,000</td><td>&euro;0.0897</td></tr>
+<tr><td>Pro</td><td>&euro;499/mo</td><td>10,000</td><td>&euro;0.0499</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>The counting rule is theirs and it is fair: an email is one credit however long it is, and a
+three-page PDF is three. That is honest metering for a product built around documents. It also means
+that if your workload is <em>email bodies</em> rather than PDFs, you are paying document prices for
+messages.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>MailMint plan</th><th>Price</th><th>Parsed emails / month</th><th>Per email</th></tr></thead>
+<tbody>
+<tr><td>Free</td><td>$0</td><td>300, no card</td><td>&mdash;</td></tr>
+<tr><td>Starter</td><td>$9/mo</td><td>5,000</td><td>$0.0018</td></tr>
+<tr><td>Pro</td><td>$29/mo</td><td>25,000</td><td>$0.00116</td></tr>
+<tr><td>Scale</td><td>$99/mo</td><td>150,000</td><td>$0.00066</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>At the bottom of the curve the gap is stark &mdash; <strong>100 emails a month costs &euro;49 there
+and nothing here</strong>, because our free tier is 300 a month with no card and no expiry. At the top
+it narrows in relative terms but not in absolute ones: Parseur&rsquo;s 10,000-page plan is &euro;499;
+MailMint&rsquo;s 25,000-email plan is $29.</p>
+</section>
+
+<section id="good">
+<h2>What Parseur does better than us, today <a class="anchor" href="#good">#</a></h2>
+<ul>
+<li><strong>It reads PDF and scanned documents.</strong> OCR, multi-page, page-counted. MailMint does
+not read attachment contents yet. If your data lives inside the attachment rather than the message,
+this page ends here and you should use Parseur.</li>
+<li><strong>Its Table Field is mature.</strong> Variable-row tables in AI mode work well; the
+documented cap is 25 pages per document.</li>
+<li><strong>Its n8n node is official and verified</strong>, published 21 August 2026. Ours is on npm
+and works, but n8n has not verified it yet, so on n8n Cloud it must be installed as a community
+node.</li>
+<li><strong>It has the integrations you would expect of a mature vendor</strong> &mdash; Zapier, Make,
+Power Automate, Google Sheets, Excel &mdash; and years of production use behind it. MailMint has an
+API, webhooks, polling and n8n.</li>
+</ul>
+<p>That is not a courtesy paragraph. If any line in it is your requirement, buy Parseur.</p>
+</section>
+
+<section id="table">
+<h2>Side by side <a class="anchor" href="#table">#</a></h2>
+
+<div class="tw">
+<table>
+<thead><tr><th></th><th>MailMint</th><th>Parseur</th></tr></thead>
+<tbody>
+<tr><td class="wrap">Per-field confidence</td><td class="wrap">Yes &mdash; computed, with the evidence span</td><td class="wrap">None &mdash; the outcome is <code>PARSEDOK</code> / <code>PARSEDKO</code> for the whole document</td></tr>
+<tr><td class="wrap">Where a value came from</td><td class="wrap"><code>source</code> plus the verbatim <code>evidence</code> substring</td><td class="wrap">&mdash;</td></tr>
+<tr><td class="wrap">Extraction model</td><td class="wrap">Deterministic rules and a model, cross-checked against each other</td><td class="wrap">AI templates, plus classic template mode</td></tr>
+<tr><td class="wrap">Variable-row line items</td><td class="wrap">Typed array with <code>row_count</code> and <code>truncated</code></td><td class="wrap">Table Field &mdash; strong; AI mode caps at 25 pages</td></tr>
+<tr><td class="wrap">Reads the email body</td><td>Yes</td><td>Yes</td></tr>
+<tr><td class="wrap">Reads PDF attachment contents</td><td class="wrap">Not yet</td><td class="wrap">Yes, with OCR</td></tr>
+<tr><td class="wrap">Re-parse mail already received</td><td class="wrap">Any stored message, any schema, from the original bytes, with a dry run</td><td class="wrap">Yes, within the retention window</td></tr>
+<tr><td class="wrap">Change the schema over the API</td><td class="wrap"><code>PATCH /v1/mailboxes/:id</code></td><td class="wrap">No &mdash; templates are built in the UI, not programmable</td></tr>
+<tr><td class="wrap">Message authentication</td><td class="wrap">SPF, DKIM and DMARC verdicts on the message as received</td><td class="wrap">&mdash;</td></tr>
+<tr><td class="wrap">Entry price</td><td class="wrap">Free for 300/mo, then $9 for 5,000</td><td class="wrap">Free for 20 pages/mo, then &euro;49 for 100</td></tr>
+</tbody>
+</table>
+</div>
+<p class="t">Parseur figures from their pricing endpoint and their published OpenAPI 3.1 schema, read 29 August 2026. Scroll sideways on a narrow screen.</p>
+</section>
+
+<section id="confidence">
+<h2>Per-field confidence, and why a document-level verdict is not the same thing <a class="anchor" href="#confidence">#</a></h2>
+
+<p>Parseur tells you whether a document parsed. It does not tell you that the <code>total</code> is
+solid and the <code>due_date</code> is a guess. In practice that is the difference between routing a
+document and routing a field: with one verdict per document you either trust all eleven fields or
+review all eleven.</p>
+
+<p>MailMint returns a <code>confidence</code>, a <code>source</code> and an <code>evidence</code> span
+per field, and sets <code>needs_review</code> on the message with flags naming which field caused it.
+The number is <a href="/docs#confidence">not the model&rsquo;s self-report</a>: it is computed from
+whether the quoted evidence is really a verbatim substring of the message, whether the rules layer and
+the model agreed independently, whether the invoice arithmetic reconciles, and whether the value
+coerced cleanly to its type. The model&rsquo;s own opinion is one input, weighted least, and it can
+only lower a score.</p>
+
+<p>The evidence span has a second use that is easy to miss: it is an audit trail. When someone asks in
+March why an invoice was booked at &euro;1,180.50, the answer is the exact characters of the email that
+number was read from, kept alongside the value.</p>
+</section>
+
+<section id="api">
+<h2>Schema over the API <a class="anchor" href="#api">#</a></h2>
+
+<p>Parseur publishes a genuinely good REST API for <em>documents</em> &mdash; upload, fetch results,
+re-process. What it does not expose is the template: fields are defined by hand in their UI.</p>
+
+<p>If you are building a product where each of your customers gets their own inbound address and their
+own field set, that difference is the whole integration. MailMint creates a mailbox and its schema over
+the API, and <code>PATCH /v1/mailboxes/:id</code> changes the fields later without touching a UI:</p>
+
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>curl -X POST https://mailmint.app.mintapis.com/v1/mailboxes \
+  -H "Authorization: Bearer $MAILMINT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "name": "acme-invoices",
+        "schema": [ { "name": "total", "type": "number", "description": "grand total including tax" } ],
+        "webhook_url": "https://your.app/hooks/mailmint" }'</code></pre>
+</div>
+</section>
+
+<section id="price">
+<h2>The volume curve, plainly <a class="anchor" href="#price">#</a></h2>
+<p>Take 1,000 emails a month, no attachments. Parseur Starter is &euro;129. MailMint Starter is $9 and
+has 4,000 parses left over. Take 100 a month: &euro;49 against $0. Take 3,000 a month: &euro;269 against
+$9. These are list prices from both vendors on the same day, for email bodies only &mdash; the workload
+where a page-based credit is least kind to you and where our per-email price is most honest about what
+we actually do.</p>
+</section>
+
+<section id="code">
+<h2>The same job, here <a class="anchor" href="#code">#</a></h2>
+<p>Stateless, nothing stored, no mailbox needed:</p>
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>curl -X POST https://mailmint.app.mintapis.com/v1/parse \
+  -H "Authorization: Bearer $MAILMINT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "subject": "Order 8841 shipped",
+    "text": "Your order 8841 shipped on 28 Aug 2026 via DHL, tracking JD014600003922379820.",
+    "schema": [
+      { "name": "order_id", "type": "string", "description": "the order number" },
+      { "name": "carrier",  "type": "string", "description": "the shipping carrier" },
+      { "name": "tracking", "type": "string", "description": "the tracking number" },
+      { "name": "shipped_on", "type": "date", "description": "the date it shipped" }
+    ]
+  }'</code></pre>
+</div>
+</section>
+
+<section id="stay">
+<h2>When you should stay on Parseur <a class="anchor" href="#stay">#</a></h2>
+<ul>
+<li><strong>Your documents are PDFs</strong>, scanned or otherwise. This is the clearest line between
+the two products and it is not close today.</li>
+<li><strong>You need n8n Cloud without community nodes</strong>, or Zapier, Make or Power Automate as a
+first-class integration.</li>
+<li><strong>You need a vendor with a track record.</strong> Parseur has years of production customers.
+MailMint has none yet, and we are not going to imply otherwise.</li>
+</ul>
+</section>
+
+<section id="honest">
+<h2>What we cannot claim <a class="anchor" href="#honest">#</a></h2>
+<p>Nobody outside this project has paid for MailMint yet, so there is no customer, no case study
+and no uptime history to quote you. Two things are missing and named rather than glossed over:
+<strong>the contents of PDF attachments are not read yet</strong> (the extractor exists, it is not
+wired into the pipeline), and the n8n node is <strong>not yet verified by n8n</strong>, so on n8n
+Cloud it has to be installed as a community node rather than found in the built-in list. Everything
+else on this page is live and can be checked with one <code>curl</code> before you spend anything.</p>
+</section>
+
+<section id="try">
+<h2>Try it against your own email <a class="anchor" href="#try">#</a></h2>
+<p>The honest test is not a feature table, it is your own worst email. Take the message that your
+current parser gets wrong, paste its subject and body into <code>POST /v1/parse</code>, and look at
+the confidence numbers and the evidence spans on the fields it returns. It stores nothing, it needs
+no address and no DNS record, and the free plan &mdash; 300 parsed emails a month, no card &mdash;
+is enough to run a real low-volume workflow rather than only to look at one.</p>
+<p><a class="cta" href="/signup">Get an API key</a> &nbsp; <a href="/quickstart">Read the quickstart</a>
+&nbsp; <a href="/docs">API reference</a></p>
+</section>
+
+<section id="more">
+<h2>Other comparisons <a class="anchor" href="#more">#</a></h2>
+<div class="cards">
+  <div class="c"><strong><a href="/email-parsing-api">Email parsing API</a></strong><span>What an email parsing API has to get right, and the four products that do it.</span></div>
+  <div class="c"><strong><a href="/mailparser-alternative">vs Mailparser</a></strong><span>$0.1198 an email, and webhook retries cost extra. The full add-on table.</span></div>
+  <div class="c"><strong><a href="/zapier-email-parser-alternative">vs Zapier Parser</a></strong><span>Free, positional, 15 templates, and it cannot re-parse. Zapier staff say so.</span></div>
+  <div class="c"><strong><a href="/docparser-alternative">vs Docparser</a></strong><span>It cannot read an email body at all &mdash; their own help centre says it.</span></div>
+</div>
+</section>
+
+  </main>
+</div>
+
+<footer style="border-top:1px solid var(--rule);padding:1.6rem 1.25rem;text-align:center;font-size:.86rem;color:var(--muted)">
+  <a href="/">MailMint</a> &middot;
+  <a href="/docs">API reference</a> &middot;
+  <a href="/quickstart">Quickstart</a> &middot;
+  <a href="/n8n">n8n</a> &middot;
+  <a href="/email-parsing-api">Email parsing API</a> &middot;
+  <a href="/dashboard">Dashboard</a>
+</footer>
+
+<script src="/docs.js"></script>
+</body>
+</html>

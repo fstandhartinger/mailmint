@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Docparser alternative for email &mdash; when the data is in the message, not the PDF</title>
+<meta name="description" content="Docparser parses attachments and discards the email body, by its own documentation, at $0.39 a document. MailMint parses the message itself for $0.0018 an email and returns a confidence and an evidence span for every field.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://mailmint.app.mintapis.com/docparser-alternative">
+<meta property="og:title" content="Docparser alternative for email &mdash; when the data is in the message, not the PDF">
+<meta property="og:description" content="Docparser parses attachments and discards the email body, by its own documentation, at $0.39 a document. MailMint parses the message itself for $0.0018 an email and returns a confidence and an evidence span for every field.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://mailmint.app.mintapis.com/docparser-alternative">
+<meta property="og:site_name" content="MailMint">
+<meta property="og:image" content="https://mailmint.app.mintapis.com/og-image.png">
+<meta property="og:image:alt" content="MailMint: an inbound email address on the left, the structured JSON it returns on the right, each field carrying its confidence.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="/docs.css">
+</head>
+<body class="docs">
+
+<header class="docs-top">
+  <a class="logo" href="/">Mail<span>Mint</span></a>
+  <nav>
+    <a href="/docs">API reference</a>
+    <a href="/quickstart">Quickstart</a>
+    <a href="/n8n">n8n</a>
+    <a class="cta" href="/signup">Get an API key</a>
+  </nav>
+</header>
+
+<div class="layout">
+
+  <aside class="toc">
+    <button class="toc-toggle" id="tocToggle" aria-expanded="false" aria-controls="tocBody">On this page</button>
+    <div class="toc-body" id="tocBody">
+      <h2>Docparser</h2>
+      <ul>
+        <li><a href="#body">It cannot read an email body</a></li>
+        <li><a href="#price">What a credit costs</a></li>
+        <li><a href="#table">Side by side</a></li>
+      </ul>
+      <h2>Then</h2>
+      <ul>
+        <li><a href="#code">The same job, here</a></li>
+        <li><a href="#stay">When to stay</a></li>
+        <li><a href="#honest">What we cannot claim</a></li>
+        <li><a href="#try">Try it</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <main class="content">
+<h1>Docparser alternative</h1>
+<p class="lede">Docparser is a document parser that accepts documents by email. It is not an email
+parser, and its own help centre says so: <strong>it does not read the body of the message</strong>, only
+the files attached to it. If the data you need is written in the email itself, Docparser cannot reach it
+at any price &mdash; and the vendor&rsquo;s answer is a second subscription to their sibling product,
+Mailparser.</p>
+
+<div class="note">
+<p><strong>Where these numbers come from.</strong> Prices read from <code>docparser.com/pricing</code>
+on <strong>29 August 2026</strong>; the email-body limitation and the credit definition from
+Docparser&rsquo;s own help centre, read on 25 August 2026 through the public Zendesk Help Center API
+(180 articles).</p>
+</div>
+
+<section id="body">
+<h2>The line that decides this comparison <a class="anchor" href="#body">#</a></h2>
+<p>Docparser&rsquo;s import-by-email feature takes the attachment and discards the message. That is a
+reasonable design for a product whose unit is a document &mdash; and it means the single most common
+real-world case, <em>&ldquo;the numbers are in the email and the PDF is a copy&rdquo;</em>, is out of
+scope.</p>
+<p>The honest converse, stated as plainly: <strong>MailMint does not read PDF contents yet.</strong> The
+extractor is built and not wired into the pipeline. So the two products fail on opposite halves of the
+same envelope. If your data is only ever inside the PDF, Docparser is the right tool and this page
+should not talk you out of it. If your data is in the message &mdash; order confirmations, enquiries,
+alerts, booking notifications, supplier replies &mdash; Docparser cannot do it and MailMint is built for
+exactly that.</p>
+</section>
+
+<section id="price">
+<h2>What a credit costs <a class="anchor" href="#price">#</a></h2>
+<p>Docparser sells parsing credits, where <em>1 credit = 1 document of up to 5 pages</em>.</p>
+<div class="tw">
+<table>
+<thead><tr><th>Docparser plan (monthly)</th><th>Price</th><th>Credits / month</th><th>Per credit</th></tr></thead>
+<tbody>
+<tr><td>Starter</td><td>$39.00/mo</td><td>100</td><td>$0.3900 <span class="t">their own figure</span></td></tr>
+<tr><td>Professional</td><td>$74.00/mo</td><td>250</td><td>$0.2960</td></tr>
+<tr><td>Business</td><td>$159.00/mo</td><td>1,000</td><td>$0.1590</td></tr>
+</tbody>
+</table>
+</div>
+<p>Annual billing is cheaper &mdash; $32.50/mo for 1,200 credits a year at the entry tier &mdash; and, as
+at Mailparser, several capabilities are separately priced add-ons, with a &ldquo;we build your parser for
+you&rdquo; service at $149 per layout. MailMint&rsquo;s entry plan is free for 300 parsed emails a month
+and $9 for 5,000, with re-parse, signed webhooks with retries and per-field confidence included at every
+tier including Free.</p>
+</section>
+
+<section id="table">
+<h2>Side by side <a class="anchor" href="#table">#</a></h2>
+<div class="tw">
+<table>
+<thead><tr><th></th><th>MailMint</th><th>Docparser</th></tr></thead>
+<tbody>
+<tr><td class="wrap">Reads the email body</td><td>Yes</td><td class="wrap">No &mdash; stated in their own help centre</td></tr>
+<tr><td class="wrap">Reads PDF attachment contents</td><td class="wrap">Not yet</td><td class="wrap">Yes, with OCR &mdash; this is the product</td></tr>
+<tr><td class="wrap">Per-field confidence</td><td class="wrap">Yes, with the evidence span</td><td class="wrap">None, bar one arithmetic preset</td></tr>
+<tr><td class="wrap">Variable-row line items</td><td class="wrap">Typed array with <code>row_count</code> and <code>truncated</code></td><td class="wrap">Smart Tables &mdash; page 1 only, columns fixed at design time</td></tr>
+<tr><td class="wrap">Re-parse</td><td class="wrap">Yes, from the original bytes, with a dry run</td><td class="wrap">Yes, bulk API</td></tr>
+<tr><td class="wrap">Message authentication</td><td class="wrap">SPF, DKIM, DMARC as received</td><td class="wrap">&mdash; the message is discarded</td></tr>
+<tr><td class="wrap">Entry price</td><td class="wrap">Free for 300/mo, then $9 for 5,000</td><td class="wrap">$39.00/mo for 100 documents</td></tr>
+<tr><td class="wrap">n8n node</td><td class="wrap">Yes &mdash; 11 actions and a trigger</td><td class="wrap">None</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<section id="code">
+<h2>The same job, here <a class="anchor" href="#code">#</a></h2>
+<p>An order confirmation whose numbers live in the message body &mdash; the case Docparser cannot
+take:</p>
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>curl -X POST https://mailmint.app.mintapis.com/v1/parse \
+  -H "Authorization: Bearer $MAILMINT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "subject": "Your order 4471 is confirmed",
+    "text": "Order 4471\nDelivery: 12 Sep 2026\n\nSKU     Qty  Net\nA-100     6  180.00\nB-220     2   47.50\n\nNet total: 227.50 EUR",
+    "schema": [
+      { "name": "order_id",  "type": "string", "description": "the order number" },
+      { "name": "delivery",  "type": "date",   "description": "promised delivery date" },
+      { "name": "net_total", "type": "number", "description": "net total excluding tax" },
+      { "name": "lines",     "type": "array",  "items": { "type": "object", "fields": [
+          { "name": "sku", "type": "string" },
+          { "name": "qty", "type": "integer" },
+          { "name": "net", "type": "number" } ] } }
+    ]
+  }'</code></pre>
+</div>
+</section>
+
+<section id="stay">
+<h2>When you should stay on Docparser <a class="anchor" href="#stay">#</a></h2>
+<ul>
+<li><strong>Your input is a PDF</strong> &mdash; scanned invoices, delivery notes, statements. That is
+what Docparser is for and it is good at it.</li>
+<li><strong>You need OCR.</strong> We have none.</li>
+<li><strong>You already run Docparser plus Mailparser as a pair</strong> and it works. A working pair
+beats a cheaper single tool that covers only half of what you do today.</li>
+</ul>
+</section>
+
+<section id="honest">
+<h2>What we cannot claim <a class="anchor" href="#honest">#</a></h2>
+<p>Nobody outside this project has paid for MailMint yet, so there is no customer, no case study
+and no uptime history to quote you. Two things are missing and named rather than glossed over:
+<strong>the contents of PDF attachments are not read yet</strong> (the extractor exists, it is not
+wired into the pipeline), and the n8n node is <strong>not yet verified by n8n</strong>, so on n8n
+Cloud it has to be installed as a community node rather than found in the built-in list. Everything
+else on this page is live and can be checked with one <code>curl</code> before you spend anything.</p>
+</section>
+
+<section id="try">
+<h2>Try it against your own email <a class="anchor" href="#try">#</a></h2>
+<p>The honest test is not a feature table, it is your own worst email. Take the message that your
+current parser gets wrong, paste its subject and body into <code>POST /v1/parse</code>, and look at
+the confidence numbers and the evidence spans on the fields it returns. It stores nothing, it needs
+no address and no DNS record, and the free plan &mdash; 300 parsed emails a month, no card &mdash;
+is enough to run a real low-volume workflow rather than only to look at one.</p>
+<p><a class="cta" href="/signup">Get an API key</a> &nbsp; <a href="/quickstart">Read the quickstart</a>
+&nbsp; <a href="/docs">API reference</a></p>
+</section>
+
+<section id="more">
+<h2>Other comparisons <a class="anchor" href="#more">#</a></h2>
+<div class="cards">
+  <div class="c"><strong><a href="/email-parsing-api">Email parsing API</a></strong><span>What an email parsing API has to get right, and the four products that do it.</span></div>
+  <div class="c"><strong><a href="/mailparser-alternative">vs Mailparser</a></strong><span>$0.1198 an email, and webhook retries cost extra. The full add-on table.</span></div>
+  <div class="c"><strong><a href="/parseur-alternative">vs Parseur</a></strong><span>The strongest of the four. Where it wins, and the &euro;0.49-an-email floor.</span></div>
+  <div class="c"><strong><a href="/zapier-email-parser-alternative">vs Zapier Parser</a></strong><span>Free, positional, 15 templates, and it cannot re-parse. Zapier staff say so.</span></div>
+</div>
+</section>
+
+  </main>
+</div>
+
+<footer style="border-top:1px solid var(--rule);padding:1.6rem 1.25rem;text-align:center;font-size:.86rem;color:var(--muted)">
+  <a href="/">MailMint</a> &middot;
+  <a href="/docs">API reference</a> &middot;
+  <a href="/quickstart">Quickstart</a> &middot;
+  <a href="/n8n">n8n</a> &middot;
+  <a href="/email-parsing-api">Email parsing API</a> &middot;
+  <a href="/dashboard">Dashboard</a>
+</footer>
+
+<script src="/docs.js"></script>
+</body>
+</html>
