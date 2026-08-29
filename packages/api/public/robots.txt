@@ -1,0 +1,14 @@
+# MailMint — https://mailmint.app.mintapis.com
+# The dashboard, the API and the Stripe hooks are behind a key or a session;
+# there is nothing there for a crawler.
+
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /login
+Disallow: /signup
+Disallow: /v1/
+Disallow: /internal/
+Disallow: /stripe/
+
+Sitemap: https://mailmint.app.mintapis.com/sitemap.xml

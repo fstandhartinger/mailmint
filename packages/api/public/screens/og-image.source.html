@@ -1,0 +1,54 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#ffffff;--panel:#f7f8fa;--ink:#12141a;--muted:#5c6472;--rule:#e3e6ec;--accent:#2b6cb0;--code:#f2f4f7}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1200px;height:630px}
+  body{background:var(--bg);color:var(--ink);font-family:Inter,sans-serif;padding:56px 60px;display:flex;flex-direction:column}
+  .logo{font-weight:700;font-size:26px;letter-spacing:-.02em}
+  .logo span{color:var(--accent)}
+  h1{font-size:52px;line-height:1.08;letter-spacing:-.025em;margin:26px 0 14px;font-weight:700}
+  .sub{font-size:20px;color:var(--muted);line-height:1.45;max-width:620px}
+  .cols{display:flex;gap:26px;align-items:stretch;margin-top:34px;flex:1}
+  .card{background:var(--panel);border:1px solid var(--rule);border-radius:12px;padding:20px 22px;display:flex;flex-direction:column}
+  .in{width:400px}
+  .out{flex:1}
+  .cap{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.09em;margin-bottom:12px}
+  .addr{font-family:"JetBrains Mono",monospace;font-size:17px;color:var(--accent);font-weight:600;word-break:break-all}
+  .mail{margin-top:16px;font-size:15px;color:var(--ink);line-height:1.6}
+  .mail b{font-weight:600}
+  .mail .m{color:var(--muted)}
+  pre{font-family:"JetBrains Mono",monospace;font-size:14.5px;line-height:1.5;color:var(--ink);white-space:pre}
+  .k{color:var(--accent)}
+  .n{color:#b7791f}
+  .c{color:var(--muted)}
+  .arrow{align-self:center;font-size:30px;color:var(--muted);font-weight:300}
+</style></head><body>
+  <div class="logo">Mail<span>Mint</span></div>
+  <h1>An email address that<br>returns structured JSON.</h1>
+  <div class="sub">Every field comes back with a confidence, its source, and the verbatim text it was read out of.</div>
+  <div class="cols">
+    <div class="card in">
+      <div class="cap">Mail arrives</div>
+      <div class="addr">k7m2xq4h9bwz@…</div>
+      <div class="mail">
+        <b>Invoice INV-2291 from Acme Ltd</b><br>
+        <span class="m">Widget &nbsp;3 &nbsp;$27.00<br>Shipping &nbsp;1 &nbsp;$4.50<br>Total: $31.50<br>Due: Sep 8, 2026</span>
+      </div>
+    </div>
+    <div class="arrow">&rarr;</div>
+    <div class="card out">
+      <div class="cap">JSON comes back</div>
+<pre>{
+  <span class="k">"invoice_number"</span>: {
+    <span class="k">"value"</span>: <span class="n">"INV-2291"</span>,
+    <span class="k">"confidence"</span>: <span class="n">0.97</span>,
+    <span class="k">"source"</span>: <span class="n">"rule"</span>,
+    <span class="k">"evidence"</span>: <span class="n">"Invoice INV-2291"</span>
+  },
+  <span class="k">"total"</span>: { <span class="k">"value"</span>: <span class="n">31.5</span>, <span class="c">&hellip;</span> },
+  <span class="k">"line_items"</span>: { <span class="c">2 rows</span> }
+}</pre>
+    </div>
+  </div>
+</body></html>

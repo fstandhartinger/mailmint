@@ -30,11 +30,25 @@ const SESSION_COOKIE = 'mailmint_session';
 
 const CSS = fs.readFileSync(path.join(PUBLIC_DIR, 'app.css'), 'utf8');
 
+// Pages rendered here are account plumbing — sign-in, the dashboard, a mailbox,
+// the re-parse view — and a search engine indexing them helps nobody: they are
+// behind a session, so a crawler sees the login redirect and lists a dead entry
+// under our own name. They are therefore noindex unless a route opts back in
+// with `{ index: true }`. `/docs/reference` does, because it is public, true,
+// and read straight from the running configuration.
 function shell(title, body, opts = {}) {
+  const robots = opts.index
+    ? ''
+    : '\n<meta name="robots" content="noindex,follow">';
+  // An indexable page must say which URL is the real one, or the same reference
+  // gets listed once per host that answers for it.
+  const canonical = opts.canonical && config.publicUrl
+    ? `\n<link rel="canonical" href="${config.publicUrl}${opts.canonical}">`
+    : '';
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${escapeHtml(title)}</title>
-<meta name="description" content="${escapeHtml(opts.description || 'MailMint turns inbound email into structured JSON.')}">
+<meta name="description" content="${escapeHtml(opts.description || 'MailMint turns inbound email into structured JSON.')}">${robots}${canonical}
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <style>${CSS}</style></head><body>${body}
 <script>
@@ -1054,7 +1068,11 @@ if (Math.abs(Date.now()/1000 - Number(t)) &gt; 300) reject();   // replay window
   <h2 id="limits">Rate limits</h2>
   <p>${require('./ratelimit').REFILL_PER_MINUTE} API requests a minute per account, burst ${require('./ratelimit').CAPACITY}.
     Inbound mail is not rate limited.</p>
-</main>`));
+</main>`, {
+    index: true,
+    canonical: '/docs/reference',
+    description: 'MailMint API reference, generated from the running configuration: plans, quotas, retention, rate limits and the numbers this deployment actually enforces.',
+  }));
 }));
 
 module.exports = { router, shell, currentAccount, schemaFromForm };
