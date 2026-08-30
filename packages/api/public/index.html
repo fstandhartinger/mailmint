@@ -278,20 +278,23 @@ x-mailmint-signature: t=1787648043,v1=6a1f…c07b
 
         <div class="measured" style="margin-top:1.8rem">
           <div>
-            <div class="n">83.5&nbsp;% / 91.5&nbsp;%</div>
+            <div class="n">85&nbsp;% / 92&nbsp;%</div>
             <div class="t">Precision and recall on a <strong>hold-out set the parser had never seen</strong> —
-              36 adversarial messages, 163 labelled field slots. This is the number we publish.</div>
+              36 adversarial messages, 163 labelled field slots, run three times on 30 Aug 2026
+              (84.3–85.9&nbsp;% and 90.4–94.7&nbsp;% across the runs). This is the number we publish.</div>
           </div>
           <div>
             <div class="n">91.6&nbsp;%</div>
-            <div class="t">Of field slots the deterministic layer answers with <strong>no model call at
-              all</strong>, at a mean of 12&nbsp;ms. Those values are byte-identical run to run.</div>
+            <div class="t">Of field slots the deterministic layer resolves <strong>before any model
+              runs</strong>, in 18&nbsp;ms. Those values are byte-identical run to run — and the model still
+              runs on every message, to cross-examine them rather than to replace them.</div>
           </div>
           <div>
-            <div class="n">92 · 83 · 57 · 20</div>
-            <div class="t">Percent actually correct in the 0.9+, 0.7&ndash;0.9, 0.6&ndash;0.7 and sub-0.6
-              confidence buckets on that same hold-out. <strong>The curve declines.</strong> That is what
-              makes the number worth reading.</div>
+            <div class="n">95 · 75</div>
+            <div class="t">Percent actually correct in the 0.9+ and 0.7&ndash;0.9 confidence buckets on that
+              hold-out, pooled over the three runs. <strong>The gate at 0.9 is worth setting.</strong> Below
+              0.7 the buckets hold 29 values in total and come out in the wrong order —
+              <a href="/docs#calibration">we publish that too</a>.</div>
           </div>
         </div>
         <p class="measured-note">Measured 25 August 2026. <strong>These are hold-out numbers, deliberately.</strong>

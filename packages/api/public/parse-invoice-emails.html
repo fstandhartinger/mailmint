@@ -271,10 +271,12 @@ mail is genuinely competitive at that size, and has better judgement than any co
 <h2>What we cannot claim <a class="anchor" href="#honest">#</a></h2>
 <p>Nobody outside this project has paid for MailMint yet, so there is no customer, no case study and no
 uptime history to quote. There is no SLA and no SOC&nbsp;2. One region, one instance. PDF attachment
-contents are not read. The confidence calibration is measured over 95 labelled field slots across 41
-messages &mdash; enough to show the pipeline is not over-confident, nowhere near enough to call it a
-calibrated probability. The parse on this page is one invoice, not a benchmark, and it is shown with its
-failure rather than without it.</p>
+contents are not read. The confidence calibration is measured over 163 labelled field slots on 36 hold-out
+messages, run three times &mdash; enough to show that a value reported at 0.9+ was right 95.4&nbsp;% of the
+time, nowhere near enough to call any of it a calibrated probability, and below 0.7 the buckets hold so few
+values that they come out in the wrong order. <a href="/docs#calibration">The whole table is published</a>,
+including the nine values it got wrong at high confidence. The parse on this page is one invoice, not a
+benchmark, and it is shown with its failure rather than without it.</p>
 </section>
 <section id="try">
 <h2>Try it on your own worst email <a class="anchor" href="#try">#</a></h2>

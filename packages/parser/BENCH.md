@@ -52,63 +52,94 @@ this parser's own output frozen in place.
 
 22 labelled messages, 95 labelled field slots.
 
+Re-measured 30 August 2026 (the 25 August figures are kept below the line where they
+changed, because a benchmark that quietly moves is not a benchmark).
+
 | | rules only (`--no-llm`) | rules + one LLM call |
 |---|---|---|
 | precision | **97.7 %** (85 / 87 returned) | **100.0 %** (94 / 94 returned) |
 | recall | **90.4 %** (85 / 94 present) | **100.0 %** (94 / 94 present) |
 | correct abstentions | 1 | 1 |
 | document type accuracy | 100.0 % (22/22) | 100.0 % (22/22) |
-| mean confidence | 0.911 | 0.942 – 0.948 |
-| mean latency / message | **12 ms** | 1,516 – 1,975 ms |
-| mean LLM latency | — | 2,522 – 3,312 ms over the 13 messages that needed one |
-| messages needing the LLM | 0 % | **59.1 %** (13/22) |
-| fields answered without a model | **91.6 %** (87/95) | 71.6 % (68/95) |
+| mean confidence | 0.842 | 0.936 |
+| mean latency / message | **18 ms** | 2,369 ms |
+| mean LLM latency | — | 2,344 ms |
+| messages the LLM sees | 0 % | **100 %** (22/22) |
+| fields resolved before any model call | **91.6 %** (87/95) | — |
+| fields whose final source is `rule` alone | — | 6.3 % (6/95) |
 
-Read the two columns together. The deterministic layer alone answers 91.6 % of field
-slots at 97.7 % precision in 12 ms, and it is what makes the median parse cheap. The
-model closes the last 9 % — Japanese labels, a calendar organiser, a card's last four
-digits, a vendor name that is nowhere written down — and costs 2.5 s when it runs.
+Read the two columns together, and read the last two rows carefully, because they are
+the row most easily misread. The deterministic layer alone answers 91.6 % of field slots
+at 97.7 % precision in 18 ms — that is its *coverage*, and it is real. It is **not** the
+median parse: since `923d110` (25 Aug) made §1a.2 literally true, the model runs on
+**every** message, for the **whole** schema, so a live parse costs ~2.4 s. Of the 95
+slots, 74 end up sourced `rule+llm` (both layers agreed — that agreement is what earns a
+confidence above 0.9), 14 `llm`, 6 `rule` alone.
 
-(The 71.6 % in the right column is lower than the 91.6 % on the left because when a
-model *is* called, fields it agrees with are re-sourced to `rule+llm`.)
+Changed since 25 August: mean confidence in the rules-only column fell 0.911 → 0.842 and
+the 0.9+ bucket there emptied from 65 values to 9. That is the same design change seen
+from the other side: a rule's own certainty no longer buys a high score, so with the
+model switched off there is nothing left to corroborate it. In the shipped configuration
+the model is never switched off.
 
 ## Calibration — is the confidence number honest?
 
 Every extracted value bucketed by the confidence we published, against the hand label.
 
-Rules only:
+Rules only (30 Aug):
 
 | bucket | n | correct | actual |
 |---|---|---|---|
-| 0.9–1.0 | 65 | 65 | **100.0 %** |
-| 0.7–0.9 | 18 | 16 | 88.9 % |
-| 0.5–0.7 | 4 | 4 | 100.0 % |
-| 0.0–0.5 | 0 | — | — |
+| 0.9–1.0 | 9 | 9 | **100.0 %** |
+| 0.7–0.9 | 72 | 71 | 98.6 % |
+| 0.5–0.7 | 5 | 5 | 100.0 % |
+| 0.0–0.5 | 1 | 0 | 0.0 % |
 
-Full pipeline:
+Full pipeline (30 Aug):
 
 | bucket | n | correct | actual |
 |---|---|---|---|
-| 0.9–1.0 | 82 | 82 | **100.0 %** |
+| 0.9–1.0 | 80 | 80 | **100.0 %** |
 | 0.7–0.9 | 11 | 11 | 100.0 % |
-| 0.5–0.7 | 0 | — | — |
-| 0.0–0.5 | 1 | 1 | 100.0 % |
+| 0.5–0.7 | 1 | 1 | 100.0 % |
+| 0.0–0.5 | 2 | 2 | 100.0 % |
 
-**Honest caveat: with zero errors in the full run this table cannot demonstrate a
-declining curve.** What it does show is that nothing is *over*-confident: no value in
-the 0.9+ bucket was wrong in either mode. The rules-only run is the more informative
-one, because it contains errors: the two wrong values there both sat in the 0.7–0.9
-band (the `vendor` guessed from the `From` display name), not in 0.9+. That is the
-behaviour the formula is designed for — a guess must not be able to buy a high score.
+**Honest caveat, and it is the whole reason the hold-out exists: with zero errors in the
+full run this table cannot demonstrate a declining curve, and it never will, because
+these are the 22 messages the rules were written against.** Neither of these two tables
+is quoted on the website as an accuracy claim. The number the site publishes comes from
+`test/holdout/` — 36 messages the parser was never tuned on, run three times on 30 August
+and pooled by `test/holdout/score-pooled.js`:
+
+| bucket | n (3 runs) | correct | actual |
+|---|---|---|---|
+| 0.9–1.0 | 196 | 187 | **95.4 %** |
+| 0.7–0.9 | 80 | 60 | 75.0 % |
+| 0.6–0.7 | 7 | 0 | **0.0 %** |
+| below 0.6 | 22 | 13 | 59.1 % |
+
+Precision 84.3–85.9 %, recall 90.4–94.7 % across the three runs. The top of the scale
+separates cleanly from the middle; the bottom two rows are 29 values in total and are in
+the wrong order, which is what two or three values per run look like and is published as
+such rather than smoothed. Nine values were wrong while reported at 0.9+, and they are
+two mistakes rather than nine: four are `invoice_number` taking a *quoted* document
+number (a credit note against an invoice, `Bezug: Rechnung …`), five are a currency or a
+total read out of mail that contains no invoice at all.
 
 Confidence is **computed, never reported**. The model's own number is one input and
 it may only ever lower a score:
 
 | source | n | correct | mean confidence |
 |---|---|---|---|
-| `rule` | 68 | 100.0 % | 0.958 |
-| `rule+llm` (two independent extractors agreed) | 12 | 100.0 % | 0.917 |
-| `llm` | 14 | 100.0 % | 0.884 |
+| `rule+llm` (two independent extractors agreed) | 74 | 100.0 % | 0.971 |
+| `llm` | 14 | 100.0 % | 0.799 |
+| `rule` (model saw the field and returned nothing for it) | 6 | 100.0 % | 0.824 |
+
+On the hold-out, where there are errors to see, the same ordering holds and it is the
+point of the design: `rule+llm` 96.4 % correct, `llm` alone 100 % over 18 values, and
+`rule` alone — a rule the model declined to corroborate — **47.8 % over 23 values**.
+A rule nobody seconded is the least trustworthy source in the system, and it is the one
+that used to score highest.
 
 The ceilings come from verifiable signals in this order: evidence is a verbatim
 substring of the input; rule and model independently agree; the value corroborates

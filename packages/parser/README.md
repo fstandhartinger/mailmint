@@ -42,15 +42,20 @@ Two layers, in this order, because the order is the cost model.
 signatures stripped; tables extracted from real HTML grids, from repeating HTML
 structure, and from whitespace- and pipe-aligned plain text; amounts, dates, ids,
 emails, phones, addresses and a document type detected. Then every schema field is
-attempted with label-based rules. Anything answered at ≥ 0.90 never reaches a model.
+attempted with label-based rules.
 
-**(b) One LLM call**, for the remaining fields only, with the stripped text, the
-subject, the tables and the deterministic detections in the prompt, demanding strict
-JSON with a verbatim `evidence` span per field.
+**(b) One LLM call**, for the **whole** schema — not only the fields the rules missed —
+with the stripped text, the subject, the tables and the deterministic detections in the
+prompt, demanding strict JSON with a verbatim `evidence` span per field. A rule that is
+certain of itself is still a single extractor, and the two worst errors the hold-out
+found were both a confident label match on the wrong number, so agreement between the
+two layers is what earns a score above 0.9 — never a rule's own certainty. The rule's
+value still wins where they disagree; what changes is the confidence.
 
 Measured on the labelled corpus: layer (a) alone answers **91.6 %** of field slots at
-**97.7 %** precision in **12 ms**. See `BENCH.md` for the full numbers, the calibration
-table, and an honest list of what does not work.
+**97.7 %** precision in **18 ms**, and that is the latency floor, not the median parse —
+layer (b) runs on every message and costs ~2.4 s. See `BENCH.md` for the full numbers,
+the calibration table, and an honest list of what does not work.
 
 ## Confidence is computed, not reported
 
