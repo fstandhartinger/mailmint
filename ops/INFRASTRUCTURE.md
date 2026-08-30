@@ -3,6 +3,30 @@
 `ops/reap.sh --list | --suspend | --destroy` operates on all of it.
 Written because infrastructure nobody wrote down is infrastructure that bills forever.
 
+## Where the service actually runs — read this before you deploy
+
+*Measured 2026-08-30. The tables below were written before MailMint had a domain or a
+published node, and they still say so. Both are now wrong.*
+
+`mailmint.app.mintapis.com` resolves to **65.109.49.103**, the Sandy/Hetzner box, and is
+served by the **Coolify application** `gen17tisqb7m6aqzzuc067rd`. There is **no Render
+service serving MailMint** — the only Render entry on this project is the free
+`mailmint-hookbin` request bin, which is a test fixture. Deploy through Coolify; for ~30 s
+after a deploy the two containers answer alternately, so take five consecutive samples
+before believing either answer.
+
+**MailMint is the one product whose n8n node carries no Render dependency.**
+`n8n-nodes-mailmint@0.1.0` — the version n8n is reviewing — names
+`https://mailmint.app.mintapis.com` five times and no `onrender.com` host at all (counted in
+the published tarball with `npm pack`, 2026-08-30). PDFMint's and DocMint's submitted
+versions do the opposite, which is why their Render services cannot be switched off.
+
+Two rows below are out of date and are corrected here rather than left to mislead:
+the npm package **is published** (`n8n-nodes-mailmint@0.1.0`, ~156 installs/week on
+2026-08-30), and there **is** a domain: `mailmint.app.mintapis.com` for the site and API,
+plus `smooth-operator.online` for inbound mail (`/healthz` reports it as `inbound_domain`,
+MX `10 mx.smooth-operator.online`).
+
 ## Monthly cost, today
 
 | What | Where | Plan | Cost |
@@ -12,8 +36,8 @@ Written because infrastructure nobody wrote down is infrastructure that bills fo
 | Inbound mail routing | Cloudflare Email Routing (not yet enabled — needs a domain) | Free | **$0.00** |
 | Email Worker | Cloudflare Workers (not yet deployed) | Free tier | **$0.00** |
 | GitHub repos + Actions | `fstandhartinger/mailmint`, `fstandhartinger/n8n-nodes-mailmint` | public | $0.00 |
-| npm package | `n8n-nodes-mailmint` | not yet published | $0.00 |
-| Domain | **none bought** | — | $0.00 |
+| npm package | `n8n-nodes-mailmint` | **published, 0.1.0** | $0.00 |
+| Domain | `mintapis.com` (site/API) + `smooth-operator.online` (inbound mail) | — | not billed here |
 | Hetzner | SSH key only; server creation is blocked on the account | — | $0.00 |
 | **Total right now** | | | **$0.00 / month** |
 
