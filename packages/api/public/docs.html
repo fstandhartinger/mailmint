@@ -245,12 +245,13 @@ dot, so it can never change which label is the token. The <code>+tag</code> form
 several senders into one mailbox and still tell them apart — the tag survives on
 <code>envelope.to</code>.</p>
 
-<div class="note warn">
-<p><strong>The hosted address is not live.</strong> Addresses are minted and reserved when you create a
-mailbox, but external mail cannot reach them until a domain is pointed at the service, and none has been
-bought yet. Everything else — schemas, webhooks, re-parsing, the event feed — works today through
-<a href="#ep-test"><code>POST /v1/test/deliver</code></a> and
-<a href="#parse"><code>POST /v1/parse</code></a>. See <a href="/quickstart#address">the quickstart</a>.</p>
+<div class="note">
+<p><strong>The hosted address is live.</strong> A mailbox&rsquo;s address is
+<code>&lt;token&gt;@smooth-operator.online</code> and real internet mail reaches it: the domain&rsquo;s MX
+record points at <code>mx.smooth-operator.online</code>, and this service&rsquo;s own
+<a href="/healthz"><code>/healthz</code></a> reports the domain it is accepting for, so you can check it
+without an account. <code>POST /v1/test/deliver</code> is still the fastest way to exercise a schema
+without waiting for a real message. See <a href="/quickstart#address">the quickstart</a>.</p>
 </div>
 </section>
 
