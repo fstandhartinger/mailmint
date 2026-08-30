@@ -101,7 +101,7 @@ source and a verbatim evidence span on every field you asked for. Delivered by w
 n8n.</p>
 
 <div class="cards">
-  <div class="c"><strong>Base URL</strong><span>your deployment — see <a href="#overview">below</a></span></div>
+  <div class="c"><strong>Base URL</strong><span><code>https://mailmint.app.mintapis.com</code></span></div>
   <div class="c"><strong>Auth</strong><span><code>Authorization: Bearer mm_live_…</code></span></div>
   <div class="c"><strong>Everything under</strong><span><code>/v1</code></span></div>
 </div>
@@ -110,9 +110,27 @@ n8n.</p>
 <section id="overview">
 <h2>Overview <a class="anchor" href="#overview">#</a></h2>
 
-<p>There is no public hosted deployment yet, so there is no base URL this page can honestly print as if it
-were live. Set <code>MAILMINT_URL</code> to whichever MailMint you are calling — <code>http://127.0.0.1:3100</code>
-when you run it from the repository — and every example below works verbatim.</p>
+<p>The hosted service is <code>https://mailmint.app.mintapis.com</code> — the site you are reading. Every
+example below sets <code>MAILMINT_URL</code> rather than hard-coding it, so the same commands also work
+against a copy you run yourself:</p>
+
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code><span class="tok-c"># the hosted service</span>
+export MAILMINT_URL="https://mailmint.app.mintapis.com"
+export MAILMINT_API_KEY="mm_live_…"      <span class="tok-c"># /signup gives you one, free, no card</span>
+
+<span class="tok-c"># or running it yourself, from the repository</span>
+export MAILMINT_URL="http://127.0.0.1:3100"</code></pre>
+</div>
+
+<p>Everything below then works verbatim. <code>GET /healthz</code> needs no key, so it is the one call you
+can make before you have an account:</p>
+
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>curl https://mailmint.app.mintapis.com/healthz</code></pre>
+</div>
 
 <p>Everything is JSON in, JSON out, except three endpoints that return bytes:
 <code>GET /v1/messages/{id}/raw</code> returns <code>message/rfc822</code>,
@@ -674,6 +692,20 @@ one.</p>
     { "name": "amount",      "type": "number" }
   ] } }</code></pre>
 </div>
+
+<p>The <strong>name of the money column inside a row matters</strong>, because the
+<a href="#confidence">arithmetic check</a> has to know which of your fields is the line total.
+Any of these is recognised, in any casing, with underscores or spaces:</p>
+
+<p><code>amount</code> · <code>total</code> · <code>line_total</code> · <code>price</code> ·
+<code>preis</code> · <code>betrag</code> · <code>sum</code> · <code>value</code> ·
+<code>charge</code> · <code>montant</code> · <code>importe</code></p>
+
+<p>A per-unit rate is deliberately not one of them — <code>unit_price</code>,
+<code>einzelpreis</code> and <code>rate</code> are never read as a line total. And if a row set
+contains no column we recognise as money, the arithmetic check <strong>declines to run</strong>
+rather than summing to zero and reporting a mismatch: a message we could not read is not a message
+that is wrong.</p>
 </section>
 
 <!-- ========================================================= ATTACHMENTS -->
@@ -1893,6 +1925,13 @@ node pointed at <code>POST /v1/parse</code> does the same job.</p>
   <a href="/quickstart">Quickstart</a> &middot;
   <a href="/n8n">n8n</a> &middot;
   <a href="/dashboard">Dashboard</a>
+
+  <div style="margin-top:.7rem">
+    <a href="/parse-invoice-emails">Invoice emails</a> &middot;
+    <a href="/parse-order-confirmation-emails">Order confirmations</a> &middot;
+    <a href="/parse-shipping-notification-emails">Shipping notifications</a> &middot;
+    <a href="/parse-lead-emails">Lead emails</a>
+  </div>
 </footer>
 
 <script src="/docs.js"></script>

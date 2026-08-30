@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Parse invoice emails into ledger data &mdash; with the arithmetic checked</title>
+<meta name="description" content="A described schema instead of positional rules: invoice number, dates, net, VAT and gross out of an invoice email, each field with a confidence and the text it was read from. One real German invoice parsed on 30 Aug 2026, shown with the field that came back at 0.25.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://mailmint.app.mintapis.com/parse-invoice-emails">
+<meta property="og:title" content="Parse invoice emails into ledger data &mdash; with the arithmetic checked">
+<meta property="og:description" content="A described schema instead of positional rules: invoice number, dates, net, VAT and gross out of an invoice email, each field with a confidence and the text it was read from. One real German invoice parsed on 30 Aug 2026, shown with the field that came back at 0.25.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://mailmint.app.mintapis.com/parse-invoice-emails">
+<meta property="og:site_name" content="MailMint">
+<meta property="og:image" content="https://mailmint.app.mintapis.com/og-image.png">
+<meta property="og:image:alt" content="MailMint: an inbound email address on the left, the structured JSON it returns on the right, each field carrying its confidence.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="/docs.css">
+</head>
+<body class="docs">
+
+<header class="docs-top">
+  <a class="logo" href="/">Mail<span>Mint</span></a>
+  <nav>
+    <a href="/docs">API reference</a>
+    <a href="/quickstart">Quickstart</a>
+    <a href="/n8n">n8n</a>
+    <a class="cta" href="/signup">Get an API key</a>
+  </nav>
+</header>
+
+<div class="layout">
+
+  <aside class="toc">
+    <button class="toc-toggle" id="tocToggle" aria-expanded="false" aria-controls="tocBody">On this page</button>
+    <div class="toc-body" id="tocBody">
+      <h2>The job</h2>
+      <ul>
+        <li><a href="#job">What actually has to happen</a></li>
+        <li><a href="#hard">The five parts that are hard</a></li>
+      </ul>
+      <h2>Doing it</h2>
+      <ul>
+        <li><a href="#schema">The schema</a></li>
+        <li><a href="#run">A real invoice, really parsed</a></li>
+        <li><a href="#arithmetic">The arithmetic check</a></li>
+        <li><a href="#queue">What to do with needs_review</a></li>
+        <li><a href="#n8n">Without writing code</a></li>
+      </ul>
+      <h2>Then</h2>
+      <ul>
+        <li><a href="#stay">When not to use this</a></li>
+        <li><a href="#honest">What we cannot claim</a></li>
+        <li><a href="#try">Try it</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <main class="content">
+<h1>Parsing invoice emails</h1>
+<p class="lede">A supplier emails an invoice. Somebody reads the number, the date, the net, the VAT and the
+gross off the screen and types them into the ledger. This page is about deleting that step &mdash; and
+about the part everybody skips, which is knowing <em>which</em> invoices the machine got wrong.</p>
+
+<div class="note">
+<p><strong>Every number on this page was measured, on 30 August 2026, against the live service at
+<code>https://mailmint.app.mintapis.com</code></strong>, from a free account created the same morning.
+The parses below are copied out of the responses, including the one that went wrong. Rerun them
+yourself; the schema and the message are both printed in full.</p>
+</div>
+
+<section id="job">
+<h2>What actually has to happen <a class="anchor" href="#job">#</a></h2>
+<p>The job is not "read a PDF". Most of the invoices that arrive by email in small and mid-sized
+businesses are either in the body of the mail or in an attachment whose numbers also appear in the body,
+and the six steps are always the same:</p>
+<ol>
+<li>Receive the mail at an address you control, and keep the original bytes.</li>
+<li>Decide it <em>is</em> an invoice and not a reminder, a statement or a receipt.</li>
+<li>Pull out the header fields &mdash; number, dates, supplier, currency.</li>
+<li>Pull out the money &mdash; net, tax, gross, and the line items if you post them separately.</li>
+<li>Decide whether you believe the result.</li>
+<li>Hand it to whatever books it, and hold back the ones you do not believe.</li>
+</ol>
+<p>Steps 1 to 4 are the ones every product in this category sells. Step 5 is the one that decides whether
+you can leave the thing running unattended, and it is the reason this page spends more space on a field
+that came back <em>wrong</em> than on the eight that came back right.</p>
+</section>
+
+<section id="hard">
+<h2>The five parts that are hard <a class="anchor" href="#hard">#</a></h2>
+<div class="tw">
+<table>
+<thead><tr><th>The problem</th><th>Why it bites</th></tr></thead>
+<tbody>
+<tr><td>Decimal commas</td><td class="wrap"><code>1.009,00</code> is one thousand and nine euros in Germany
+and is nonsense read as an English number. Getting this wrong is silent: you book &euro;1.01 and the
+totals still look like money.</td></tr>
+<tr><td>Ambiguous dates</td><td class="wrap"><code>08/09/2026</code> is two different months. A due date
+off by thirty days is a late payment fee, and nothing in the output looks unusual.</td></tr>
+<tr><td>Which total</td><td class="wrap">An invoice mail commonly prints four amounts &mdash; net, VAT,
+gross, and an unrelated figure in the footer or the signature. "The biggest number" is wrong often
+enough to matter.</td></tr>
+<tr><td>Layout drift</td><td class="wrap">Suppliers change invoice templates without telling anybody.
+A positional rule &mdash; "the value two lines under the word Total" &mdash; keeps returning a value
+after the layout moves. It just returns the wrong one.</td></tr>
+<tr><td>Knowing you were wrong</td><td class="wrap">The four above are all <em>silent</em>. A parser that
+returns a plausible number and no signal about it is worse than one that fails loudly, because the
+error reaches the ledger.</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<section id="schema">
+<h2>The schema <a class="anchor" href="#schema">#</a></h2>
+<p>There are no templates to draw and no positional rules to maintain. You name the fields you want,
+give each a type and one line of description, and that is the whole configuration:</p>
+
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>[
+  { "name": "invoice_number", "type": "string", "description": "the supplier's invoice number" },
+  { "name": "invoice_date",   "type": "date",   "description": "date the invoice was issued" },
+  { "name": "due_date",       "type": "date",   "description": "date payment is due" },
+  { "name": "supplier_name",  "type": "string", "description": "legal name of the company sending the invoice" },
+  { "name": "currency",       "type": "string", "description": "ISO currency code of the amounts" },
+  { "name": "subtotal",       "type": "number", "description": "net amount before tax" },
+  { "name": "tax_amount",     "type": "number", "description": "the VAT amount" },
+  { "name": "total",          "type": "number", "description": "the gross amount due" },
+  { "name": "iban",           "type": "string", "description": "bank account to pay to" }
+]</code></pre>
+</div>
+
+<p>Attach it to a mailbox and every message that arrives is parsed against it, or send it inline with
+<code>POST /v1/parse</code> to try it without an address:</p>
+
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>curl -X POST "$MAILMINT_URL/v1/parse" \
+  -H "Authorization: Bearer $MAILMINT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d @invoice-request.json</code></pre>
+</div>
+</section>
+
+<section id="run">
+<h2>A real invoice, really parsed <a class="anchor" href="#run">#</a></h2>
+<p>A German logistics invoice, decimal commas and all, with three line items and a footer. The full body
+was sent as <code>text</code>. It came back in <strong>4,471&nbsp;ms</strong>. Nine fields, verbatim from
+the response &mdash; <code>value</code>, <code>confidence</code>, and the <code>evidence</code> span the
+value was read from:</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Field</th><th>Value</th><th>Conf.</th><th>Source</th><th>Evidence in the mail</th></tr></thead>
+<tbody>
+<tr><td><code>invoice_number</code></td><td><code>INV-2026-0731</code></td><td>0.97</td><td>rule+llm</td><td class="wrap">Invoice INV-2026-0731 from Nordwind Logistik GmbH</td></tr>
+<tr><td><code>invoice_date</code></td><td><code>2026-08-28</code></td><td>0.97</td><td>rule+llm</td><td class="wrap">Rechnungsdatum: 28.08.2026</td></tr>
+<tr><td><code>due_date</code></td><td><code>2026-09-27</code></td><td>0.93</td><td>llm</td><td class="wrap">27.09.2026</td></tr>
+<tr><td><code>supplier_name</code></td><td><code>Nordwind Logistik GmbH</code></td><td><strong>0.25</strong></td><td>llm</td><td class="wrap"><em>none returned</em></td></tr>
+<tr><td><code>currency</code></td><td><code>EUR</code></td><td>0.97</td><td>rule+llm</td><td class="wrap">45,00 EUR</td></tr>
+<tr><td><code>subtotal</code></td><td><code>1009</code></td><td>0.97</td><td>rule+llm</td><td class="wrap">Zwischensumme&nbsp;&nbsp;&nbsp;&nbsp;1.009,00 EUR</td></tr>
+<tr><td><code>tax_amount</code></td><td><code>191.71</code></td><td>0.93</td><td>llm</td><td class="wrap">191,71 EUR</td></tr>
+<tr><td><code>total</code></td><td><code>1200.71</code></td><td>0.97</td><td>rule+llm</td><td class="wrap">Gesamtbetrag&nbsp;&nbsp;&nbsp;&nbsp;1.200,71 EUR</td></tr>
+<tr><td><code>iban</code></td><td><code>DE44 5001 0517 5407 3249 31</code></td><td>0.85</td><td>llm</td><td class="wrap">IBAN DE44 5001 0517 5407 3249 31</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>The decimal commas came through: <code>1.009,00 EUR</code> is <code>1009</code>, not <code>1.009</code>.
+Both dates were read day-first because the document is German and said so. And
+<code>Gesamtbetrag</code> won over the three other amounts in the mail.</p>
+
+<p><strong>Now the interesting row.</strong> <code>supplier_name</code> is
+<em>correct</em> &mdash; the company really is Nordwind Logistik GmbH &mdash; and it came back at
+<strong>0.25</strong> with the flag <code>hallucinated_evidence:supplier_name</code>. The model produced
+the right answer but could not point at the substring it read it from, and a value whose evidence does
+not survive a literal search of the message is not trusted, however plausible it looks. The whole
+message was marked <code>needs_review: true</code> for that one field.</p>
+
+<p>That is the trade being made, stated plainly: <strong>you will review some fields that were right.</strong>
+The alternative is a parser that hands you a confident wrong company name, and that is the failure that
+ends up in a ledger.</p>
+</section>
+
+<section id="arithmetic">
+<h2>The arithmetic check <a class="anchor" href="#arithmetic">#</a></h2>
+<p>An invoice is one of the few documents that can be checked against itself: the line items sum to the
+net, and net plus tax minus discount equals the gross. When your schema names those fields, the sums are
+verified and the result moves the confidence:</p>
+<ul>
+<li>reconciles &rarr; the confidence ceiling rises by 0.03;</li>
+<li>does not reconcile &rarr; every confidence is multiplied by 0.8 and the message is flagged
+<code>arithmetic_mismatch</code>, which sets <code>needs_review</code> on the whole message rather than
+on one field.</li>
+</ul>
+<p>This is what catches the classic failure in this category &mdash; forty line items in the mail, one
+line item in the output &mdash; because a short row set does not add up and a short row set is otherwise
+indistinguishable from a correct one.</p>
+<p>Two things worth knowing before you rely on it. <strong>It only runs when it knows the relationship.</strong>
+Line items are compared to a <code>subtotal</code> if you asked for one; against a tax-inclusive
+<code>total</code> alone they are only checked against a plausibility band, because the gap between the
+two is a tax rate nobody told us. And <strong>the name of the money column inside each row matters</strong>:
+<code>amount</code>, <code>total</code>, <code>line_total</code>, <code>price</code>, <code>preis</code>,
+<code>betrag</code>, <code>sum</code>, <code>value</code>, <code>charge</code>, <code>montant</code> and
+<code>importe</code> are all read as the line total; <code>unit_price</code> and <code>einzelpreis</code>
+deliberately are not. If a row set contains no column we recognise as money, the check declines to run
+rather than summing to zero &mdash; a message we could not read is not a message that is wrong.</p>
+</section>
+
+<section id="queue">
+<h2>What to do with needs_review <a class="anchor" href="#queue">#</a></h2>
+<p><code>needs_review</code> is a stored column, not a client-side rule, so the API, the dashboard queue
+and the webhook body can never disagree about it. It is also indexed, which means the operational
+question &mdash; "what do I have to look at this morning" &mdash; is one request:</p>
+
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code><span class="tok-c"># everything a human still has to see, newest first</span>
+curl "$MAILMINT_URL/v1/messages?needs_review=true&amp;view=review" \
+  -H "Authorization: Bearer $MAILMINT_API_KEY"
+
+<span class="tok-c"># or just the ones whose sums did not add up</span>
+curl "$MAILMINT_URL/v1/messages?flag=arithmetic_mismatch" \
+  -H "Authorization: Bearer $MAILMINT_API_KEY"</code></pre>
+</div>
+
+<p><code>view=review</code> adds an <code>issues</code> array to each row: which flag fired, on which
+field, what the value and the confidence were, and the evidence. That is enough to build a review screen
+without fetching the messages one at a time.</p>
+<p>And when you improve the schema &mdash; because that supplier name kept coming back thin &mdash; you do
+not have to wait for the next invoice. <code>POST /v1/mailboxes/{id}/reparse</code> replays the stored
+original bytes against the new schema, with <code>dry_run: true</code> to see what would change before
+anything does.</p>
+</section>
+
+<section id="n8n">
+<h2>Without writing code <a class="anchor" href="#n8n">#</a></h2>
+<p>Three routes, in order of how much you have to build:</p>
+<ol>
+<li><strong>Webhook.</strong> Point <code>webhook_url</code> at your accounting system's inbound endpoint.
+The signed body is the same message object the API returns. Nothing to poll.</li>
+<li><strong>n8n.</strong> <code>n8n-nodes-mailmint</code> installs on self-hosted n8n; the trigger runs on
+the polling feed when a webhook cannot reach you. On n8n Cloud it is not yet available &mdash; verification
+is n8n's decision, not ours &mdash; but an <a href="/n8n">HTTP Request node against
+<code>POST /v1/parse</code></a> works from any n8n today.</li>
+<li><strong>Polling.</strong> <code>GET /v1/events?cursor=…</code> with an opaque cursor, for anything that
+cannot be reached from outside.</li>
+</ol>
+</section>
+
+<section id="stay">
+<h2>When not to use this <a class="anchor" href="#stay">#</a></h2>
+<ul>
+<li><strong>The numbers are only inside a PDF attachment.</strong> Attachment content extraction is written
+but <em>not wired into the parse pipeline</em>. If the mail body says "please find attached" and nothing
+else, MailMint reads the mail and not the invoice. This is the single most likely reason this page does
+not apply to you &mdash; check three real invoices before you go further.</li>
+<li><strong>You are already inside an accounting suite that does this.</strong> If DATEV, Xero or QuickBooks
+already ingest your supplier mail, a second pipeline buys you nothing but reconciliation work.</li>
+<li><strong>Nothing may leave your network.</strong> There is one region and one hosted instance. If your
+invoices cannot cross that line, run a parser yourself; that is a legitimate answer to this problem.</li>
+<li><strong>Under about a hundred invoices a month, arriving in two layouts.</strong> A person opening the
+mail is genuinely competitive at that size, and has better judgement than any confidence score.</li>
+</ul>
+</section>
+
+<section id="honest">
+<h2>What we cannot claim <a class="anchor" href="#honest">#</a></h2>
+<p>Nobody outside this project has paid for MailMint yet, so there is no customer, no case study and no
+uptime history to quote. There is no SLA and no SOC&nbsp;2. One region, one instance. PDF attachment
+contents are not read. The confidence calibration is measured over 95 labelled field slots across 41
+messages &mdash; enough to show the pipeline is not over-confident, nowhere near enough to call it a
+calibrated probability. The parse on this page is one invoice, not a benchmark, and it is shown with its
+failure rather than without it.</p>
+</section>
+<section id="try">
+<h2>Try it on your own worst email <a class="anchor" href="#try">#</a></h2>
+<p>Not a demo message &mdash; the one your current parser gets wrong. Paste its subject and body into
+<code>POST /v1/parse</code> and read the confidence and the evidence span on each field.
+<code>/v1/parse</code> stores nothing, needs no inbound address and no DNS record, and the free plan is
+<strong>300 parsed emails a month with no card</strong>, which is enough to run a real low-volume
+workflow rather than only to look at one.</p>
+<p><a class="cta" href="/signup">Get an API key</a> &nbsp; <a href="/quickstart">Read the quickstart</a>
+&nbsp; <a href="/docs">API reference</a></p>
+</section>
+<section id="more">
+<h2>The other three <a class="anchor" href="#more">#</a></h2>
+<div class="cards">
+  <div class="c"><strong><a href="/parse-order-confirmation-emails">Order confirmations</a></strong><span>Order number, totals and every line item, reconciled against the total.</span></div>
+  <div class="c"><strong><a href="/parse-shipping-notification-emails">Shipping notifications</a></strong><span>Tracking number, carrier and the promised date, out of any carrier's template.</span></div>
+  <div class="c"><strong><a href="/parse-lead-emails">Lead &amp; contact-form emails</a></strong><span>Name, company, phone and budget into the CRM, with the doubtful ones held back.</span></div>
+</div>
+<p style="margin-top:1rem">Comparisons instead: <a href="/email-parsing-api">what an email parsing API has to get right</a> &middot; <a href="/mailparser-alternative">vs Mailparser</a> &middot; <a href="/parseur-alternative">vs Parseur</a> &middot; <a href="/docparser-alternative">vs Docparser</a> &middot; <a href="/zapier-email-parser-alternative">vs Zapier Parser</a></p>
+</section>
+
+  </main>
+</div>
+
+<footer style="border-top:1px solid var(--rule);padding:1.6rem 1.25rem;text-align:center;font-size:.86rem;color:var(--muted)">
+  <a href="/">MailMint</a> &middot;
+  <a href="/docs">API reference</a> &middot;
+  <a href="/quickstart">Quickstart</a> &middot;
+  <a href="/n8n">n8n</a> &middot;
+  <a href="/email-parsing-api">Email parsing API</a> &middot;
+  <a href="/dashboard">Dashboard</a>
+
+  <div style="margin-top:.7rem">
+    <a href="/parse-invoice-emails">Invoice emails</a> &middot;
+    <a href="/parse-order-confirmation-emails">Order confirmations</a> &middot;
+    <a href="/parse-shipping-notification-emails">Shipping notifications</a> &middot;
+    <a href="/parse-lead-emails">Lead emails</a>
+  </div>
+</footer>
+
+<script src="/docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Parse order confirmation emails &mdash; line items that reconcile</title>
+<meta name="description" content="Order number, totals and typed line items out of an order confirmation email, with the line items summed against the subtotal so a dropped row cannot pass silently. One real order mail parsed on 30 Aug 2026, response printed in full.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://mailmint.app.mintapis.com/parse-order-confirmation-emails">
+<meta property="og:title" content="Parse order confirmation emails &mdash; line items that reconcile">
+<meta property="og:description" content="Order number, totals and typed line items out of an order confirmation email, with the line items summed against the subtotal so a dropped row cannot pass silently. One real order mail parsed on 30 Aug 2026, response printed in full.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://mailmint.app.mintapis.com/parse-order-confirmation-emails">
+<meta property="og:site_name" content="MailMint">
+<meta property="og:image" content="https://mailmint.app.mintapis.com/og-image.png">
+<meta property="og:image:alt" content="MailMint: an inbound email address on the left, the structured JSON it returns on the right, each field carrying its confidence.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="/docs.css">
+</head>
+<body class="docs">
+
+<header class="docs-top">
+  <a class="logo" href="/">Mail<span>Mint</span></a>
+  <nav>
+    <a href="/docs">API reference</a>
+    <a href="/quickstart">Quickstart</a>
+    <a href="/n8n">n8n</a>
+    <a class="cta" href="/signup">Get an API key</a>
+  </nav>
+</header>
+
+<div class="layout">
+
+  <aside class="toc">
+    <button class="toc-toggle" id="tocToggle" aria-expanded="false" aria-controls="tocBody">On this page</button>
+    <div class="toc-body" id="tocBody">
+      <h2>The job</h2>
+      <ul>
+        <li><a href="#job">Order mail into order rows</a></li>
+        <li><a href="#lineitems">The line items are the hard part</a></li>
+      </ul>
+      <h2>Doing it</h2>
+      <ul>
+        <li><a href="#schema">The schema</a></li>
+        <li><a href="#run">A real order mail, really parsed</a></li>
+        <li><a href="#naming">The one naming mistake that floods your queue</a></li>
+        <li><a href="#n8n">Into your system</a></li>
+      </ul>
+      <h2>Then</h2>
+      <ul>
+        <li><a href="#stay">When not to use this</a></li>
+        <li><a href="#honest">What we cannot claim</a></li>
+        <li><a href="#try">Try it</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <main class="content">
+<h1>Parsing order confirmation emails</h1>
+<p class="lede">Marketplaces, shop platforms and resellers all send an order confirmation, and almost none
+of them will send you the same order as JSON. This page turns that mail into an order row plus its line
+items &mdash; and shows the reconciliation that tells you when a row went missing.</p>
+
+<div class="note">
+<p><strong>Measured on 30 August 2026 against the live service at
+<code>https://mailmint.app.mintapis.com</code></strong>, from a free account created the same morning.
+The message, the schema and the response are all printed below, including a run that produced a false
+alarm and why.</p>
+</div>
+
+<section id="job">
+<h2>Order mail into order rows <a class="anchor" href="#job">#</a></h2>
+<p>You need the order to exist in your own system: an order number to key on, who it is for, what it came
+to, and the products with quantities so stock and margin are right. The mail contains all of it, laid out
+for a human, in a template the sender may change next Tuesday.</p>
+<p>The header fields &mdash; number, name, total, currency &mdash; are the easy half. They are short,
+labelled, and there is exactly one of each.</p>
+</section>
+
+<section id="lineitems">
+<h2>The line items are the hard part <a class="anchor" href="#lineitems">#</a></h2>
+<p>Three reasons, and they compound:</p>
+<ul>
+<li><strong>There is often no table.</strong> Outlook compatibility pushes every large sender towards
+nested single-cell tables, so an HTML <code>&lt;table&gt;</code> extractor structurally cannot see the
+line items. MailMint runs row extraction from more than one independent source and reconciles the
+candidates; when two sources disagree the field is flagged
+<code>array_source_disagreement</code> rather than silently resolved in favour of one.</li>
+<li><strong>A short row set looks exactly like a correct one.</strong> "Forty rows in the mail, one row in
+the output" is the standing complaint in this category, and it goes unnoticed because nothing in the
+output says how many there should have been. Deterministic tables therefore carry
+<code>row_count</code> and <code>truncated</code> alongside the rows.</li>
+<li><strong>Summary rows double-count.</strong> A <em>Subtotal</em> line sitting inside the same visual
+table as the products will break every sum downstream if it is treated as a product. It is detected and
+dropped.</li>
+</ul>
+</section>
+
+<section id="schema">
+<h2>The schema <a class="anchor" href="#schema">#</a></h2>
+<p>Line items are an <code>array</code> of <code>object</code>, so you get typed rows rather than strings:</p>
+
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>[
+  { "name": "order_number",      "type": "string", "description": "the order reference" },
+  { "name": "customer_name",     "type": "string", "description": "name of the person who ordered" },
+  { "name": "subtotal",          "type": "number", "description": "sum of the line items before shipping" },
+  { "name": "shipping_cost",     "type": "number", "description": "the shipping charge" },
+  { "name": "order_total",       "type": "number", "description": "grand total charged" },
+  { "name": "currency",          "type": "string", "description": "ISO currency code" },
+  { "name": "shipping_postcode", "type": "string", "description": "postcode of the delivery address" },
+  { "name": "shipping_country",  "type": "string", "description": "delivery country" },
+  { "name": "line_items", "type": "array", "description": "one row per ordered product",
+    "items": { "type": "object", "fields": [
+      { "name": "sku",         "type": "string"  },
+      { "name": "description", "type": "string"  },
+      { "name": "qty",         "type": "integer" },
+      { "name": "unit_price",  "type": "number"  },
+      { "name": "amount",      "type": "number"  }
+    ] } }
+]</code></pre>
+</div>
+
+<p>Asking for <code>subtotal</code> and <code>shipping_cost</code> is not decoration. They are what let the
+arithmetic check know the relationship it is supposed to verify &mdash; see
+<a href="#naming">below</a>.</p>
+</section>
+
+<section id="run">
+<h2>A real order mail, really parsed <a class="anchor" href="#run">#</a></h2>
+<p>A three-product order confirmation with SKUs, a shipping charge and a UK delivery address, sent as
+plain text. Back in <strong>5,132&nbsp;ms</strong> with <code>flags: []</code> and
+<code>needs_review: false</code>:</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Field</th><th>Value</th><th>Conf.</th><th>Source</th></tr></thead>
+<tbody>
+<tr><td><code>order_number</code></td><td><code>A7-449021</code></td><td>0.97</td><td>rule+llm</td></tr>
+<tr><td><code>customer_name</code></td><td><code>Priya Raman</code></td><td>0.85</td><td>llm</td></tr>
+<tr><td><code>subtotal</code></td><td><code>122.5</code></td><td><strong>0.98</strong></td><td>rule+llm</td></tr>
+<tr><td><code>shipping_cost</code></td><td><code>4.9</code></td><td>0.85</td><td>llm</td></tr>
+<tr><td><code>order_total</code></td><td><code>127.4</code></td><td><strong>0.96</strong></td><td>llm</td></tr>
+<tr><td><code>currency</code></td><td><code>GBP</code></td><td>0.97</td><td>rule+llm</td></tr>
+<tr><td><code>shipping_postcode</code></td><td><code>BS1 4TR</code></td><td>0.85</td><td>llm</td></tr>
+<tr><td><code>shipping_country</code></td><td><code>United Kingdom</code></td><td>0.85</td><td>llm</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>And the rows, typed, straight out of <code>fields.line_items.value</code>:</p>
+
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>[
+  { "sku": "CPD-02", "description": "Ceramic Pour-Over Dripper", "qty": 2, "unit_price": 27,   "amount": 54   },
+  { "sku": "FP-100", "description": "Filter Papers, 100 pack",   "qty": 1, "unit_price": 6.5,  "amount": 6.5  },
+  { "sku": "GK-09",  "description": "Gooseneck Kettle 0.9L",     "qty": 1, "unit_price": 62,   "amount": 62   }
+]</code></pre>
+</div>
+
+<p>54 + 6.50 + 62 = 122.50, which is the <code>subtotal</code>; 122.50 + 4.90 = 127.40, which is the
+<code>order_total</code>. Both equations were checked, both held, and the message came back clean.</p>
+</section>
+
+<section id="naming">
+<h2>The one naming mistake that floods your queue <a class="anchor" href="#naming">#</a></h2>
+<p>Worth knowing because it is invisible: <strong>the arithmetic check has to be able to find the money
+column inside each row.</strong> It reads <code>amount</code>, <code>total</code>, <code>line_total</code>,
+<code>price</code>, <code>preis</code>, <code>betrag</code>, <code>sum</code>, <code>value</code>,
+<code>charge</code>, <code>montant</code> and <code>importe</code>, in any casing, with underscores or
+spaces. It deliberately does <em>not</em> read <code>unit_price</code>, <code>einzelpreis</code> or
+<code>rate</code> &mdash; a per-unit rate is never mistaken for a line total.</p>
+
+<p>An earlier build of this service accepted only <code>amount</code> and <code>total</code>. The same
+order mail, the same schema, with the row field renamed, on 30 August 2026:</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Row money field</th><th>Result then</th><th>Result now</th></tr></thead>
+<tbody>
+<tr><td><code>amount</code></td><td>clean</td><td>clean</td></tr>
+<tr><td><code>price</code></td><td><code>arithmetic_mismatch</code>, needs_review</td><td>clean</td></tr>
+<tr><td><code>betrag</code></td><td><code>arithmetic_mismatch</code>, needs_review</td><td>clean</td></tr>
+<tr><td><code>line_total</code></td><td>confidence penalty on the total</td><td>clean</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>The rows were identical and correct in every case; only the key name changed. The sum came to zero,
+zero never reconciles, and the message was flagged &mdash; every message, forever. It is fixed, the
+recognised names are listed above and in the <a href="/docs#tables">reference</a>, and the case is in the
+test suite. It is on this page because it is the kind of thing a vendor normally quietly patches, and
+because the general rule it illustrates is worth more than the bug: <strong>a check that cannot read your
+data must decline to run, not report your data as wrong.</strong> That is now the behaviour &mdash; a row
+set with no recognisable money column is left unverified rather than blamed.</p>
+</section>
+
+<section id="n8n">
+<h2>Into your system <a class="anchor" href="#n8n">#</a></h2>
+<p>Point <code>webhook_url</code> at your order intake and the signed message object arrives as the order
+is confirmed &mdash; HMAC-SHA256 over timestamp and body, with the verification worked through
+<a href="/docs#webhooks">in the reference</a>. Or poll <code>GET /v1/events</code> with a cursor. Or use
+<code>n8n-nodes-mailmint</code> on self-hosted n8n; on n8n Cloud, an
+<a href="/n8n">HTTP Request node against <code>POST /v1/parse</code></a> works today while verification
+is outstanding.</p>
+<p>Two order mails for the same order &mdash; the shop's and the marketplace's &mdash; are a normal thing
+to receive. Give each its own mailbox with its own schema and webhook; several endpoints on one mailbox
+are also supported, and one failing endpoint never disables another.</p>
+</section>
+
+<section id="stay">
+<h2>When not to use this <a class="anchor" href="#stay">#</a></h2>
+<ul>
+<li><strong>The platform has an API or a webhook.</strong> Shopify, WooCommerce, Amazon SP-API and most
+marketplaces will give you the order as data. Take it. Structured beats parsed every time, and parsing
+their confirmation email instead is a worse version of the same integration.</li>
+<li><strong>You need it in under a second.</strong> These parses took 2.9 to 5.1&nbsp;s end to end. That is
+fine for order intake and wrong for anything a customer is waiting on.</li>
+<li><strong>The order is a PDF attachment.</strong> Attachment content extraction is not wired into the
+parse pipeline yet.</li>
+<li><strong>One sender, one template, forever.</strong> If exactly one shop mails you and its layout is
+stable, a regular expression is free and will not surprise you.</li>
+</ul>
+</section>
+
+<section id="honest">
+<h2>What we cannot claim <a class="anchor" href="#honest">#</a></h2>
+<p>No paying customer outside this project, no case study, no uptime history, no SLA, no SOC&nbsp;2. One
+region, one instance. PDF attachment contents are not read. The confidence numbers come from a
+calibration set of 95 labelled field slots across 41 messages &mdash; enough to show the pipeline is not
+over-confident, not enough to call it calibrated. The parse above is one order mail. Run your own before
+you believe anything here.</p>
+</section>
+<section id="try">
+<h2>Try it on your own worst email <a class="anchor" href="#try">#</a></h2>
+<p>Not a demo message &mdash; the one your current parser gets wrong. Paste its subject and body into
+<code>POST /v1/parse</code> and read the confidence and the evidence span on each field.
+<code>/v1/parse</code> stores nothing, needs no inbound address and no DNS record, and the free plan is
+<strong>300 parsed emails a month with no card</strong>, which is enough to run a real low-volume
+workflow rather than only to look at one.</p>
+<p><a class="cta" href="/signup">Get an API key</a> &nbsp; <a href="/quickstart">Read the quickstart</a>
+&nbsp; <a href="/docs">API reference</a></p>
+</section>
+<section id="more">
+<h2>The other three <a class="anchor" href="#more">#</a></h2>
+<div class="cards">
+  <div class="c"><strong><a href="/parse-invoice-emails">Invoice emails</a></strong><span>Supplier invoices into ledger rows, with the arithmetic checked.</span></div>
+  <div class="c"><strong><a href="/parse-shipping-notification-emails">Shipping notifications</a></strong><span>Tracking number, carrier and the promised date, out of any carrier's template.</span></div>
+  <div class="c"><strong><a href="/parse-lead-emails">Lead &amp; contact-form emails</a></strong><span>Name, company, phone and budget into the CRM, with the doubtful ones held back.</span></div>
+</div>
+<p style="margin-top:1rem">Comparisons instead: <a href="/email-parsing-api">what an email parsing API has to get right</a> &middot; <a href="/mailparser-alternative">vs Mailparser</a> &middot; <a href="/parseur-alternative">vs Parseur</a> &middot; <a href="/docparser-alternative">vs Docparser</a> &middot; <a href="/zapier-email-parser-alternative">vs Zapier Parser</a></p>
+</section>
+
+  </main>
+</div>
+
+<footer style="border-top:1px solid var(--rule);padding:1.6rem 1.25rem;text-align:center;font-size:.86rem;color:var(--muted)">
+  <a href="/">MailMint</a> &middot;
+  <a href="/docs">API reference</a> &middot;
+  <a href="/quickstart">Quickstart</a> &middot;
+  <a href="/n8n">n8n</a> &middot;
+  <a href="/email-parsing-api">Email parsing API</a> &middot;
+  <a href="/dashboard">Dashboard</a>
+</footer>
+
+<script src="/docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Parse shipping notification emails &mdash; tracking number, carrier, promised date</title>
+<meta name="description" content="Tracking number, carrier, despatch date, promised date and the order reference out of any carrier despatch email, each with the substring it was read from. One real carrier mail parsed on 30 Aug 2026 in 2.9 s with no flags.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://mailmint.app.mintapis.com/parse-shipping-notification-emails">
+<meta property="og:title" content="Parse shipping notification emails &mdash; tracking number, carrier, promised date">
+<meta property="og:description" content="Tracking number, carrier, despatch date, promised date and the order reference out of any carrier despatch email, each with the substring it was read from. One real carrier mail parsed on 30 Aug 2026 in 2.9 s with no flags.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://mailmint.app.mintapis.com/parse-shipping-notification-emails">
+<meta property="og:site_name" content="MailMint">
+<meta property="og:image" content="https://mailmint.app.mintapis.com/og-image.png">
+<meta property="og:image:alt" content="MailMint: an inbound email address on the left, the structured JSON it returns on the right, each field carrying its confidence.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="/docs.css">
+</head>
+<body class="docs">
+
+<header class="docs-top">
+  <a class="logo" href="/">Mail<span>Mint</span></a>
+  <nav>
+    <a href="/docs">API reference</a>
+    <a href="/quickstart">Quickstart</a>
+    <a href="/n8n">n8n</a>
+    <a class="cta" href="/signup">Get an API key</a>
+  </nav>
+</header>
+
+<div class="layout">
+
+  <aside class="toc">
+    <button class="toc-toggle" id="tocToggle" aria-expanded="false" aria-controls="tocBody">On this page</button>
+    <div class="toc-body" id="tocBody">
+      <h2>The job</h2>
+      <ul>
+        <li><a href="#job">Tracking mail into order status</a></li>
+        <li><a href="#hard">Why it is not a regex</a></li>
+      </ul>
+      <h2>Doing it</h2>
+      <ul>
+        <li><a href="#schema">The schema</a></li>
+        <li><a href="#run">A real carrier mail, really parsed</a></li>
+        <li><a href="#join">Joining it back to the order</a></li>
+      </ul>
+      <h2>Then</h2>
+      <ul>
+        <li><a href="#stay">When not to use this</a></li>
+        <li><a href="#honest">What we cannot claim</a></li>
+        <li><a href="#try">Try it</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <main class="content">
+<h1>Parsing shipping notification emails</h1>
+<p class="lede">Your supplier ships. The carrier emails a tracking number. Somebody copies it into the
+order so the customer can be told. This is the smallest of the four jobs on this site and the one that
+runs cleanest &mdash; the parse below came back with no flags at all.</p>
+
+<div class="note">
+<p><strong>Measured on 30 August 2026 against the live service at
+<code>https://mailmint.app.mintapis.com</code></strong>, from a free account created the same morning.
+The message and schema are printed in full; rerun it yourself.</p>
+</div>
+
+<section id="job">
+<h2>Tracking mail into order status <a class="anchor" href="#job">#</a></h2>
+<p>You want six things out of a despatch mail: the tracking number, who is carrying it, when it left, when
+it is promised, which order it belongs to, and the link to hand the customer. Get those and the order
+status updates itself and the "where is my parcel" mail never gets written.</p>
+<p>The problem is that these mails come from carriers, from freight forwarders, from suppliers' own
+systems and from marketplaces, and no two of them lay the information out the same way.</p>
+</section>
+
+<section id="hard">
+<h2>Why it is not a regex <a class="anchor" href="#hard">#</a></h2>
+<p>Tracking numbers look regular enough that everybody starts with a pattern, and the pattern is where it
+goes wrong:</p>
+<ul>
+<li><strong>The formats overlap.</strong> UPS <code>1Z</code> numbers are distinctive; DHL, DPD, GLS, Hermes
+and Royal Mail are runs of 10 to 20 digits that also match order numbers, invoice numbers, customer
+numbers and phone numbers sitting in the same mail.</li>
+<li><strong>The number appears more than once.</strong> Subject line, body, tracking link, sometimes a
+returns label with a <em>different</em> number. A pattern takes the first match; the first match is
+sometimes the return.</li>
+<li><strong>"Estimated delivery" is written eleven ways</strong> and at least three of them are relative
+&mdash; "in 2&ndash;4 business days" has no date in it at all.</li>
+<li><strong>Carrier names are inconsistent.</strong> <em>UPS</em>, <em>United Parcel Service</em>, a logo
+with alt text, or nothing but the tracking URL's domain.</li>
+</ul>
+<p>Asking for a described field rather than a pattern moves all of that from your maintenance burden into
+the parse &mdash; and every value comes back with the substring it was read from, so when it is wrong you
+can see why in one glance rather than debugging a regex against a mail you no longer have.</p>
+</section>
+
+<section id="schema">
+<h2>The schema <a class="anchor" href="#schema">#</a></h2>
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>[
+  { "name": "tracking_number",    "type": "string", "description": "the carrier tracking number" },
+  { "name": "carrier",            "type": "string", "description": "which carrier is delivering" },
+  { "name": "shipped_date",       "type": "date",   "description": "date the parcel left the warehouse" },
+  { "name": "estimated_delivery", "type": "date",   "description": "expected delivery date" },
+  { "name": "order_reference",    "type": "string", "description": "the order this shipment belongs to" },
+  { "name": "tracking_url",       "type": "string", "description": "the link to the carrier's tracking page" }
+]</code></pre>
+</div>
+<p>Six fields, six descriptions, no templates and nothing positional. The descriptions do real work: they
+are how <code>order_reference</code> and <code>tracking_number</code> stay apart in a mail that contains
+both.</p>
+</section>
+
+<section id="run">
+<h2>A real carrier mail, really parsed <a class="anchor" href="#run">#</a></h2>
+<p>A despatch notification with a tracking number in the subject <em>and</em> the body, an order reference,
+a weight, a piece count and a tracking URL. Back in <strong>2,908&nbsp;ms</strong> &mdash; the fastest of
+the four jobs on this site &mdash; with <code>flags: []</code> and <code>needs_review: false</code>:</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Field</th><th>Value</th><th>Conf.</th><th>Source</th><th>Evidence in the mail</th></tr></thead>
+<tbody>
+<tr><td><code>tracking_number</code></td><td><code>1Z999AA10123456784</code></td><td>0.97</td><td>rule+llm</td><td class="wrap">Your parcel is on its way - tracking 1Z999AA10123456784</td></tr>
+<tr><td><code>carrier</code></td><td><code>UPS</code></td><td>0.97</td><td>rule+llm</td><td class="wrap">Carrier: UPS</td></tr>
+<tr><td><code>shipped_date</code></td><td><code>2026-08-29</code></td><td>0.93</td><td>llm</td><td class="wrap">29 August 2026</td></tr>
+<tr><td><code>estimated_delivery</code></td><td><code>2026-09-02</code></td><td>0.97</td><td>rule+llm</td><td class="wrap">Estimated delivery: 2 September 2026 by end of day</td></tr>
+<tr><td><code>order_reference</code></td><td><code>A7-449021</code></td><td>0.93</td><td>llm</td><td class="wrap">order A7-449021</td></tr>
+<tr><td><code>tracking_url</code></td><td class="wrap"><code>https://www.ups.com/track?tracknum=1Z999AA10123456784</code></td><td>0.93</td><td>llm</td><td class="wrap">the same URL, verbatim</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Three things in that table are worth a second look. The tracking number and the order reference are
+both alphanumeric identifiers in the same short mail and neither leaked into the other's field.
+<code>2 September 2026 by end of day</code> became the date <code>2026-09-02</code> without the trailing
+words. And <code>rule+llm</code> on four of the six fields means a deterministic rule and the model
+independently produced the same value &mdash; that agreement is what the 0.97 is; the model alone cannot
+raise a confidence, it can only lower one.</p>
+</section>
+
+<section id="join">
+<h2>Joining it back to the order <a class="anchor" href="#join">#</a></h2>
+<p>The despatch mail is only useful once it finds its order, and <code>order_reference</code> is the join
+key. Two practical notes:</p>
+<ul>
+<li>If the reference is missing from the mail entirely &mdash; some carrier notifications carry only the
+tracking number &mdash; the field comes back <code>null</code> rather than guessed, and you join on the
+tracking number you stored when you booked the shipment instead.</li>
+<li>The full message object always carries the sender, the subject, and
+<a href="/docs#auth">SPF, DKIM and DMARC results</a>. "This despatch mail is really from the carrier"
+is a question worth asking before a tracking link goes out to a customer, and the answer travels with the
+parse.</li>
+</ul>
+<p>Then either the webhook posts it to your order service as it arrives, or you poll
+<code>GET /v1/events</code>, or an n8n workflow moves it &mdash; <code>n8n-nodes-mailmint</code> on
+self-hosted n8n, or <a href="/n8n">an HTTP Request node against <code>POST /v1/parse</code></a> anywhere
+else.</p>
+</section>
+
+<section id="stay">
+<h2>When not to use this <a class="anchor" href="#stay">#</a></h2>
+<ul>
+<li><strong>You booked the shipment yourself.</strong> Then you already have the tracking number from the
+carrier's API, and you should be using their tracking API for status too &mdash; it tells you about
+delays, which an email sent once at despatch never will.</li>
+<li><strong>You only need to know a parcel exists.</strong> A filter rule in the mailbox is free.</li>
+<li><strong>One supplier, one template.</strong> A regular expression is fine and it will not cost you
+$9 a month. Come back when the second supplier arrives with a different layout.</li>
+<li><strong>Live tracking events.</strong> MailMint parses the despatch mail. It does not follow the parcel;
+"out for delivery" and "delivery attempted" come from the carrier, not from us.</li>
+</ul>
+</section>
+
+<section id="honest">
+<h2>What we cannot claim <a class="anchor" href="#honest">#</a></h2>
+<p>No paying customer outside this project, no case study, no uptime history, no SLA, no SOC&nbsp;2. One
+region, one instance. This is one carrier mail, not a benchmark across carriers &mdash; and the clean run
+above is the easiest of the four jobs on this site, which is exactly why the
+<a href="/parse-invoice-emails">invoice page</a> shows a field that came back at 0.25 instead. Relative
+dates ("in 2&ndash;4 business days") are not resolved to a calendar date. PDF attachment contents are not
+read.</p>
+</section>
+<section id="try">
+<h2>Try it on your own worst email <a class="anchor" href="#try">#</a></h2>
+<p>Not a demo message &mdash; the one your current parser gets wrong. Paste its subject and body into
+<code>POST /v1/parse</code> and read the confidence and the evidence span on each field.
+<code>/v1/parse</code> stores nothing, needs no inbound address and no DNS record, and the free plan is
+<strong>300 parsed emails a month with no card</strong>, which is enough to run a real low-volume
+workflow rather than only to look at one.</p>
+<p><a class="cta" href="/signup">Get an API key</a> &nbsp; <a href="/quickstart">Read the quickstart</a>
+&nbsp; <a href="/docs">API reference</a></p>
+</section>
+<section id="more">
+<h2>The other three <a class="anchor" href="#more">#</a></h2>
+<div class="cards">
+  <div class="c"><strong><a href="/parse-invoice-emails">Invoice emails</a></strong><span>Supplier invoices into ledger rows, with the arithmetic checked.</span></div>
+  <div class="c"><strong><a href="/parse-order-confirmation-emails">Order confirmations</a></strong><span>Order number, totals and every line item, reconciled against the total.</span></div>
+  <div class="c"><strong><a href="/parse-lead-emails">Lead &amp; contact-form emails</a></strong><span>Name, company, phone and budget into the CRM, with the doubtful ones held back.</span></div>
+</div>
+<p style="margin-top:1rem">Comparisons instead: <a href="/email-parsing-api">what an email parsing API has to get right</a> &middot; <a href="/mailparser-alternative">vs Mailparser</a> &middot; <a href="/parseur-alternative">vs Parseur</a> &middot; <a href="/docparser-alternative">vs Docparser</a> &middot; <a href="/zapier-email-parser-alternative">vs Zapier Parser</a></p>
+</section>
+
+  </main>
+</div>
+
+<footer style="border-top:1px solid var(--rule);padding:1.6rem 1.25rem;text-align:center;font-size:.86rem;color:var(--muted)">
+  <a href="/">MailMint</a> &middot;
+  <a href="/docs">API reference</a> &middot;
+  <a href="/quickstart">Quickstart</a> &middot;
+  <a href="/n8n">n8n</a> &middot;
+  <a href="/email-parsing-api">Email parsing API</a> &middot;
+  <a href="/dashboard">Dashboard</a>
+</footer>
+
+<script src="/docs.js"></script>
+</body>
+</html>

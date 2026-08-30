@@ -39,6 +39,13 @@ const PAGES = {
   '/parseur-alternative': 'parseur-alternative.html',
   '/zapier-email-parser-alternative': 'zapier-email-parser-alternative.html',
   '/docparser-alternative': 'docparser-alternative.html',
+  // Use-case pages: the same chrome again, one per job people actually search
+  // for. "Email parsing API" is what we call it; "parse invoice emails" is what
+  // they type.
+  '/parse-invoice-emails': 'parse-invoice-emails.html',
+  '/parse-order-confirmation-emails': 'parse-order-confirmation-emails.html',
+  '/parse-shipping-notification-emails': 'parse-shipping-notification-emails.html',
+  '/parse-lead-emails': 'parse-lead-emails.html',
 };
 
 const hasSession = (req) => new RegExp(`(?:^|;\\s*)${SESSION_COOKIE}=`).test(req.headers.cookie || '');

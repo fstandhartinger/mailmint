@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Parse lead and contact-form emails into CRM records</title>
+<meta name="description" content="Name, company, phone, country and budget out of a lead or contact-form email, with a confidence per field so thin values are flagged rather than filed. One real enquiry parsed on 30 Aug 2026 &mdash; all eight fields shown, including the three that were held back.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://mailmint.app.mintapis.com/parse-lead-emails">
+<meta property="og:title" content="Parse lead and contact-form emails into CRM records">
+<meta property="og:description" content="Name, company, phone, country and budget out of a lead or contact-form email, with a confidence per field so thin values are flagged rather than filed. One real enquiry parsed on 30 Aug 2026 &mdash; all eight fields shown, including the three that were held back.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://mailmint.app.mintapis.com/parse-lead-emails">
+<meta property="og:site_name" content="MailMint">
+<meta property="og:image" content="https://mailmint.app.mintapis.com/og-image.png">
+<meta property="og:image:alt" content="MailMint: an inbound email address on the left, the structured JSON it returns on the right, each field carrying its confidence.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="/docs.css">
+</head>
+<body class="docs">
+
+<header class="docs-top">
+  <a class="logo" href="/">Mail<span>Mint</span></a>
+  <nav>
+    <a href="/docs">API reference</a>
+    <a href="/quickstart">Quickstart</a>
+    <a href="/n8n">n8n</a>
+    <a class="cta" href="/signup">Get an API key</a>
+  </nav>
+</header>
+
+<div class="layout">
+
+  <aside class="toc">
+    <button class="toc-toggle" id="tocToggle" aria-expanded="false" aria-controls="tocBody">On this page</button>
+    <div class="toc-body" id="tocBody">
+      <h2>The job</h2>
+      <ul>
+        <li><a href="#job">Lead mail into a CRM record</a></li>
+        <li><a href="#hard">Why leads are the messiest of the four</a></li>
+      </ul>
+      <h2>Doing it</h2>
+      <ul>
+        <li><a href="#schema">The schema</a></li>
+        <li><a href="#run">A real enquiry, really parsed</a></li>
+        <li><a href="#threshold">Choosing a threshold</a></li>
+        <li><a href="#crm">Into the CRM</a></li>
+      </ul>
+      <h2>Then</h2>
+      <ul>
+        <li><a href="#stay">When not to use this</a></li>
+        <li><a href="#honest">What we cannot claim</a></li>
+        <li><a href="#try">Try it</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <main class="content">
+<h1>Parsing lead and contact-form emails</h1>
+<p class="lede">An enquiry arrives as an email &mdash; from your own contact form, from a portal, from a
+directory, from a partner who forwards them by hand. Getting it into the CRM as a record rather than as
+an unread message is a five-minute job done four hundred times a year. This page does it, and is honest
+about the fields that came back doubtful.</p>
+
+<div class="note">
+<p><strong>Measured on 30 August 2026 against the live service at
+<code>https://mailmint.app.mintapis.com</code></strong>, from a free account created the same morning.
+Eight fields were asked for; three of them ended up in the review queue, and this page shows all eight
+rather than the five that worked.</p>
+</div>
+
+<section id="job">
+<h2>Lead mail into a CRM record <a class="anchor" href="#job">#</a></h2>
+<p>A lead is only worth something while it is warm, and the thing that cools it is sitting in a shared
+mailbox waiting for somebody to retype it. What you want is: the person, the company, a way to reach
+them, whatever qualification the form collected, and the message itself &mdash; created as a record,
+routed to an owner, within seconds of arriving.</p>
+</section>
+
+<section id="hard">
+<h2>Why leads are the messiest of the four <a class="anchor" href="#hard">#</a></h2>
+<p>Invoices and despatch notes are written by machines to a template. Lead mail is half machine and half
+human, and the human half is where the trouble is:</p>
+<ul>
+<li><strong>Every source has its own shape.</strong> Your form, a portal's notification, a directory's
+lead alert and a colleague's forwarded mail carry the same facts in four layouts &mdash; and the forwarded
+one has the real sender buried in a quoted header.</li>
+<li><strong>The valuable fields are free text.</strong> "Budget: 15,000&ndash;25,000 EUR" is a range, not a
+number. "Timeline: before our audit in November" is a date only a human can see.</li>
+<li><strong>Wrong is expensive in both directions.</strong> A misfiled company name is a bad CRM record; a
+lead that never became a record at all is lost revenue. This is exactly the case where you want to know
+<em>which</em> fields to trust, not an average.</li>
+</ul>
+</section>
+
+<section id="schema">
+<h2>The schema <a class="anchor" href="#schema">#</a></h2>
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code>[
+  { "name": "contact_name", "type": "string", "description": "full name of the person enquiring" },
+  { "name": "company",      "type": "string", "description": "company name" },
+  { "name": "email",        "type": "string", "description": "reply-to email address of the enquirer" },
+  { "name": "phone",        "type": "string", "description": "phone number in international format" },
+  { "name": "country",      "type": "string", "description": "country of the enquirer" },
+  { "name": "budget_max",   "type": "number", "description": "upper end of the stated budget, as a number" },
+  { "name": "timeline",     "type": "string", "description": "when they want to start" },
+  { "name": "message",      "type": "string", "description": "the free-text body of the enquiry" }
+]</code></pre>
+</div>
+</section>
+
+<section id="run">
+<h2>A real enquiry, really parsed <a class="anchor" href="#run">#</a></h2>
+<p>A contact-form notification: a Polish company, a labelled block of form fields, a free-text message and
+a footer with a timestamp and an IP. Back in <strong>2,205&nbsp;ms</strong>. All eight fields, nothing
+omitted:</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Field</th><th>Value</th><th>Conf.</th><th>Source</th><th>Verdict</th></tr></thead>
+<tbody>
+<tr><td><code>email</code></td><td class="wrap"><code>a.kowalczyk@helixdiag.pl</code></td><td>0.97</td><td>rule+llm</td><td>right</td></tr>
+<tr><td><code>phone</code></td><td><code>+48 22 501 88 40</code></td><td>0.97</td><td>rule+llm</td><td>right</td></tr>
+<tr><td><code>country</code></td><td><code>Poland</code></td><td>0.97</td><td>rule+llm</td><td>right</td></tr>
+<tr><td><code>timeline</code></td><td><code>Q4 2026</code></td><td>0.97</td><td>rule+llm</td><td>right</td></tr>
+<tr><td><code>contact_name</code></td><td><code>Dr. Anna Kowalczyk</code></td><td>0.85</td><td>llm</td><td>right</td></tr>
+<tr><td><code>company</code></td><td class="wrap"><code>Helix Diagnostics Sp. z o.o</code></td><td><strong>0.50</strong></td><td>rule</td><td class="wrap">right, minus the final full stop</td></tr>
+<tr><td><code>message</code></td><td class="wrap">the enquiry text</td><td><strong>0.50</strong></td><td>rule</td><td class="wrap">right; rule and model disagreed on where it ends</td></tr>
+<tr><td><code>budget_max</code></td><td><code>25000</code></td><td><strong>0.25</strong></td><td>llm</td><td class="wrap">right, but no evidence span survived</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Flags: <code>rule_llm_disagreement:company</code>, <code>rule_llm_disagreement:message</code>,
+<code>hallucinated_evidence:budget_max</code>, plus a <code>low_confidence:</code> flag on each of the
+three. <code>needs_review: true</code>.</p>
+
+<p><strong>All eight values are usable, and three were held back anyway.</strong> That is the point of the
+page. <code>company</code> differs between the deterministic rule and the model by one character &mdash;
+the trailing full stop of <em>Sp. z o.o.</em> &mdash; and a disagreement is a disagreement whether or not
+it is trivial, so the confidence is capped at 0.50 rather than resolved in favour of a guess.
+<code>budget_max</code> is the interesting one: the model correctly read <em>25,000</em> as the upper end
+of "15,000&ndash;25,000 EUR", but that number is a <em>derived</em> answer, not a substring, so no
+evidence span survived a literal search of the message and it dropped to 0.25.</p>
+
+<p>A value that cannot point at the text it came from is exactly where a parser invents things. The rule
+costs you review on some correct answers &mdash; and it is the reason a wrong company name does not
+quietly become a CRM record.</p>
+</section>
+
+<section id="threshold">
+<h2>Choosing a threshold <a class="anchor" href="#threshold">#</a></h2>
+<p>Because the confidence is per field, you do not have to treat the whole message as one decision. A
+lead pipeline usually wants the opposite of an invoice pipeline: <strong>create the record anyway, flag
+the fields.</strong> A lead held in a queue for review is a lead going cold.</p>
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre><code><span class="tok-c"># create every lead; mark the thin fields for the owner to confirm</span>
+const lead = Object.fromEntries(
+  Object.entries(msg.fields).map(([k, f]) =&gt; [k, f.value]));
+
+lead.confirm = Object.entries(msg.fields)
+  .filter(([, f]) =&gt; f.confidence &lt; 0.8)
+  .map(([k]) =&gt; k);            <span class="tok-c">// ["company", "message", "budget_max"]</span></code></pre>
+</div>
+<p>Contact details are the fields worth a hard gate: <code>email</code> and <code>phone</code> came back at
+0.97 here because a rule and the model agreed, and if they ever do not, that is worth a human before
+anybody dials. The calibration set behind these numbers is small &mdash; 95 labelled field slots across
+41 messages &mdash; so treat 0.8 as a starting point you tune against your own mail, not as a probability.</p>
+</section>
+
+<section id="crm">
+<h2>Into the CRM <a class="anchor" href="#crm">#</a></h2>
+<p>Point <code>webhook_url</code> at the CRM's inbound endpoint, or at the automation platform in front of
+it, and the signed message object arrives as the enquiry does. Delivery retries with backoff, a webhook
+that keeps failing auto-disables rather than silently dropping, and one endpoint failing never disables
+another &mdash; so the CRM and the Slack notification are independent.</p>
+<p>In n8n: <code>n8n-nodes-mailmint</code> installs on self-hosted n8n, and its trigger falls back to the
+polling feed when a webhook cannot reach you. On n8n Cloud, verification is n8n's decision and has not
+happened, so use <a href="/n8n">an HTTP Request node against <code>POST /v1/parse</code></a> &mdash; it
+works from any n8n today.</p>
+<p>And if you later add a field &mdash; nobody asked for <code>source</code> until the first quarterly
+report &mdash; <code>POST /v1/mailboxes/{id}/reparse</code> replays the stored originals against the new
+schema, with <code>dry_run: true</code> to see what would change first. The leads you already have get the
+new field too.</p>
+</section>
+
+<section id="stay">
+<h2>When not to use this <a class="anchor" href="#stay">#</a></h2>
+<ul>
+<li><strong>You own the form.</strong> Post it to your CRM directly. Structured data beats parsing an email
+you generated yourself &mdash; and if the form is on your own site, there is no reason for the data to take
+a detour through a mailbox at all. This disqualifies more readers of this page than anything else on it.</li>
+<li><strong>Your CRM already has an inbound address.</strong> HubSpot, Pipedrive and Salesforce all parse
+common lead notifications themselves. Check before you add a layer.</li>
+<li><strong>The mail is unstructured prose.</strong> "Hi, saw your talk, can we chat?" has no fields to
+extract. A parser adds nothing to a reply.</li>
+<li><strong>Under a hundred leads a month.</strong> Reading them yourself is better qualification than any
+schema, and free.</li>
+</ul>
+</section>
+
+<section id="honest">
+<h2>What we cannot claim <a class="anchor" href="#honest">#</a></h2>
+<p>No paying customer outside this project, no case study, no uptime history, no SLA, no SOC&nbsp;2. One
+region, one instance. The confidence numbers rest on 95 labelled field slots across 41 messages: enough to
+show the pipeline is not over-confident &mdash; nothing in the 0.9+ bucket was wrong &mdash; and nowhere
+near enough to fit a reliability curve. This is one enquiry, parsed once; a second run of the same message
+returned <code>contact_name</code> at a different confidence, so treat individual numbers as
+observations, not constants. PDF and document attachments are not read yet. Prompt injection is not
+solved: an email body is attacker-controlled text, and parsed output is data to be checked, not an
+instruction to be followed.</p>
+</section>
+<section id="try">
+<h2>Try it on your own worst email <a class="anchor" href="#try">#</a></h2>
+<p>Not a demo message &mdash; the one your current parser gets wrong. Paste its subject and body into
+<code>POST /v1/parse</code> and read the confidence and the evidence span on each field.
+<code>/v1/parse</code> stores nothing, needs no inbound address and no DNS record, and the free plan is
+<strong>300 parsed emails a month with no card</strong>, which is enough to run a real low-volume
+workflow rather than only to look at one.</p>
+<p><a class="cta" href="/signup">Get an API key</a> &nbsp; <a href="/quickstart">Read the quickstart</a>
+&nbsp; <a href="/docs">API reference</a></p>
+</section>
+<section id="more">
+<h2>The other three <a class="anchor" href="#more">#</a></h2>
+<div class="cards">
+  <div class="c"><strong><a href="/parse-invoice-emails">Invoice emails</a></strong><span>Supplier invoices into ledger rows, with the arithmetic checked.</span></div>
+  <div class="c"><strong><a href="/parse-order-confirmation-emails">Order confirmations</a></strong><span>Order number, totals and every line item, reconciled against the total.</span></div>
+  <div class="c"><strong><a href="/parse-shipping-notification-emails">Shipping notifications</a></strong><span>Tracking number, carrier and the promised date, out of any carrier's template.</span></div>
+</div>
+<p style="margin-top:1rem">Comparisons instead: <a href="/email-parsing-api">what an email parsing API has to get right</a> &middot; <a href="/mailparser-alternative">vs Mailparser</a> &middot; <a href="/parseur-alternative">vs Parseur</a> &middot; <a href="/docparser-alternative">vs Docparser</a> &middot; <a href="/zapier-email-parser-alternative">vs Zapier Parser</a></p>
+</section>
+
+  </main>
+</div>
+
+<footer style="border-top:1px solid var(--rule);padding:1.6rem 1.25rem;text-align:center;font-size:.86rem;color:var(--muted)">
+  <a href="/">MailMint</a> &middot;
+  <a href="/docs">API reference</a> &middot;
+  <a href="/quickstart">Quickstart</a> &middot;
+  <a href="/n8n">n8n</a> &middot;
+  <a href="/email-parsing-api">Email parsing API</a> &middot;
+  <a href="/dashboard">Dashboard</a>
+</footer>
+
+<script src="/docs.js"></script>
+</body>
+</html>

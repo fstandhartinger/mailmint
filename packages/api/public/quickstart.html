@@ -101,8 +101,9 @@ site uses a placeholder, and every email address is a deliberately fake <code>.e
 <section id="base">
 <h2>The base URL <a class="anchor" href="#base">#</a></h2>
 
-<p>There is no public hosted deployment yet, so there is no URL we can honestly print here as if it were
-live. Set <code>MAILMINT_URL</code> to whichever MailMint you are talking to:</p>
+<p>The hosted service is <code>https://mailmint.app.mintapis.com</code> — the site you are reading. Set
+<code>MAILMINT_URL</code> to whichever MailMint you are talking to, and every command on this page works
+unchanged against either one:</p>
 
 <div class="code">
 <button class="copy" type="button">Copy</button>
@@ -416,6 +417,13 @@ dashboard. If you want IMAP mail parsed and you are not hosting MailMint yoursel
   <a href="/docs">API reference</a> &middot;
   <a href="/n8n">n8n</a> &middot;
   <a href="/dashboard">Dashboard</a>
+
+  <div style="margin-top:.7rem">
+    <a href="/parse-invoice-emails">Invoice emails</a> &middot;
+    <a href="/parse-order-confirmation-emails">Order confirmations</a> &middot;
+    <a href="/parse-shipping-notification-emails">Shipping notifications</a> &middot;
+    <a href="/parse-lead-emails">Lead emails</a>
+  </div>
 </footer>
 
 <script src="/docs.js"></script>

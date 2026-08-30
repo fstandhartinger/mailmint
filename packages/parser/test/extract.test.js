@@ -275,6 +275,36 @@ test('arithmetic reconciliation catches a dropped line item', () => {
   assert.match(bad.detail, /line_items_sum/);
 });
 
+test('the line-item money column may be called any name the column mapper accepts', () => {
+  // Regression. reconcile() read `row.amount ?? row.total` and nothing else,
+  // while mapColumns accepted `price`, `betrag`, `line total` and six more. A
+  // schema using any of those summed to zero, never reconciled, and put
+  // `arithmetic_mismatch` + needs_review on EVERY message.
+  const schema = [{ name: 'line_items' }, { name: 'subtotal' }];
+  for (const key of ['amount', 'total', 'line_total', 'price', 'preis', 'betrag', 'value', 'charge', 'montant']) {
+    const rows = [{ description: 'a', unit_price: 27, [key]: 54 }, { description: 'b', unit_price: 6.5, [key]: 6.5 }];
+    const r = reconcile({ line_items: rows, subtotal: 60.5 }, schema);
+    assert.strictEqual(r.ok, true, `${key} should reconcile`);
+    assert.strictEqual(r.checked, true, `${key} should actually be checked`);
+  }
+});
+
+test('a per-unit rate is never mistaken for the line total', () => {
+  const schema = [{ name: 'line_items' }, { name: 'subtotal' }];
+  // Only unit prices in the rows: there is no line total to sum, so the check
+  // must decline to run rather than report the message as inconsistent.
+  const r = reconcile({ line_items: [{ description: 'a', unit_price: 27 }, { description: 'b', einzelpreis: 6.5 }], subtotal: 60.5 }, schema);
+  assert.strictEqual(r.checked, false);
+  assert.strictEqual(r.ok, true);
+});
+
+test('rows with no readable amount blame nobody', () => {
+  const schema = [{ name: 'line_items' }, { name: 'subtotal' }];
+  const r = reconcile({ line_items: [{ description: 'a', qty: 2 }, { description: 'b', qty: 1 }], subtotal: 60.5 }, schema);
+  assert.strictEqual(r.checked, false, 'an unreadable row set is not evidence of a bad message');
+  assert.strictEqual(r.ok, true);
+});
+
 test('the total equation is only checked when an adjustment term was extracted', () => {
   // subtotal and total differ only by a tax we were not asked to extract
   const r = reconcile({ subtotal: 1280, total: { amount: 1523.2 } }, [{ name: 'subtotal' }, { name: 'total' }]);

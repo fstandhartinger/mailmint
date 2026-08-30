@@ -124,11 +124,12 @@ function reconcile(values, schema) {
   }
 
   const checks = [];
-  if (byRole.items && byRole.items.length) {
-    const sum = byRole.items.reduce((n, it) => {
-      const a = it && typeof it === 'object' ? toAmount(it.amount !== undefined ? it.amount : it.total) : toAmount(it);
-      return n + (a === null ? 0 : a);
-    }, 0);
+  const itemAmounts = byRole.items ? byRole.items.map(rowAmount) : [];
+  // A row set we could not read a single amount out of tells us nothing about
+  // the message. Summing it to zero and reporting the gap would blame the mail
+  // for our own blindness, and it sets needs_review on every message at once.
+  if (itemAmounts.some((a) => a !== null)) {
+    const sum = itemAmounts.reduce((n, a) => n + (a === null ? 0 : a), 0);
     // Only claim a mismatch when the expected relationship is actually known.
     // Items sum to the SUBTOTAL; they sum to the TOTAL only once tax, shipping
     // and discount are accounted for. Comparing them to a tax-inclusive total
@@ -166,6 +167,34 @@ function reconcile(values, schema) {
     detail: bad.length ? bad.map((c) => `${c.name}: ${round2(c.got)} != ${round2(c.want)}`).join('; ') : null,
     roles: Object.keys(byRole),
   };
+}
+
+/**
+ * The money column inside one line-item row.
+ *
+ * `mapColumns` below already accepts a broad set of names for this column
+ * (`ROLE_PATTERNS.amount`), and the comment on SUMMARY_ROW claims the two agree.
+ * They did not: this function used to read `row.amount ?? row.total` and nothing
+ * else, so a schema that named the column `line_total`, `price`, `preis` or
+ * `betrag` — every one of them a name the column mapper accepts — summed to
+ * zero. Zero never reconciles, so `arithmetic_mismatch` fired and
+ * `needs_review` was set on *every* message, which is the one failure mode a
+ * review queue cannot survive. Measured against the live service on 30 Aug 2026:
+ * the same order email with the same schema came back clean under `amount` and
+ * flagged under `price` and `betrag`.
+ *
+ * `unit_price` and `einzelpreis` deliberately do not match — the patterns are
+ * anchored, so a per-unit rate is never mistaken for the line total.
+ */
+function rowAmount(row) {
+  if (!row || typeof row !== 'object') return toAmount(row);
+  if (row.amount !== undefined && row.amount !== null) return toAmount(row.amount);
+  if (row.total !== undefined && row.total !== null) return toAmount(row.total);
+  for (const [k, v] of Object.entries(row)) {
+    if (v === undefined || v === null) continue;
+    if (ROLE_PATTERNS.amount.test(String(k).replace(/_/g, ' '))) return toAmount(v);
+  }
+  return null;
 }
 
 /** Items + (unknown) tax and shipping should still be most of the total. */
