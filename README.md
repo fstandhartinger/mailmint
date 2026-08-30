@@ -11,23 +11,46 @@ the body it actually received. Every parse result carries
 
 ![The n8n node's parse output](docs/screens/06-parse-output.png)
 
-## Honest status, 2026-08-26
+## Try it in three ways
 
-**Not usable by a stranger yet.** The pieces work and are tested; the last step is a DNS
-change nobody has made.
+**As an API — nothing to install, nothing stored:**
+
+```bash
+curl -X POST https://mailmint.app.mintapis.com/v1/parse \
+  -H "Authorization: Bearer $MAILMINT_KEY" -H 'content-type: application/json' \
+  -d '{"subject":"Invoice INV-7781","text":"Amount due: 1,284.00 EUR\nDue date: 2026-09-30",
+       "schema":[{"name":"amount_due","type":"number","description":"Total amount due"}]}'
+```
+
+**As an inbound address:** sign up at
+[mailmint.app.mintapis.com](https://mailmint.app.mintapis.com), and the address on your
+dashboard is live immediately. Mail sent to it is received, authenticated and parsed.
+
+**In n8n:** `npm i n8n-nodes-mailmint` in `~/.n8n/nodes`, or *Settings → Community Nodes*.
+There is a finished workflow to import rather than build —
+[Screen invoice emails and hold the doubtful ones for review](https://mailmint.app.mintapis.com/n8n#templates),
+twelve annotated nodes with both failure paths wired.
+
+## Honest status, 2026-08-30
+
+**Live, and a stranger can use it.** Every row below was checked on 2026-08-30, not recalled.
 
 | Piece | State |
 | --- | --- |
-| `packages/smtpd` — inbound SMTP server | Runs, accepts real internet mail on port 25 with STARTTLS, verifies SPF/DKIM/DMARC |
+| Hosted service | **https://mailmint.app.mintapis.com** — sign up, no card, no confirmation mail |
+| Public inbound address | **Yes.** `mx.smooth-operator.online` points at the server; an invoice mailed to a fresh account's address came back parsed, with its SPF/DKIM/DMARC verdicts |
+| `packages/api` — REST API, webhooks, dashboard | Live. `POST /v1/parse` takes a message you already have and stores nothing |
+| `packages/smtpd` — inbound SMTP server | Live on port 25 with STARTTLS; sees the envelope and the raw RFC822 bytes |
 | `packages/parser` — RFC822 → canonical JSON | Complete against the contract, tested |
-| `packages/api` — REST API, webhooks, dashboard | Runs |
-| `packages/n8n-node` — `n8n-nodes-mailmint` | Built, **not published to npm** |
-| Public inbound address | **No.** The MX record still points elsewhere, so no stranger's mail reaches it |
-| TLS certificate | Self-signed |
+| `packages/n8n-node` — `n8n-nodes-mailmint` | **Published: `npm i n8n-nodes-mailmint`**, zero runtime dependencies, npm provenance attestation |
+| Billing | Live. Free is 300 parsed emails a month; Starter $9, Pro $29, Scale $99 through Stripe Checkout |
+| SMTP TLS certificate | **Still self-signed.** Sending servers using opportunistic STARTTLS deliver anyway; one enforcing strict TLS would refuse |
+| n8n verification | **Not yet.** The node is in n8n's manual review, so n8n Cloud cannot install it; self-hosted n8n can |
+| Paying customers | **None.** Nobody outside this project has paid, and no number here will pretend otherwise |
 
-So: mail sent to the server is received, verified and parsed — that has been done with
-real internet mail. Nobody outside can point mail at it, because the domain's MX record
-has not been switched over.
+Two things follow from that table and are worth saying out loud: the parts a stranger
+touches — signup, an address, a parse, a webhook, a card — all work today; and the two
+things that do not are a TLS certificate and somebody else's review queue.
 
 ## What the JSON looks like
 
