@@ -211,6 +211,23 @@ router.get('/dashboard', requireAccount, asyncRoute(async (req, res) => {
     <li class="${hasSchema ? 'done' : ''}">${hasSchema ? 'Schema defined.' : 'Define the fields you want extracted — open a mailbox below.'}</li>
     <li class="${hasMail ? 'done' : ''}">${hasMail ? 'Mail received and parsed.' : 'Send an email to the address, or use the test panel on the mailbox page.'}</li>
   </ol>
+  ${account.used_month === 0 && !hasMail ? `<section class="card firstcall">
+    <h2>Parse one right now</h2>
+    <p class="muted">No mail has to arrive first and nothing is stored: <code>POST /v1/parse</code>
+    takes a message you paste in and hands back the fields you asked for, with a confidence and the
+    evidence span for each. Paste this into a terminal.</p>
+    <pre><code id="firstcall">curl -X POST ${escapeHtml(config.publicUrl)}/v1/parse \\
+  -H "Authorization: Bearer ${escapeHtml(fullKey || '$MAILMINT_KEY')}" \\
+  -H 'content-type: application/json' \\
+  -d '{"subject":"Invoice INV-7781",
+       "text":"Amount due: 1,284.00 EUR\\nDue date: 2026-09-30",
+       "schema":[{"name":"amount_due","type":"number","description":"Total amount due"},
+                 {"name":"due_date","type":"date","description":"When payment is due"}]}'</code></pre>
+    <p><button class="copy" data-target="firstcall">Copy</button>${fullKey ? '' : `
+      <span class="muted small">Your key is shown once at signup only &mdash; if you no longer have it,
+      create a new one below and put it in <code>$MAILMINT_KEY</code>.</span>`}</p>
+  </section>` : ''}
+
   ${reviewCount[0].n ? `<div class="notice"><strong>${reviewCount[0].n} message${reviewCount[0].n === 1 ? '' : 's'} need${reviewCount[0].n === 1 ? 's' : ''} review.</strong>
     A field came back empty, disagreed with the rule layer, or did not add up.
     <a href="/dashboard/review">Open the review queue</a>.</div>` : ''}
