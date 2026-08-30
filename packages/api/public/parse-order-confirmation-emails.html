@@ -189,6 +189,17 @@ order mail, the same schema, with the row field renamed, on 30 August 2026:</p>
 </table>
 </div>
 
+<p><strong>And a run that shows why the check is worth having.</strong> Eight further runs of the same
+message on 30 August 2026 came back clean seven times. The eighth did not, and it was right not to: that
+run extracted <em>four</em> rows instead of three &mdash; one of them entirely <code>null</code> &mdash;
+and priced the &pound;62 kettle at &pound;6.50. The rows summed to 73.50 against a stated subtotal of
+122.50, so <code>arithmetic_mismatch</code> fired and the message went to review instead of into an order
+system. Nothing else in that response looked wrong: the order number, the total and the address were all
+correct, and a parser without the reconciliation would have handed you a clean-looking order with a
+missing product and a mispriced one. That is the failure this check exists for, and it is also why the
+false version of it was worth fixing &mdash; an alarm that fires on every message is an alarm nobody reads
+on the one that matters.</p>
+
 <p>The rows were identical and correct in every case; only the key name changed. The sum came to zero,
 zero never reconciles, and the message was flagged &mdash; every message, forever. It is fixed, the
 recognised names are listed above and in the <a href="/docs#tables">reference</a>, and the case is in the
