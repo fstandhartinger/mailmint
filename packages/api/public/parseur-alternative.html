@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Parseur alternative &mdash; per-field confidence, and $0.0018 an email</title>
-<meta name="description" content="Parseur starts at &euro;49/month for 100 pages and returns one verdict per document. MailMint parses 5,000 emails for $9 and returns a confidence, a source and the verbatim evidence span for every field. Prices read from Parseur's own pricing endpoint on 29 August 2026.">
+<meta name="description" content="Parseur starts at &euro;49/month for 100 pages and returns one verdict per document. MailMint parses 5,000 emails for $9 and returns a confidence, a source and the verbatim evidence span for every field. Prices read from Parseur's own pricing endpoint, re-checked 30 August 2026.">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="canonical" href="https://mailmint.app.mintapis.com/parseur-alternative">
 <meta property="og:title" content="Parseur alternative &mdash; per-field confidence, and $0.0018 an email">
-<meta property="og:description" content="Parseur starts at &euro;49/month for 100 pages and returns one verdict per document. MailMint parses 5,000 emails for $9 and returns a confidence, a source and the verbatim evidence span for every field. Prices read from Parseur's own pricing endpoint on 29 August 2026.">
+<meta property="og:description" content="Parseur starts at &euro;49/month for 100 pages and returns one verdict per document. MailMint parses 5,000 emails for $9 and returns a confidence, a source and the verbatim evidence span for every field. Prices read from Parseur's own pricing endpoint, re-checked 30 August 2026.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://mailmint.app.mintapis.com/parseur-alternative">
 <meta property="og:site_name" content="MailMint">
@@ -67,7 +67,7 @@ field tells you how sure it is or which characters it was read from.</p>
 
 <div class="note">
 <p><strong>Where these numbers come from.</strong> Parseur&rsquo;s pricing page is a slider, so the
-figures below were read on <strong>29 August 2026</strong> from the endpoint the page itself calls,
+figures below were read on <strong>29 August 2026</strong> and re-checked on <strong>30 August 2026</strong> from the endpoint the page itself calls,
 <code>parseur.com/api/price_set</code>. They came back in <strong>euros</strong> because that endpoint
 geolocates; their own response reports <code>default_currency_code: USD</code>, so a visitor in the US
 sees dollar figures at different absolute values. Compare like for like before you decide.</p>
@@ -122,8 +122,8 @@ this page ends here and you should use Parseur.</li>
 <li><strong>Its Table Field is mature.</strong> Variable-row tables in AI mode work well; the
 documented cap is 25 pages per document.</li>
 <li><strong>Its n8n node is official and verified</strong>, published 21 August 2026. Ours is on npm
-and works, but n8n has not verified it yet, so on n8n Cloud it must be installed as a community
-node.</li>
+and works on self-hosted n8n, but n8n has not verified it yet, so it cannot be installed on n8n
+Cloud at all until the review clears.</li>
 <li><strong>It has the integrations you would expect of a mature vendor</strong> &mdash; Zapier, Make,
 Power Automate, Google Sheets, Excel &mdash; and years of production use behind it. MailMint has an
 API, webhooks, polling and n8n.</li>
@@ -151,7 +151,7 @@ API, webhooks, polling and n8n.</li>
 </tbody>
 </table>
 </div>
-<p class="t">Parseur figures from their pricing endpoint and their published OpenAPI 3.1 schema, read 29 August 2026. Scroll sideways on a narrow screen.</p>
+<p class="t">Parseur figures from their pricing endpoint and their published OpenAPI 3.1 schema, read 29 August 2026, re-checked 30 August 2026. Scroll sideways on a narrow screen.</p>
 </section>
 
 <section id="confidence">
@@ -243,8 +243,8 @@ MailMint has none yet, and we are not going to imply otherwise.</li>
 <p>Nobody outside this project has paid for MailMint yet, so there is no customer, no case study
 and no uptime history to quote you. Two things are missing and named rather than glossed over:
 <strong>the contents of PDF attachments are not read yet</strong> (the extractor exists, it is not
-wired into the pipeline), and the n8n node is <strong>not yet verified by n8n</strong>, so on n8n
-Cloud it has to be installed as a community node rather than found in the built-in list. Everything
+wired into the pipeline), and the n8n node is <strong>not yet verified by n8n</strong>, so it runs
+on self-hosted n8n but cannot be installed on n8n Cloud until that review clears. Everything
 else on this page is live and can be checked with one <code>curl</code> before you spend anything.</p>
 </section>
 
