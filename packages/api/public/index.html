@@ -894,6 +894,7 @@ curl -X POST <span class="tok-n">$MAILMINT_URL</span>/v1/mailboxes/mbx_01JQ8Y…
           <li>Raw message kept 30 days</li>
           <li>Attachment bytes kept 7 days</li>
           <li>No card</li>
+          <li>Over the line: still delivered, flagged</li>
         </ul>
         <p class="plan-for">Enough to run a real low-volume workflow rather than only to look at one.</p>
         <a class="l-btn l-btn-ghost" href="/signup">Create an account</a>
@@ -940,6 +941,15 @@ curl -X POST <span class="tok-n">$MAILMINT_URL</span>/v1/mailboxes/mbx_01JQ8Y…
         <p class="plan-for">Production volume, and a retention window that outlives an audit.</p>
         <a class="l-btn l-btn-ghost" href="/signup">Start on Scale</a>
       </div>
+    </div>
+
+    <div class="plan-all" style="margin-bottom:1rem">
+      <b>What happens if you go over?</b> Nothing is dropped and nothing bounces. A message past
+      your monthly allowance is still received, still parsed by the deterministic layer, still
+      stored and still delivered to your webhook — it arrives with the flag
+      <code>quota_exceeded</code> and without the model pass, so the fields it could not read
+      deterministically come back <code>null</code> rather than guessed. Your mail keeps flowing
+      while you decide whether to upgrade.
     </div>
 
     <div class="plan-all">
