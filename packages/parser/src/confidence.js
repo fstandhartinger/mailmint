@@ -35,6 +35,10 @@ const CEILING = {
   llm_evidence_and_corroborated: 0.93,  // model + a layer-(a) detection of the same value
   header_fact: 0.95,      // not an extraction at all: the subject IS the subject
   rule_unverified: 0.88,  // a clean label match that no second extractor confirmed
+  // A payment fact in a message that nothing identifies as a document. Both
+  // extractors read the same lone number, so their agreement is one sighting
+  // counted twice — see `unanchored` in computeConfidence.
+  unanchored_fact: 0.85,
   llm_evidence: 0.85,
   llm_corroborated: 0.8,
   llm_bare: 0.6,
@@ -42,6 +46,24 @@ const CEILING = {
   hallucinated: 0.25,
   disagreement: 0.5,
 };
+
+/**
+ * Fields that assert a MONETARY OR SCHEDULING FACT about a document — "this is
+ * what is owed", "this is when it is due". They are the ones a number's mere
+ * presence in the text says nothing about: every message that mentions any
+ * price at all contains a number that looks like a total.
+ *
+ * `currency` is matched by name because it is declared as a string, not as a
+ * money type, and it was the field that reported USD at 0.97 on a horoscope.
+ */
+const MONEY_FACT = /(^|_)(total|amount|sum|betrag|summe|subtotal|net|tax|vat|mwst|ust|shipping|discount|price|preis|balance|due|paid|currency|waehrung|währung)(_|$)/i;
+
+function assertsPaymentFact(field) {
+  const type = field.type || 'string';
+  if (type === 'date' || type === 'datetime') return true;
+  if (type === 'number' || type === 'integer' || type === 'currency') return MONEY_FACT.test(field.name);
+  return /^(currency|waehrung|währung)$/i.test(field.name);
+}
 
 /** Does this value already appear in the deterministic detections or tables? */
 function corroborates(value, ctx) {
@@ -258,6 +280,18 @@ function computeConfidence(sig) {
   // Structural nonsense in a row set is a defect in the value itself.
   if (sig.structural === false) { ceiling = Math.min(ceiling * 0.6, 0.55); flags.push('suspect_row'); }
 
+  // Nothing in this message says it is a document, and no rule read a payment
+  // fact off a label — so the number is unanchored: we know it is THERE, not
+  // what it MEANS. Both extractors read the same lone figure, which is one
+  // sighting counted twice and exactly what the >0.9 promise excludes. The cap
+  // is the last word, after the arithmetic bonus, and it keeps the value rather
+  // than discarding it: below the accept line, still returned, still cited.
+  // A header fact is exempt — the Date header IS the date, not an extraction.
+  if (sig.unanchored && source !== 'header') {
+    ceiling = Math.min(ceiling, CEILING.unanchored_fact);
+    flags.push('no_document_context');
+  }
+
   // The model's own number may only pull the score down (§1a.5).
   let conf = ceiling;
   if (typeof sig.modelConfidence === 'number' && isFinite(sig.modelConfidence)) {
@@ -351,4 +385,4 @@ function mapColumns(headers, itemFields) {
   return matched >= Math.min(2, itemFields.length) ? map : null;
 }
 
-module.exports = { computeConfidence, corroborates, sameValue, reconcile, deriveArrayFromTables, CEILING, toAmount };
+module.exports = { computeConfidence, corroborates, sameValue, reconcile, deriveArrayFromTables, assertsPaymentFact, CEILING, toAmount };

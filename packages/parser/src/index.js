@@ -10,7 +10,7 @@ const { ruleExtract } = require('./rules');
 const { coerce } = require('./coerce');
 const { llmExtract } = require('./extract-llm');
 const { normaliseLogger, makeLogger } = require('./log');
-const { computeConfidence, corroborates, sameValue, reconcile, deriveArrayFromTables, toAmount } = require('./confidence');
+const { computeConfidence, corroborates, sameValue, reconcile, deriveArrayFromTables, assertsPaymentFact, toAmount } = require('./confidence');
 const { pickLineItems, rowsEqual } = require('./lineitems');
 const { verify, surfacesOf: evidenceSurfaces, spanFor } = require('./evidence');
 const { localeHint } = require('./dates');
@@ -302,6 +302,25 @@ async function parseMessage(input, options) {
         } else { coerced[f.name] = c.value; typeOk[f.name] = true; }
       }
 
+      // -- does this message have any document context at all? -----------------
+      // Layer (a) finds every number in the text; it cannot find what a number
+      // MEANS. In a message that no type keyword identifies as a document, and
+      // in which no rule read a payment fact off an actual label, "$4.95" in a
+      // horoscope newsletter and "2002-06-26" in a domain-renewal notice look
+      // exactly like a total and a due date — and the model, reading that same
+      // lone figure, agrees. Two extractors, one sighting: precisely what the
+      // >0.9 promise is not allowed to cover.
+      //
+      // Measured on the hold-out before this existed: of 19 `generic` messages
+      // 17 must answer nothing at all, and the two real documents among them
+      // are untouched — the Portuguese invoice anchors on "Valor total:", the
+      // Chinese one carries no detectable amount and never reached 0.9 anyway.
+      const anchored = schema.some((f) => {
+        const r = cand[f.name] && cand[f.name].rule;
+        return r && r.value !== null && r.value !== undefined && !r.fallback && !r.unlabelled && assertsPaymentFact(f);
+      });
+      const noDocumentContext = detected.type === 'generic' && !anchored;
+
       // -- phase 4: verify arithmetic and structure, then compute confidence ----
       const arith = reconcile(coerced, schema);
       if (arith.checked && !arith.ok) { pushFlag(flags, 'arithmetic_mismatch'); warnings.push(`arithmetic: ${arith.detail}`); }
@@ -324,6 +343,7 @@ async function parseMessage(input, options) {
           evidenceGiven: ev.given,
           evidenceOk: ev.ok,
           corroborated: corroborates(value, ruleCtx),
+          unanchored: noDocumentContext && assertsPaymentFact(f),
           disagreement: p.disagreement,
           arithmetic: inCluster ? arith.ok : undefined,
           structural: structural ? structural.ok : undefined,

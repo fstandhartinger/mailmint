@@ -320,8 +320,20 @@ function ruleExtract(field, ctx) {
     }
   }
   if (key === 'currency' && (ctx.detected.amounts || []).length) {
+    // UNLABELLED, and it must say so: this is "the first money symbol anywhere
+    // in the message", not a reading of `Currency:`. It is right for a document
+    // and meaningless for a newsletter that quotes one price, so it must not
+    // vouch for the message — see the anchor test in index.js.
+    //
+    // `unlabelled` and NOT `fallback`, and the difference is measured. A
+    // `fallback` also tells pick() to stand aside for the model, and here that
+    // is destructive: the rule cites "2.310,75 EUR", which verifies, while the
+    // model cites a span that does not support the bare string "EUR". Marking
+    // this one `fallback` sent fourteen CORRECT currencies out of the 0.9+
+    // bucket on the hold-out and seven of them to 0.25 with
+    // `hallucinated_evidence` — a needs_review on nearly every real invoice.
     const c = ctx.detected.amounts[0].currency;
-    if (c) return { value: c, confidence: 0.85, source: 'rule', evidence: ctx.detected.amounts[0].raw };
+    if (c) return { value: c, confidence: 0.85, source: 'rule', evidence: ctx.detected.amounts[0].raw, unlabelled: true };
   }
   return null;
 }

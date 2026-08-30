@@ -458,3 +458,82 @@ test('a quoted number is still answered when it is the only one, but not at 0.9'
   assert.ok(out.fields.invoice_number.confidence < 0.9,
     'the only candidate is a quotation — usable, but the model has to confirm it');
 });
+
+// --------------------------------------------- unanchored payment facts
+/**
+ * A message that nothing identifies as a document.
+ *
+ * The hold-out found this at 0.9+ three times: `$4.95` in a horoscope
+ * newsletter came back as `total` and `USD`, and a domain-renewal notice gave
+ * up its expiry date as `due_date`. Both extractors were reading the SAME lone
+ * figure — layer (a) detects every number in any text, so a model value copied
+ * out of the body is corroborated by construction. That is one sighting counted
+ * twice, and >0.9 is sold as two independent ones.
+ *
+ * The model is stubbed rather than called: the point under test is what the
+ * scorer does when the model AGREES, and a live model may or may not that day.
+ */
+function stubModel(fields) {
+  return async () => ({ text: JSON.stringify({ fields }), model: 'stub', attempts: [] });
+}
+
+const MONEY_SCHEMA = [
+  { name: 'total', type: 'number', description: 'the grand total payable' },
+  { name: 'currency', type: 'string', description: 'ISO 4217 code' },
+  { name: 'due_date', type: 'date', description: 'the date payment is due' },
+];
+
+test('a lone price in a message with no document context cannot reach 0.9', async () => {
+  const mail = 'Subject: Your Daily Horoscope\n\nVenus is in retrograde. Get a One Month Forecast for only $4.95!\n';
+  const out = await parseMessage(Buffer.from(mail), {
+    schema: MONEY_SCHEMA,
+    complete: stubModel({
+      total: { value: 4.95, confidence: 0.95, evidence: 'a One Month Forecast for only $4.95!' },
+      currency: { value: 'USD', confidence: 0.95, evidence: '$4.95' },
+    }),
+  });
+
+  assert.strictEqual(out.detected.type, 'generic', 'nothing here says "document"');
+  // The value is KEPT — silence would be a worse answer than a hedged one.
+  assert.strictEqual(out.fields.total.value, 4.95);
+  assert.ok(out.fields.total.confidence <= 0.85,
+    `total must stay below the accept line, got ${out.fields.total.confidence}`);
+  assert.ok(out.fields.currency.confidence <= 0.85,
+    `currency must stay below the accept line, got ${out.fields.currency.confidence}`);
+  assert.ok(out.flags.includes('no_document_context:total'),
+    'the reason is published, not just the lower number');
+});
+
+test('a labelled total anchors the message, so its siblings keep their score', async () => {
+  // The Portuguese invoice from the hold-out: no English type keyword, so the
+  // detector calls it `generic` — but "Valor total:" is a real label, and once
+  // one payment fact is read off a label the message IS a document.
+  const mail = 'Subject: Fatura FT 2026/00417\n\nSegue em anexo a fatura FT 2026/00417.\n'
+    + 'Valor total: 2.310,75 EUR\nData de vencimento: 06/09/2026\n';
+  const out = await parseMessage(Buffer.from(mail), {
+    schema: MONEY_SCHEMA,
+    complete: stubModel({
+      total: { value: 2310.75, confidence: 0.95, evidence: 'Valor total: 2.310,75 EUR' },
+      currency: { value: 'EUR', confidence: 0.95, evidence: '2.310,75 EUR' },
+    }),
+  });
+
+  assert.strictEqual(out.detected.type, 'generic', 'still no type keyword it knows');
+  assert.ok(out.fields.total.confidence > 0.9,
+    `a label-anchored total must keep its score, got ${out.fields.total.confidence}`);
+  assert.ok(!out.flags.some((f) => f.startsWith('no_document_context')),
+    'an anchored message is never treated as contextless');
+});
+
+test('the currency guess is unlabelled, so it may not anchor a message by itself', async () => {
+  // `currency` falls back to "the first money symbol anywhere", with no label
+  // behind it. Before it said so, that guess made the horoscope above look like
+  // an anchored document and suppressed the cap on every other field in it.
+  const { ruleExtract } = require('../src/rules');
+  const out = ruleExtract({ name: 'currency', type: 'string' }, {
+    searchable: 'only $4.95!', stripped: 'only $4.95!', text: 'only $4.95!', subject: '',
+    headers: {}, tables: [], detected: { ids: [], amounts: [{ value: 4.95, currency: 'USD', raw: '$4.95' }] },
+  });
+  assert.strictEqual(out.value, 'USD', 'it still answers');
+  assert.ok(out.unlabelled, 'and it declares that no label backed it');
+});
