@@ -412,3 +412,49 @@ test('parse.failed is logged with the input sha256 when everything breaks', asyn
   assert.ok(r.parse.warnings.length > 0);
   assert.strictEqual(r.needs_review, true);
 });
+
+// -------------------------------------------- quoted vs. own document number
+test('a number the message only quotes is marked, not adopted as its own', () => {
+  const ids = findIds('Credit note CN-3390 against invoice INV-9921');
+  const inv = ids.find((i) => i.kind === 'invoice_number');
+  const cn = ids.find((i) => i.kind === 'credit_note_number');
+  assert.strictEqual(inv.value, 'INV-9921');
+  assert.ok(inv.referenced, 'INV-9921 sits behind "against" — it is the document being cancelled');
+  assert.ok(inv.confidence < 0.9, 'a quoted id must not carry full confidence');
+  assert.strictEqual(cn.value, 'CN-3390');
+  assert.ok(!cn.referenced, "the credit note's own number is not a quotation");
+
+  const de = findIds('Gutschrift Nr. 4900123456\nBezug: Rechnung 9100998877');
+  assert.ok(de.find((i) => i.kind === 'invoice_number' && i.value === '9100998877').referenced);
+  assert.strictEqual(de.find((i) => i.kind === 'credit_note_number').value, '4900123456');
+});
+
+test('an unquoted invoice number keeps full confidence', () => {
+  const ids = findIds('Invoice INV-7781\nTotal: 120.00 EUR');
+  const inv = ids.find((i) => i.kind === 'invoice_number');
+  assert.strictEqual(inv.value, 'INV-7781');
+  assert.ok(!inv.referenced);
+  assert.strictEqual(inv.confidence, 0.9);
+});
+
+test('on a credit note, invoice_number reads the credit note, not the invoice it cancels', async () => {
+  const raw = Buffer.from([
+    'From: Vantage Media Ltd <accounts@vantagemedia.example>',
+    'Subject: Credit note CN-3390 against invoice INV-9921',
+    'Content-Type: text/plain', '',
+    'Credit note CN-3390', 'Issued against invoice INV-9921.', 'Total: -525.00 USD', '',
+  ].join('\n'));
+  const out = await parseMessage(raw, { llm: false, schema: { fields: [{ name: 'invoice_number', type: 'string' }] } });
+  assert.strictEqual(out.fields.invoice_number.value, 'CN-3390');
+});
+
+test('a quoted number is still answered when it is the only one, but not at 0.9', async () => {
+  const raw = Buffer.from([
+    'From: Ops <ops@x.example>', 'Subject: Payment reminder', 'Content-Type: text/plain', '',
+    'Bezug: Rechnung 9100998877', 'Betrag: 100,00 EUR', '',
+  ].join('\n'));
+  const out = await parseMessage(raw, { llm: false, schema: { fields: [{ name: 'invoice_number', type: 'string' }] } });
+  assert.strictEqual(out.fields.invoice_number.value, '9100998877');
+  assert.ok(out.fields.invoice_number.confidence < 0.9,
+    'the only candidate is a quotation — usable, but the model has to confirm it');
+});

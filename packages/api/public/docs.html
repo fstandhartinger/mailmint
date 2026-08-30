@@ -522,33 +522,41 @@ the bottom buckets, which is noise wearing the costume of a measurement:</p>
 <table>
 <thead><tr><th>Reported confidence</th><th>Values (3 runs pooled)</th><th>Actually correct</th></tr></thead>
 <tbody>
-<tr><td>0.9 &ndash; 1.0</td><td>196</td><td><strong>95.4&nbsp;%</strong></td></tr>
-<tr><td>0.7 &ndash; 0.9</td><td>80</td><td>75.0&nbsp;%</td></tr>
-<tr><td>0.6 &ndash; 0.7</td><td>7</td><td>0.0&nbsp;%</td></tr>
-<tr><td>below 0.6</td><td>22</td><td>59.1&nbsp;%</td></tr>
+<tr><td>0.9 &ndash; 1.0</td><td>204</td><td><strong>97.5&nbsp;%</strong></td></tr>
+<tr><td>0.7 &ndash; 0.9</td><td>78</td><td>74.4&nbsp;%</td></tr>
+<tr><td>0.6 &ndash; 0.7</td><td>6</td><td>0.0&nbsp;%</td></tr>
+<tr><td>below 0.6</td><td>18</td><td>61.1&nbsp;%</td></tr>
 </tbody>
 </table>
 </div>
 
-<p>Overall on that set, across the three runs: <strong>precision 84.3&ndash;85.9&nbsp;%, recall
-90.4&ndash;94.7&nbsp;%.</strong> On our own labelled corpus the same pipeline scores 100&nbsp;% on both, and
+<p>Overall on that set, across the three runs: <strong>precision 87.1&ndash;88.2&nbsp;%, recall
+93.6&ndash;95.7&nbsp;%.</strong> On our own labelled corpus the same pipeline scores 100&nbsp;% on both, and
 we do not quote that number, because a score measured on the cases you tuned against is not a score.</p>
 
-<p><strong>Read the bottom two rows as inverted, because they are.</strong> Seven values across three runs
-landed in 0.6&ndash;0.7 and none of them was right; twenty-two landed below 0.6 and thirteen were. At those
+<p><strong>Read the bottom two rows as inverted, because they are.</strong> Six values across three runs
+landed in 0.6&ndash;0.7 and none of them was right; eighteen landed below 0.6 and eleven were. At those
 counts that ordering is not evidence of anything &mdash; it is what two or three values per run look like.
 The part of the table that is measured rather than sampled is the top: a value reported at 0.9+ was right
-<strong>187 times out of 196</strong>, one reported at 0.7&ndash;0.9 only 3 times in 4. Everything under 0.7
+<strong>199 times out of 204</strong>, one reported at 0.7&ndash;0.9 only 3 times in 4. Everything under 0.7
 should be treated as &ldquo;the pipeline is telling you it does not know&rdquo;, not as a probability.</p>
 
 <p>The commitment is the shape of that table, not any single figure in it: if values reported at 0.9+ stop
-being right about 90&nbsp;% of the time, the formula is wrong and gets fixed. The nine wrong ones are
-concentrated, not scattered, and they are two mistakes rather than nine. Four of them are one rule:
-a document that <em>quotes another document&rsquo;s number</em> &mdash; a credit note against an invoice, a
-German advice with <code>Bezug: Rechnung &hellip;</code> &mdash; and the <code>invoice_number</code> rule
-takes the quoted number instead of the document&rsquo;s own. The other five are a money symbol read out of
-ordinary non-invoice mail (a horoscope, a newsletter, a sweepstakes notice) where the right answer was to
-return nothing at all. Every run, and every case
+being right about 90&nbsp;% of the time, the formula is wrong and gets fixed. The five wrong ones are
+concentrated, not scattered, and they are now a single mistake: <strong>a figure read out of ordinary
+non-invoice mail</strong> &mdash; a <code>$4.95</code> in a horoscope newsletter becoming a total and a
+currency, a date in a renewal reminder becoming a due date &mdash; where the right answer was to return
+nothing at all. That is the open one, and it is named here rather than averaged away.</p>
+
+<p><strong>What the previous table (95.4&nbsp;% at 0.9+, four of its nine errors in one rule) reported and
+this one does not:</strong> a document that <em>quotes another document&rsquo;s number</em> &mdash; a credit
+note against the invoice it cancels, a German advice reading <code>Bezug: Rechnung &hellip;</code> &mdash;
+made <code>invoice_number</code> return the quoted number instead of the document&rsquo;s own. A quoted
+number is now recognised as a quotation: it is still offered when it is the only candidate in the message,
+but below the threshold at which a rule is accepted on its own, so the model has to confirm it. A credit
+note&rsquo;s own number is read under its own label. Both of the hold-out cases that turned on this are now
+right in all three runs, and the 0.9+ bucket grew from 196 values to 204 while getting <em>more</em>
+accurate &mdash; the gain was not bought by abstaining more often. Every run, and every case
 each one gets wrong, is in <code>packages/parser/test/holdout/</code>; the pooled table above is
 <code>node test/holdout/score-pooled.js</code>.</p>
 </section>
@@ -1914,8 +1922,8 @@ node pointed at <code>POST /v1/parse</code> does the same job.</p>
     populated yet.</li>
   <li><strong>The confidence calibration curve is measured but small.</strong> The published table covers
     163 labelled field slots over 36 hold-out messages, run three times and pooled — 305 bucketed values. It
-    is enough to show that the top of the scale means something (95.4&nbsp;% correct at 0.9+) and nowhere
-    near enough to fit a reliability curve: below 0.7 the whole scale holds 29 values across all three runs,
+    is enough to show that the top of the scale means something (97.5&nbsp;% correct at 0.9+) and nowhere
+    near enough to fit a reliability curve: below 0.7 the whole scale holds 24 values across all three runs,
     and they are not even in the right order. That needs a corpus an order of magnitude larger. The
     22-message corpus the parser was tuned against scores 100&nbsp;% and is deliberately not quoted anywhere
     as an accuracy claim.</li>

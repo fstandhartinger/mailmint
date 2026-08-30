@@ -63,6 +63,10 @@ const SYSTEM = [
   '   Do not guess. Do not write "N/A", "unknown" or an empty string; use null.',
   '5. `confidence` is your own honest probability that the value is correct.',
   '6. Include every requested field exactly once, using the exact field name given.',
+  '7. A number the message QUOTES as a reference to ANOTHER document is not this',
+  '   document\'s number: in "Credit note CN-3390 against invoice INV-9921" the credit',
+  '   note number is CN-3390, and INV-9921 is the invoice being cancelled. Prefer the',
+  '   number this message itself carries.',
 ].join('\n');
 
 function buildPrompt(fields, ctx) {
@@ -75,7 +79,9 @@ function buildPrompt(fields, ctx) {
   const det = [];
   if (ctx.detected.amounts.length) det.push(`amounts: ${JSON.stringify(ctx.detected.amounts.slice(0, 12).map((a) => a.raw))}`);
   if (ctx.detected.dates.length) det.push(`dates: ${JSON.stringify(ctx.detected.dates.slice(0, 12).map((d) => `${d.raw} = ${d.value}`))}`);
-  if (ctx.detected.ids.length) det.push(`ids: ${JSON.stringify(ctx.detected.ids.slice(0, 12).map((i) => `${i.kind}=${i.value}`))}`);
+  // A quoted id must be labelled as such here, or "prefer these" below tells the
+  // model to adopt the other document's number with our own authority behind it.
+  if (ctx.detected.ids.length) det.push(`ids: ${JSON.stringify(ctx.detected.ids.slice(0, 12).map((i) => `${i.kind}=${i.value}${i.referenced ? ' (QUOTED reference to ANOTHER document, not this one)' : ''}`))}`);
   if (det.length) parts.push('DETERMINISTIC DETECTIONS (already verified, prefer these):\n' + det.join('\n'));
 
   if (ctx.tables && ctx.tables.length) {

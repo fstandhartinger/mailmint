@@ -32,6 +32,8 @@ const SYNONYMS = {
   order_number: ['order number', 'order no', 'order #', 'order id', 'order', 'bestellnummer',
     'bestell-nr', 'auftragsnummer', 'auftrags-nr', 'numero de pedido', 'numero de commande'],
   receipt_number: ['receipt number', 'receipt no', 'receipt #', 'receipt', 'quittungsnummer', 'belegnummer'],
+  credit_note_number: ['credit note number', 'credit note no', 'credit note #', 'credit note',
+    'credit memo', 'gutschriftsnummer', 'gutschrift-nr', 'gutschrift nr', 'gutschrift'],
   customer_number: ['customer number', 'customer no', 'customer id', 'account number',
     'kundennummer', 'kunden-nr', 'kundennr'],
   tracking_number: ['tracking number', 'tracking no', 'tracking #', 'tracking id', 'tracking code',
@@ -81,7 +83,37 @@ const ID_KIND_FOR = {
   customer_number: 'customer_number', customer_id: 'customer_number', kundennummer: 'customer_number',
   po_number: 'po_number', purchase_order: 'po_number',
   receipt_number: 'receipt_number', reference: 'reference', vat_id: 'vat_id', vat_number: 'vat_id',
+  credit_note_number: 'credit_note_number', credit_note: 'credit_note_number',
+  credit_note_no: 'credit_note_number', credit_memo_number: 'credit_note_number',
+  gutschrift: 'credit_note_number', gutschriftsnummer: 'credit_note_number',
 };
+
+/**
+ * Choose the id that is THIS document's number.
+ *
+ * Two ways the plain "first id of the right kind" answer is wrong, both of them
+ * measured on the hold-out:
+ *  1. the message only QUOTES the number ("against invoice INV-9921",
+ *     "Bezug: Rechnung 9100998877") — that is another document's number;
+ *  2. on a credit note the document's own number wears a credit-note label, so
+ *     an `invoice_number` field finds nothing but the invoice being cancelled.
+ *
+ * A quoted number is still returned when it is all there is — dropping it would
+ * turn right answers into silence — but below the rule-accept threshold, so the
+ * model has to confirm it before it can be reported as certain.
+ */
+function pickId(ids, idKind) {
+  const of = (k) => (ids || []).filter((i) => i.kind === k);
+  const own = of(idKind).filter((i) => !i.referenced);
+  if (own.length) return { hit: own[0], cap: 0.95 };
+  if (idKind === 'invoice_number' || idKind === 'receipt_number') {
+    const credit = of('credit_note_number').filter((i) => !i.referenced);
+    if (credit.length) return { hit: credit[0], cap: 0.95 };
+  }
+  const quoted = of(idKind)[0];
+  if (quoted) return { hit: quoted, cap: 0.7, quoted: true };
+  return null;
+}
 
 function normName(n) { return String(n || '').trim().toLowerCase().replace(/[\s-]+/g, '_'); }
 function humanise(n) { return normName(n).replace(/_/g, ' '); }
@@ -228,10 +260,11 @@ function ruleExtract(field, ctx) {
   // 1. A detected id of the matching kind is as good as it gets.
   const idKind = ID_KIND_FOR[key];
   if (idKind) {
-    const hit = (ctx.detected.ids || []).find((i) => i.kind === idKind);
-    if (hit) {
-      return { value: hit.value, confidence: Math.min(0.95, hit.confidence + 0.05),
-        source: 'rule', evidence: evidenceAround(ctx.searchable, hit.value) };
+    const p = pickId(ctx.detected.ids, idKind);
+    if (p) {
+      return { value: p.hit.value, confidence: Math.min(p.cap, p.hit.confidence + 0.05),
+        source: 'rule', evidence: evidenceAround(ctx.searchable, p.hit.value),
+        ...(p.quoted ? { fallback: true } : {}) };
     }
   }
 

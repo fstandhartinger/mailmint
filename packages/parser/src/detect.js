@@ -68,6 +68,7 @@ const ID_LABELS = [
   { kind: 'po_number', re: /\b(?:p\.?o\.?|purchase order)[\s\-]*(?:number|no\.?|nr\.?|#)?\s*[:#]?\s*([A-Z0-9][A-Z0-9._\/-]{1,29})\b/gi },
   { kind: 'receipt_number', re: /\b(?:receipt|beleg|quittung|recibo|ricevuta)[\s\-]*(?:number|no\.?|nr\.?|#|id)?\s*[:#]?\s*([A-Z0-9][A-Z0-9._\/-]{1,29})\b/gi },
   { kind: 'reference', re: /\b(?:reference|referenz|ref\.?|verwendungszweck)[\s\-]*(?:number|no\.?|nr\.?|#)?\s*[:#]?\s*([A-Z0-9][A-Z0-9._\/-]{2,29})\b/gi },
+  { kind: 'credit_note_number', re: /\b(?:credit[\s\-]*note|credit[\s\-]*memo|gutschrift|avoir|nota[\s\-]*de[\s\-]*cr[ée]dito|nota[\s\-]*di[\s\-]*credito)[\s\-]*(?:number|no\.?|nr\.?|num\.?|#|id)?\s*[:#]?\s*([A-Z0-9][A-Z0-9._\/-]{1,29})\b/gi },
   { kind: 'vat_id', re: /\b(?:VAT|USt-?IdNr\.?|Ust-?ID|TVA|IVA)[\s\-]*(?:number|no\.?|nr\.?|#|id)?\s*[:#]?\s*([A-Z]{2}[A-Z0-9]{6,14})\b/gi },
 ];
 
@@ -77,6 +78,18 @@ const CARRIER_TRACKING = [
   { re: /\b(?:JJD|JVGL|GM)\d{10,20}\b/g, carrier: 'dhl' },
   { re: /\b\d{12}\b(?=[^\d])/g, carrier: 'fedex' },
 ];
+
+/**
+ * A number the message QUOTES is not the message's own number.
+ * "Credit note CN-3390 against invoice INV-9921" names two documents and only
+ * one of them is this one; "Bezug: Rechnung 9100998877" names the invoice a
+ * credit note cancels. Reading the quoted number as the document's own was the
+ * most common way this layer was confidently wrong on the hold-out.
+ *
+ * Tested against the text immediately BEFORE the label, so the cue has to sit
+ * right there — a mention of "original" two sentences earlier does not count.
+ */
+const REFERENCE_CUE = /(?:\bagainst|\boriginal|\bref(?:erence|erences|erring|ers)?\s*(?:to)?\s*[:.]?|\brelat(?:ing|ed)\s+to|\bcorrection\s+(?:to|for)|\bcancels?|\bbezug(?:nehmend)?(?:\s+auf)?\s*[:.]?|\bbez[\u00fcu]glich|\bstorno(?:\s+(?:zu|f\u00fcr))?|\bkorrektur\s+zu|\bstorniert|\bzur?)\s*$/i;
 
 const STOPWORDS = new Set(['NUMBER', 'NO', 'NR', 'ID', 'FOR', 'FROM', 'TO', 'IS', 'THE', 'AND',
   'OF', 'DATE', 'TOTAL', 'AT', 'ON', 'YOUR', 'OUR', 'HAS', 'BEEN', 'WAS', 'WE', 'YOU', 'IST',
@@ -106,7 +119,9 @@ function findIds(text) {
       const key = kind + '|' + v;
       if (seen.has(key)) continue;
       seen.add(key);
-      out.push({ kind, value: v, index: m.index, confidence: 0.9 });
+      const referenced = REFERENCE_CUE.test(text.slice(Math.max(0, m.index - 40), m.index));
+      out.push({ kind, value: v, index: m.index, confidence: referenced ? 0.5 : 0.9,
+        ...(referenced ? { referenced: true } : {}) });
     }
   }
   for (const { re, carrier } of CARRIER_TRACKING) {

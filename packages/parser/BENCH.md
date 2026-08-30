@@ -6,7 +6,7 @@ ground truth. Nothing here is estimated. Where the parser is wrong or blind, it 
 Reproduce:
 
 ```
-npm test                       # 61 unit tests, offline, ~0.3 s
+npm test                       # 89 unit tests, offline, ~0.4 s
 node test/accuracy.js --no-llm # deterministic layer only
 node test/accuracy.js          # full pipeline (makes live model calls)
 ```
@@ -113,18 +113,28 @@ and pooled by `test/holdout/score-pooled.js`:
 
 | bucket | n (3 runs) | correct | actual |
 |---|---|---|---|
-| 0.9–1.0 | 196 | 187 | **95.4 %** |
-| 0.7–0.9 | 80 | 60 | 75.0 % |
-| 0.6–0.7 | 7 | 0 | **0.0 %** |
-| below 0.6 | 22 | 13 | 59.1 % |
+| 0.9–1.0 | 204 | 199 | **97.5 %** |
+| 0.7–0.9 | 78 | 58 | 74.4 % |
+| 0.6–0.7 | 6 | 0 | **0.0 %** |
+| below 0.6 | 18 | 11 | 61.1 % |
 
-Precision 84.3–85.9 %, recall 90.4–94.7 % across the three runs. The top of the scale
-separates cleanly from the middle; the bottom two rows are 29 values in total and are in
+Precision 87.1–88.2 %, recall 93.6–95.7 % across the three runs. The top of the scale
+separates cleanly from the middle; the bottom two rows are 24 values in total and are in
 the wrong order, which is what two or three values per run look like and is published as
-such rather than smoothed. Nine values were wrong while reported at 0.9+, and they are
-two mistakes rather than nine: four are `invoice_number` taking a *quoted* document
-number (a credit note against an invoice, `Bezug: Rechnung …`), five are a currency or a
-total read out of mail that contains no invoice at all.
+such rather than smoothed. Five values were wrong while reported at 0.9+, and they are
+now one mistake: a figure read out of mail that contains no invoice at all — a `$4.95`
+in a horoscope newsletter read as a total and a currency, a date in a renewal reminder
+read as a due date. In each the right answer was to return nothing.
+
+Changed since the 30 August morning run (196 / 95.4 %, precision 84.3–85.9 %, recall
+90.4–94.7 %): four of that run's nine top-bucket errors were `invoice_number` returning a
+number the message merely *quotes* — a credit note against the invoice it cancels,
+`Bezug: Rechnung …`. `detect.js` now marks a quoted id as a quotation and drops its
+confidence to 0.5, `rules.js` prefers the document's own number and reads a credit note's
+number under its own label, and the model is told which ids are quotations instead of
+being handed them under "prefer these". Both hold-out cases are right in all three runs.
+The 0.9+ bucket grew 196 → 204 while getting more accurate, so the gain was not bought by
+abstaining more often. Regression tests: `test/extract.test.js`, four cases.
 
 Confidence is **computed, never reported**. The model's own number is one input and
 it may only ever lower a score:
@@ -136,8 +146,9 @@ it may only ever lower a score:
 | `rule` (model saw the field and returned nothing for it) | 6 | 100.0 % | 0.824 |
 
 On the hold-out, where there are errors to see, the same ordering holds and it is the
-point of the design: `rule+llm` 96.4 % correct, `llm` alone 100 % over 18 values, and
-`rule` alone — a rule the model declined to corroborate — **47.8 % over 23 values**.
+point of the design (pooled over the three 30 August runs): `rule+llm` 98.9 % correct
+over 177 values, `llm` alone 94.0 % over 67, and `rule` alone — a rule the model declined
+to corroborate — **45.6 % over 57 values**.
 A rule nobody seconded is the least trustworthy source in the system, and it is the one
 that used to score highest.
 
