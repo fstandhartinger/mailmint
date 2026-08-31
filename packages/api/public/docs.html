@@ -1879,8 +1879,9 @@ screenshots of it running in a real n8n, is on <a href="/n8n">the n8n page</a>.<
 <p><strong>It is on npm</strong>, so on self-hosted n8n it installs from
 <em>Settings&nbsp;&rarr;&nbsp;Community&nbsp;Nodes</em> or with
 <code>npm install n8n-nodes-mailmint</code> in <code>~/.n8n/nodes</code>.
-<strong>n8n Cloud will not accept it until n8n verifies it</strong>; there, an <strong>HTTP Request</strong>
-node pointed at <code>POST /v1/parse</code> does the same job.</p>
+<strong>n8n approved it on 31 August 2026, but its registry publication is still pending</strong>;
+until the entry appears, an <strong>HTTP Request</strong> node pointed at <code>POST /v1/parse</code>
+does the same job on Cloud.</p>
 </div>
 
 <div class="tw">
@@ -1913,8 +1914,9 @@ node pointed at <code>POST /v1/parse</code> does the same job.</p>
 <p>Kept here rather than left for you to discover.</p>
 
 <ul>
-  <li><strong>The n8n node is not verified by n8n.</strong> It is published on npm and installs on
-    self-hosted n8n, but n8n Cloud only accepts verified community nodes, and that decision is n8n's.
+  <li><strong>The n8n node is approved, but not yet in n8n&rsquo;s registry.</strong> It is published on npm
+    and installs on self-hosted n8n. n8n approved it on 31 August 2026 and says publication is pending
+    its next registry batch; Cloud cannot install it until that entry appears.
     <a href="#parse"><code>POST /v1/parse</code></a> works from any n8n through an HTTP Request node.</li>
   <li><strong>Attachment content extraction is not wired into the parse pipeline.</strong> The extractor
     package is written; <code>attachments[].extracted</code> is reserved for its output and is not
@@ -1939,8 +1941,8 @@ node pointed at <code>POST /v1/parse</code> does the same job.</p>
     <code>needs_review</code> before acting on it.</li>
   <li><strong>There is no SLA and no uptime history.</strong> Plans and prices exist and are charged;
     an availability commitment does not.</li>
-  <li><strong>Nobody outside this project has paid for MailMint.</strong> There are no customer numbers to
-    quote, and none will be invented here.</li>
+  <li><strong>MailMint has paying customers.</strong> No customer count, logo, testimonial or case study
+    is quoted here without a current measurement or the customer&rsquo;s permission.</li>
 </ul>
 </section>
 

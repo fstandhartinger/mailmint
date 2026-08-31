@@ -45,12 +45,12 @@ twelve annotated nodes with both failure paths wired.
 | `packages/n8n-node` — `n8n-nodes-mailmint` | **Published: `npm i n8n-nodes-mailmint`**, zero runtime dependencies, npm provenance attestation |
 | Billing | Live. Free is 300 parsed emails a month; Starter $9, Pro $29, Scale $99 through Stripe Checkout |
 | SMTP TLS certificate | **Still self-signed.** Sending servers using opportunistic STARTTLS deliver anyway; one enforcing strict TLS would refuse |
-| n8n verification | **Not yet.** The node is in n8n's manual review, so n8n Cloud cannot install it; self-hosted n8n can |
-| Paying customers | **None.** Nobody outside this project has paid, and no number here will pretend otherwise |
+| n8n verification | **Approved 31 August 2026.** n8n says publication is pending its next registry batch; until the registry entry appears, n8n Cloud cannot install it. Self-hosted n8n can install it now |
+| Paying customers | **Yes.** No customer logos or testimonials are quoted without permission |
 
 Two things follow from that table and are worth saying out loud: the parts a stranger
 touches — signup, an address, a parse, a webhook, a card — all work today; and the two
-things that do not are a TLS certificate and somebody else's review queue.
+things that do not are a public CA certificate and the still-pending n8n registry batch.
 
 ## What the JSON looks like
 
