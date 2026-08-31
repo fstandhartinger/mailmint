@@ -221,6 +221,14 @@ function detectType(ctx) {
   if (ctx.tables.length && ctx.amounts.length >= 2) { scores.invoice += 1; scores.order += 1; }
   if (!ctx.amounts.length) { scores.invoice -= 2; scores.receipt -= 2; scores.order -= 1; }
 
+  // Sweepstakes rules use "receipt" as a legal noun (for example, "receipt
+  // of documents") and repeat prices/retail values without describing a
+  // payment. Do not let those repetitions turn promotional mail into a
+  // receipt unless an actual transaction phrase is also present.
+  const promotion = /\b(?:sweepstakes?|contest rules?|prize (?:notification|winner|claim))\b/i.test(hay);
+  const transaction = /\b(?:payment (?:received|successful|confirmation)|thanks? for your payment|you (?:have been |were )?charged|card ending|transaction id|receipt\s*(?:#|number|no\.?|id))\b/i.test(hay);
+  if (promotion && !transaction) scores.receipt = 0;
+
   let best = 'generic', bestScore = 0;
   for (const [t, s] of Object.entries(scores)) if (s > bestScore) { best = t; bestScore = s; }
   return bestScore >= 3 ? best : 'generic';

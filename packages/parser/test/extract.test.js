@@ -153,6 +153,21 @@ test('document type detection over the corpus', () => {
   }
 });
 
+test('sweepstakes legal copy mentioning receipt and retail values is not a receipt', () => {
+  const m = parseMime(fs.readFileSync(path.join(__dirname, 'holdout/corpus/ho-real-04-sa-nocte.eml')));
+  const text = m.body.stripped_text || m.body.text;
+  const got = detectType({ subject: m.headers.subject, text, attachments: m.attachments,
+    ids: findIds(text), tables: m.tables, amounts: findAmounts(text) });
+  assert.strictEqual(got, 'generic');
+});
+
+test('a transactional receipt remains a receipt even when it mentions a prize', () => {
+  const text = 'Payment received. Transaction ID: tx-441. Prize promotion discount. Total: $12.00';
+  const got = detectType({ subject: 'Your receipt', text, attachments: [], ids: findIds(text),
+    tables: [], amounts: findAmounts(text) });
+  assert.strictEqual(got, 'receipt');
+});
+
 // ---------------------------------------------------------------- tables
 test('whitespace-aligned plain-text tables', () => {
   const t = extractTextTables('Item              Qty   Unit price   Amount\nBlue Widget         3       $9.00      $27.00\nRed Gadget          1       $4.50       $4.50');
