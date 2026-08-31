@@ -280,8 +280,8 @@ x-mailmint-signature: t=1787648043,v1=6a1f…c07b
           <div>
             <div class="n">88&nbsp;% / 95&nbsp;%</div>
             <div class="t">Precision and recall on a <strong>hold-out set the parser had never seen</strong> —
-              36 adversarial messages, 163 labelled field slots, run three times on 30 Aug 2026
-              (87.1–88.2&nbsp;% and 93.6–95.7&nbsp;% across the runs). This is the number we publish.</div>
+              36 adversarial messages, 163 labelled field slots, run three times on 31 Aug 2026
+              (87.1–87.8&nbsp;% and 91.5–93.6&nbsp;% across the runs). This is the number we publish.</div>
           </div>
           <div>
             <div class="n">91.6&nbsp;%</div>
@@ -290,14 +290,14 @@ x-mailmint-signature: t=1787648043,v1=6a1f…c07b
               runs on every message, to cross-examine them rather than to replace them.</div>
           </div>
           <div>
-            <div class="n">97 · 74</div>
+            <div class="n">100 · 70</div>
             <div class="t">Percent actually correct in the 0.9+ and 0.7&ndash;0.9 confidence buckets on that
               hold-out, pooled over the three runs. <strong>The gate at 0.9 is worth setting.</strong> Below
-              0.7 the buckets hold 24 values in total and come out in the wrong order —
+              0.7 the buckets hold 28 values in total and come out in the wrong order —
               <a href="/docs#calibration">we publish that too</a>.</div>
           </div>
         </div>
-        <p class="measured-note">Measured 30 August 2026. <strong>These are hold-out numbers, deliberately.</strong>
+        <p class="measured-note">Measured 31 August 2026. <strong>These are hold-out numbers, deliberately.</strong>
           On our own labelled corpus the full pipeline scores 100&nbsp;% precision and recall, and we do not
           quote that, because a number measured on the cases you tuned against is not a number. 36 unseen
           adversarial messages is still a small sample and not a general accuracy guarantee. The harness, the

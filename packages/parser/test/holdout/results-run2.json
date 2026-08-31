@@ -10,9 +10,9 @@
    "currency": "GBP",
    "line_items_count": 3
   },
-  "ms": 2887,
+  "ms": 3810,
   "out": {
-   "received_at": "2026-08-30T12:39:23.534Z",
+   "received_at": "2026-08-31T16:40:52.350Z",
    "headers": {
     "message_id": "<nw-2026-0518@northwind-supply.co.uk>",
     "date": "2026-08-21T08:12:44.000Z",
@@ -220,10 +220,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 2886,
-     "mime": 6,
-     "deterministic": 9,
-     "llm": 2844,
+     "total": 3809,
+     "mime": 11,
+     "deterministic": 13,
+     "llm": 3759,
      "persist": 0
     },
     "warnings": []
@@ -238,9 +238,9 @@
    "due_date": "2026-09-02",
    "currency": "USD"
   },
-  "ms": 2989,
+  "ms": 1837,
   "out": {
-   "received_at": "2026-08-30T12:39:26.523Z",
+   "received_at": "2026-08-31T16:40:54.188Z",
    "headers": {
     "message_id": "<hc-88214-corr@heliocloud.io>",
     "date": "2026-08-03T17:41:02.000Z",
@@ -335,8 +335,8 @@
     },
     "currency": {
      "value": "USD",
-     "confidence": 0.85,
-     "source": "rule",
+     "confidence": 0.9,
+     "source": "rule+llm",
      "evidence": "$1,299.00"
     }
    },
@@ -348,10 +348,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 2989,
-     "mime": 3,
-     "deterministic": 0,
-     "llm": 2981,
+     "total": 1837,
+     "mime": 1,
+     "deterministic": 1,
+     "llm": 1830,
      "persist": 0
     },
     "warnings": []
@@ -370,9 +370,9 @@
    "currency": "EUR",
    "vendor": "Atlas Print Werk"
   },
-  "ms": 5281,
+  "ms": 1901,
   "out": {
-   "received_at": "2026-08-30T12:39:31.805Z",
+   "received_at": "2026-08-31T16:40:56.089Z",
    "headers": {
     "message_id": "<reply-ap4471@meyer-gmbh.de>",
     "date": "2026-07-15T09:20:00.000Z",
@@ -518,9 +518,9 @@
     },
     "tax": {
      "value": 199.5,
-     "confidence": 0.96,
+     "confidence": 0.28,
      "source": "llm",
-     "evidence": "199,50 EUR"
+     "evidence": null
     },
     "due_date": {
      "value": "2026-08-13",
@@ -530,7 +530,7 @@
     },
     "invoice_date": {
      "value": "2026-07-14",
-     "confidence": 0.5,
+     "confidence": 0.88,
      "source": "rule",
      "evidence": "Date: Tue, 14 Jul 2026 09:30:00 +0200"
     },
@@ -548,8 +548,8 @@
     }
    },
    "flags": [
-    "rule_llm_disagreement:invoice_date",
-    "low_confidence:invoice_date"
+    "hallucinated_evidence:tax",
+    "low_confidence:tax"
    ],
    "needs_review": true,
    "parse": {
@@ -558,10 +558,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 5281,
-     "mime": 3,
-     "deterministic": 1,
-     "llm": 5097,
+     "total": 1901,
+     "mime": 2,
+     "deterministic": 0,
+     "llm": 1735,
      "persist": 0
     },
     "warnings": []
@@ -576,9 +576,9 @@
    "due_date": "2026-04-03",
    "currency": "EUR"
   },
-  "ms": 1797,
+  "ms": 2426,
   "out": {
-   "received_at": "2026-08-30T12:39:33.603Z",
+   "received_at": "2026-08-31T16:40:58.515Z",
    "headers": {
     "message_id": "<lindner-90112@lindner-elektro.de>",
     "date": "2026-03-02T06:00:00.000Z",
@@ -678,10 +678,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 1797,
+     "total": 2426,
      "mime": 0,
-     "deterministic": 0,
-     "llm": 1795,
+     "deterministic": 1,
+     "llm": 2424,
      "persist": 0
     },
     "warnings": []
@@ -696,9 +696,9 @@
    "currency": "EUR",
    "payment_date": "2026-08-06"
   },
-  "ms": 2471,
+  "ms": 2657,
   "out": {
-   "received_at": "2026-08-30T12:39:36.074Z",
+   "received_at": "2026-08-31T16:41:01.172Z",
    "headers": {
     "message_id": "<tm-77301@transfermint.eu>",
     "date": "2026-08-06T12:00:00.000Z",
@@ -769,13 +769,13 @@
      "value": "TM-77301",
      "confidence": 0.85,
      "source": "llm",
-     "evidence": "Payment confirmation TM-77301"
+     "evidence": "TM-77301"
     },
     "total": {
      "value": 1234.56,
      "confidence": 0.93,
      "source": "llm",
-     "evidence": "You were charged:        1.234,56 €"
+     "evidence": "1.234,56 €"
     },
     "currency": {
      "value": "EUR",
@@ -787,7 +787,7 @@
      "value": "2026-08-06",
      "confidence": 0.93,
      "source": "llm",
-     "evidence": "Date of payment: 06.08.2026"
+     "evidence": "06.08.2026"
     }
    },
    "flags": [],
@@ -798,10 +798,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 2471,
-     "mime": 5,
-     "deterministic": 15,
-     "llm": 2253,
+     "total": 2657,
+     "mime": 4,
+     "deterministic": 12,
+     "llm": 2454,
      "persist": 0
     },
     "warnings": []
@@ -816,9 +816,9 @@
    "currency": "USD",
    "line_items_count": 2
   },
-  "ms": 1776,
+  "ms": 2697,
   "out": {
-   "received_at": "2026-08-30T12:39:37.851Z",
+   "received_at": "2026-08-31T16:41:03.869Z",
    "headers": {
     "message_id": "<cn-3390@vantagemedia.example>",
     "date": "2026-08-11T10:30:00.000Z",
@@ -913,13 +913,17 @@
      {
       "kind": "invoice_number",
       "value": "INV-9921"
+     },
+     {
+      "kind": "credit_note_number",
+      "value": "CN-3390"
      }
     ],
     "addresses": []
    },
    "fields": {
     "invoice_number": {
-     "value": "INV-9921",
+     "value": "CN-3390",
      "confidence": 0.97,
      "source": "rule+llm",
      "evidence": "Credit note CN-3390 against invoice INV-9921"
@@ -962,10 +966,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 1776,
+     "total": 2697,
      "mime": 1,
-     "deterministic": 0,
-     "llm": 1773,
+     "deterministic": 1,
+     "llm": 2695,
      "persist": 0
     },
     "warnings": []
@@ -985,9 +989,9 @@
    "delivery_date": "2026-09-02",
    "line_items_count": 3
   },
-  "ms": 2757,
+  "ms": 4712,
   "out": {
-   "received_at": "2026-08-30T12:39:40.608Z",
+   "received_at": "2026-08-31T16:41:08.581Z",
    "headers": {
     "message_id": "<rf-556120@rowanfell.example>",
     "date": "2026-08-15T19:05:00.000Z",
@@ -1217,10 +1221,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 2757,
-     "mime": 1,
-     "deterministic": 1,
-     "llm": 2749,
+     "total": 4712,
+     "mime": 2,
+     "deterministic": 0,
+     "llm": 4704,
      "persist": 0
     },
     "warnings": [
@@ -1237,9 +1241,9 @@
    "currency": "USD",
    "line_items_count": 6
   },
-  "ms": 3679,
+  "ms": 2865,
   "out": {
-   "received_at": "2026-08-30T12:39:44.287Z",
+   "received_at": "2026-08-31T16:41:11.445Z",
    "headers": {
     "message_id": "<sh-1042-r2@studio-halcyon.example>",
     "date": "2026-08-19T13:45:00.000Z",
@@ -1403,11 +1407,11 @@
      "value": 8400,
      "confidence": 0.96,
      "source": "llm",
-     "evidence": "$8,400.00"
+     "evidence": "Grand total is $8,400.00."
     },
     "currency": {
      "value": "USD",
-     "confidence": 0.97,
+     "confidence": 0.9,
      "source": "rule+llm",
      "evidence": "$8,400.00"
     },
@@ -1459,10 +1463,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 3679,
+     "total": 2864,
      "mime": 1,
      "deterministic": 1,
-     "llm": 3673,
+     "llm": 2859,
      "persist": 0
     },
     "warnings": []
@@ -1479,9 +1483,9 @@
    "due_date": "2026-09-11",
    "line_items_count": 2
   },
-  "ms": 1962,
+  "ms": 4005,
   "out": {
-   "received_at": "2026-08-30T12:39:46.249Z",
+   "received_at": "2026-08-31T16:41:15.451Z",
    "headers": {
     "message_id": "<fp-2026-3388@yunhe-tech.example>",
     "date": "2026-08-12T01:00:00.000Z",
@@ -1536,19 +1540,19 @@
      "value": "FP-2026-3388",
      "confidence": 0.85,
      "source": "llm",
-     "evidence": "FP-2026-3388"
+     "evidence": "发票号码: FP-2026-3388"
     },
     "total": {
      "value": 4480,
-     "confidence": 0.88,
+     "confidence": 0.85,
      "source": "llm",
-     "evidence": "总计: 4480.00 元 (CNY)"
+     "evidence": "总计: 4480.00 元"
     },
     "currency": {
      "value": "CNY",
-     "confidence": 0.25,
+     "confidence": 0.85,
      "source": "llm",
-     "evidence": null
+     "evidence": "4480.00 元 (CNY)"
     },
     "invoice_date": {
      "value": "2026-08-12",
@@ -1581,10 +1585,12 @@
     }
    },
    "flags": [
-    "hallucinated_evidence:currency",
+    "no_document_context:total",
+    "no_document_context:currency",
     "hallucinated_evidence:invoice_date",
+    "no_document_context:invoice_date",
     "hallucinated_evidence:due_date",
-    "low_confidence:currency",
+    "no_document_context:due_date",
     "low_confidence:invoice_date",
     "low_confidence:due_date"
    ],
@@ -1595,10 +1601,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 1962,
-     "mime": 2,
-     "deterministic": 0,
-     "llm": 1876,
+     "total": 4005,
+     "mime": 1,
+     "deterministic": 1,
+     "llm": 3921,
      "persist": 0
     },
     "warnings": []
@@ -1614,9 +1620,9 @@
    "due_date": "2026-09-06",
    "attachment_filename": "Fatura FT 2026-00417 - Monteiro Serviços Unipessoal Lda (cópia).pdf"
   },
-  "ms": 1503,
+  "ms": 2588,
   "out": {
-   "received_at": "2026-08-30T12:39:47.752Z",
+   "received_at": "2026-08-31T16:41:18.039Z",
    "headers": {
     "message_id": "<ft-2026-00417@monteiro-servicos.pt>",
     "date": "2026-08-07T11:00:00.000Z",
@@ -1690,28 +1696,28 @@
    },
    "fields": {
     "invoice_number": {
-     "value": "FT 2026/00417",
-     "confidence": 0.85,
-     "source": "llm",
-     "evidence": "FT 2026/00417"
+     "value": null,
+     "confidence": 0,
+     "source": "none",
+     "evidence": null
     },
     "total": {
      "value": 2310.75,
-     "confidence": 0.97,
-     "source": "rule+llm",
+     "confidence": 0.88,
+     "source": "rule",
      "evidence": "total: 2.310,75 EUR"
     },
     "currency": {
      "value": "EUR",
-     "confidence": 0.97,
-     "source": "rule+llm",
+     "confidence": 0.85,
+     "source": "rule",
      "evidence": "2.310,75 EUR"
     },
     "due_date": {
-     "value": "2026-09-06",
-     "confidence": 0.93,
-     "source": "llm",
-     "evidence": "06/09/2026"
+     "value": null,
+     "confidence": 0,
+     "source": "none",
+     "evidence": null
     },
     "attachment_filename": {
      "value": "Fatura FT 2026-00417 - Monteiro Serviços Unipessoal Lda (cópia).pdf",
@@ -1728,10 +1734,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 1503,
+     "total": 2588,
      "mime": 2,
      "deterministic": 0,
-     "llm": 1487,
+     "llm": 2571,
      "persist": 0
     },
     "warnings": []
@@ -1747,9 +1753,9 @@
    "payment_date": "2026-08-02",
    "card_last4": "4242"
   },
-  "ms": 3181,
+  "ms": 2510,
   "out": {
-   "received_at": "2026-08-30T12:39:50.934Z",
+   "received_at": "2026-08-31T16:41:20.549Z",
    "headers": {
     "message_id": "<rc-40217@nightjar.example>",
     "date": "2026-08-02T03:11:00.000Z",
@@ -1859,10 +1865,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 3181,
+     "total": 2510,
      "mime": 0,
      "deterministic": 1,
-     "llm": 3174,
+     "llm": 2504,
      "persist": 0
     },
     "warnings": [
@@ -1879,9 +1885,9 @@
    "currency": "USD",
    "line_items_count": 2
   },
-  "ms": 2127,
+  "ms": 2398,
   "out": {
-   "received_at": "2026-08-30T12:39:53.061Z",
+   "received_at": "2026-08-31T16:41:22.947Z",
    "headers": {
     "message_id": "<ft-rcpt-771@ferroustools.example>",
     "date": "2026-08-13T22:14:00.000Z",
@@ -2027,10 +2033,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 2127,
+     "total": 2398,
      "mime": 1,
      "deterministic": 0,
-     "llm": 2125,
+     "llm": 2396,
      "persist": 0
     },
     "warnings": []
@@ -2049,9 +2055,9 @@
    "vendor": "Coilworks, Inc.",
    "line_items_count": 7
   },
-  "ms": 2675,
+  "ms": 4040,
   "out": {
-   "received_at": "2026-08-30T12:39:55.737Z",
+   "received_at": "2026-08-31T16:41:26.987Z",
    "headers": {
     "message_id": "<cw-2026-0091@coilworks.example>",
     "date": "2026-08-10T06:00:00.000Z",
@@ -2274,44 +2280,44 @@
    "fields": {
     "invoice_number": {
      "value": "CW-2026-0091",
-     "confidence": 0.88,
-     "source": "rule",
+     "confidence": 0.97,
+     "source": "rule+llm",
      "evidence": "Invoice CW-2026-0091 from Coilworks, Inc."
     },
     "total": {
      "value": 759.5,
-     "confidence": 0.81,
-     "source": "rule",
+     "confidence": 0.98,
+     "source": "rule+llm",
      "evidence": "Amount due\t$759.50"
     },
     "subtotal": {
      "value": 700,
-     "confidence": 0.81,
-     "source": "rule",
+     "confidence": 0.98,
+     "source": "rule+llm",
      "evidence": "Subtotal\t$700.00"
     },
     "tax": {
-     "value": null,
-     "confidence": 0,
-     "source": "none",
-     "evidence": null
+     "value": 59.5,
+     "confidence": 0.96,
+     "source": "llm",
+     "evidence": "Tax (8.5%)\t$59.50"
     },
     "due_date": {
      "value": "2026-09-09",
-     "confidence": 0.78,
-     "source": "rule",
+     "confidence": 0.97,
+     "source": "rule+llm",
      "evidence": "Due 2026-09-09. Billed to Vireo Labs LLC."
     },
     "currency": {
      "value": "USD",
-     "confidence": 0.85,
-     "source": "rule",
+     "confidence": 0.97,
+     "source": "rule+llm",
      "evidence": "$240.00"
     },
     "vendor": {
-     "value": "Coilworks Billing",
+     "value": "Coilworks, Inc.",
      "confidence": 0.25,
-     "source": "header",
+     "source": "llm",
      "evidence": null
     },
     "line_items": {
@@ -2352,8 +2358,8 @@
        "amount": 60
       }
      ],
-     "confidence": 0.91,
-     "source": "rule",
+     "confidence": 0.98,
+     "source": "rule+llm",
      "evidence": "platform subscription - aug 2026 qty 1 $240"
     }
    },
@@ -2368,10 +2374,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 2675,
+     "total": 4040,
      "mime": 3,
      "deterministic": 1,
-     "llm": 2666,
+     "llm": 4032,
      "persist": 0
     },
     "warnings": []
@@ -2386,9 +2392,9 @@
    "currency": "EUR",
    "delivery_date": null
   },
-  "ms": 1404,
+  "ms": 2092,
   "out": {
-   "received_at": "2026-08-30T12:39:57.141Z",
+   "received_at": "2026-08-31T16:41:29.078Z",
    "headers": {
     "message_id": "<kv-30188@kettleandvine.example>",
     "date": "2026-08-18T14:22:00.000Z",
@@ -2498,10 +2504,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 1404,
-     "mime": 0,
-     "deterministic": 1,
-     "llm": 1396,
+     "total": 2091,
+     "mime": 1,
+     "deterministic": 0,
+     "llm": 2079,
      "persist": 0
     },
     "warnings": []
@@ -2516,9 +2522,9 @@
    "carrier": "DHL Express",
    "delivery_date": "2026-08-24"
   },
-  "ms": 1743,
+  "ms": 2369,
   "out": {
-   "received_at": "2026-08-30T12:39:58.885Z",
+   "received_at": "2026-08-31T16:41:31.448Z",
    "headers": {
     "message_id": "<sw-9911@shipwise.example>",
     "date": "2026-08-20T08:00:00.000Z",
@@ -2615,10 +2621,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 1743,
+     "total": 2369,
      "mime": 0,
      "deterministic": 0,
-     "llm": 1742,
+     "llm": 2367,
      "persist": 0
     },
     "warnings": []
@@ -2638,9 +2644,9 @@
    "vendor": "Cabinet Guérin",
    "line_items_count": 2
   },
-  "ms": 2259,
+  "ms": 7601,
   "out": {
-   "received_at": "2026-08-30T12:40:01.144Z",
+   "received_at": "2026-08-31T16:41:39.049Z",
    "headers": {
     "message_id": "<fa-2026-0774@cabinet-guerin.fr>",
     "date": "2026-08-05T08:00:00.000Z",
@@ -2812,7 +2818,7 @@
     "vendor": {
      "value": "Cabinet Guérin",
      "confidence": 0.25,
-     "source": "header",
+     "source": "llm",
      "evidence": null
     },
     "line_items": {
@@ -2844,10 +2850,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 2259,
-     "mime": 1,
-     "deterministic": 1,
-     "llm": 2121,
+     "total": 7601,
+     "mime": 2,
+     "deterministic": 0,
+     "llm": 7467,
      "persist": 0
     },
     "warnings": []
@@ -2863,9 +2869,9 @@
    "due_date": "2026-09-13",
    "line_items_count": 40
   },
-  "ms": 3253,
+  "ms": 9249,
   "out": {
-   "received_at": "2026-08-30T12:40:04.398Z",
+   "received_at": "2026-08-31T16:41:48.298Z",
    "headers": {
     "message_id": "<ipd-556677@ipd.example>",
     "date": "2026-08-14T11:00:00.000Z",
@@ -3349,26 +3355,26 @@
    "fields": {
     "invoice_number": {
      "value": "IPD-556677",
-     "confidence": 0.88,
-     "source": "rule",
+     "confidence": 0.97,
+     "source": "rule+llm",
      "evidence": "Invoice IPD-556677"
     },
     "total": {
      "value": 1523.4,
-     "confidence": 0.91,
-     "source": "rule",
+     "confidence": 0.98,
+     "source": "rule+llm",
      "evidence": "Total: 1523.40 USD"
     },
     "currency": {
      "value": "USD",
-     "confidence": 0.85,
-     "source": "rule",
+     "confidence": 0.97,
+     "source": "rule+llm",
      "evidence": "1523.40 USD"
     },
     "due_date": {
      "value": "2026-09-13",
-     "confidence": 0.88,
-     "source": "rule",
+     "confidence": 0.97,
+     "source": "rule+llm",
      "evidence": "Due date: 2026-09-13"
     },
     "line_items": {
@@ -3574,8 +3580,8 @@
        "amount": 64.8
       }
      ],
-     "confidence": 0.91,
-     "source": "rule",
+     "confidence": 0.98,
+     "source": "rule+llm",
      "evidence": "component part 001 2 11.37"
     }
    },
@@ -3587,10 +3593,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 3253,
-     "mime": 2,
-     "deterministic": 2,
-     "llm": 3245,
+     "total": 9249,
+     "mime": 1,
+     "deterministic": 1,
+     "llm": 9244,
      "persist": 0
     },
     "warnings": []
@@ -3607,9 +3613,9 @@
    "card_last4": "1881",
    "line_items_count": 2
   },
-  "ms": 2051,
+  "ms": 2977,
   "out": {
-   "received_at": "2026-08-30T12:40:06.450Z",
+   "received_at": "2026-08-31T16:41:51.275Z",
    "headers": {
     "message_id": "<mrc-8891@mercantile.example>",
     "date": "2026-08-08T20:00:00.000Z",
@@ -3711,7 +3717,7 @@
     },
     "currency": {
      "value": "USD",
-     "confidence": 0.9,
+     "confidence": 0.97,
      "source": "rule+llm",
      "evidence": "$28.00"
     },
@@ -3725,7 +3731,7 @@
      "value": "1881",
      "confidence": 0.85,
      "source": "llm",
-     "evidence": "Visa ending 1881"
+     "evidence": "Paid 08/08/2026 by Visa ending 1881"
     },
     "line_items": {
      "value": [
@@ -3757,10 +3763,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 2051,
+     "total": 2977,
      "mime": 1,
-     "deterministic": 0,
-     "llm": 2048,
+     "deterministic": 1,
+     "llm": 2972,
      "persist": 0
     },
     "warnings": [
@@ -3777,9 +3783,9 @@
    "due_date": null,
    "currency": null
   },
-  "ms": 1850,
+  "ms": 2043,
   "out": {
-   "received_at": "2026-08-30T12:40:08.300Z",
+   "received_at": "2026-08-31T16:41:53.318Z",
    "headers": {
     "message_id": "<notes-thu@rivergate.example>",
     "date": "2026-08-21T15:30:00.000Z",
@@ -3862,10 +3868,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 1849,
+     "total": 2043,
      "mime": 0,
      "deterministic": 0,
-     "llm": 1846,
+     "llm": 2040,
      "persist": 0
     },
     "warnings": []
@@ -3881,9 +3887,9 @@
    "invoice_date": "2026-08-17",
    "due_date": "2026-09-16"
   },
-  "ms": 1601,
+  "ms": 2483,
   "out": {
-   "received_at": "2026-08-30T12:40:09.901Z",
+   "received_at": "2026-08-31T16:41:55.801Z",
    "headers": {
     "message_id": "<sap-4900123456@stahlwerk-nord.de>",
     "date": "2026-08-17T07:00:00.000Z",
@@ -3942,40 +3948,44 @@
      {
       "kind": "invoice_number",
       "value": "9100998877"
+     },
+     {
+      "kind": "credit_note_number",
+      "value": "4900123456"
      }
     ],
     "addresses": []
    },
    "fields": {
     "invoice_number": {
-     "value": "9100998877",
-     "confidence": 0.97,
-     "source": "rule+llm",
-     "evidence": "Bezug: Rechnung 9100998877"
+     "value": "4900123456",
+     "confidence": 0.88,
+     "source": "rule",
+     "evidence": "Gutschrift 4900123456"
     },
     "total": {
      "value": -1780,
-     "confidence": 0.97,
-     "source": "rule+llm",
+     "confidence": 0.88,
+     "source": "rule",
      "evidence": "Betrag:            1.780,00-"
     },
     "currency": {
      "value": "EUR",
-     "confidence": 0.97,
-     "source": "rule+llm",
+     "confidence": 0.88,
+     "source": "rule",
      "evidence": "Währung: EUR"
     },
     "invoice_date": {
-     "value": "2026-08-17",
-     "confidence": 0.93,
-     "source": "llm",
-     "evidence": "Buchungsdatum: 17.08.2026"
+     "value": null,
+     "confidence": 0,
+     "source": "none",
+     "evidence": null
     },
     "due_date": {
-     "value": "2026-09-16",
-     "confidence": 0.93,
-     "source": "llm",
-     "evidence": "Fälligkeit: 16.09.2026"
+     "value": null,
+     "confidence": 0,
+     "source": "none",
+     "evidence": null
     }
    },
    "flags": [],
@@ -3986,10 +3996,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 1601,
+     "total": 2483,
      "mime": 0,
-     "deterministic": 0,
-     "llm": 1597,
+     "deterministic": 1,
+     "llm": 2478,
      "persist": 0
     },
     "warnings": []
@@ -4004,9 +4014,9 @@
    "due_date": null,
    "currency": null
   },
-  "ms": 2060,
+  "ms": 1936,
   "out": {
-   "received_at": "2026-08-30T12:40:11.962Z",
+   "received_at": "2026-08-31T16:41:57.737Z",
    "headers": {
     "message_id": "<000d01c22919$c5890e10$a883a8c0@wl.opentext.com>",
     "date": "2002-07-11T20:30:16.000Z",
@@ -4115,10 +4125,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 2060,
+     "total": 1936,
      "mime": 2,
      "deterministic": 1,
-     "llm": 2040,
+     "llm": 1917,
      "persist": 0
     },
     "warnings": []
@@ -4133,9 +4143,9 @@
    "due_date": null,
    "currency": null
   },
-  "ms": 2232,
+  "ms": 2062,
   "out": {
-   "received_at": "2026-08-30T12:40:14.194Z",
+   "received_at": "2026-08-31T16:41:59.799Z",
    "headers": {
     "message_id": "<20020831132152.964796DA0B@www.fastmail.fm>",
     "date": "2002-08-31T14:21:05.000Z",
@@ -4235,8 +4245,8 @@
     },
     "total": {
      "value": 4.95,
-     "confidence": 0.6,
-     "source": "rule",
+     "confidence": 0.85,
+     "source": "llm",
      "evidence": "$4.95"
     },
     "due_date": {
@@ -4247,25 +4257,26 @@
     },
     "currency": {
      "value": "USD",
-     "confidence": 0.85,
-     "source": "rule",
+     "confidence": 0.8,
+     "source": "rule+llm",
      "evidence": "$4.95"
     }
    },
    "flags": [
-    "low_confidence:total"
+    "no_document_context:total",
+    "no_document_context:currency"
    ],
-   "needs_review": true,
+   "needs_review": false,
    "parse": {
     "request_id": "ho_ho-real-02-sa-win1252.eml",
     "schema_version": null,
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 2232,
-     "mime": 2,
+     "total": 2062,
+     "mime": 1,
      "deterministic": 1,
-     "llm": 2222,
+     "llm": 2052,
      "persist": 0
     },
     "warnings": []
@@ -4280,9 +4291,9 @@
    "due_date": null,
    "currency": null
   },
-  "ms": 2134,
+  "ms": 2290,
   "out": {
-   "received_at": "2026-08-30T12:40:16.328Z",
+   "received_at": "2026-08-31T16:42:02.089Z",
    "headers": {
     "message_id": "<LAW2-F11UgJkU6XnDSa0000e652@hotmail.com>",
     "date": "2002-08-12T15:23:40.000Z",
@@ -4383,10 +4394,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 2134,
-     "mime": 2,
-     "deterministic": 0,
-     "llm": 2125,
+     "total": 2290,
+     "mime": 1,
+     "deterministic": 1,
+     "llm": 2281,
      "persist": 0
     },
     "warnings": []
@@ -4401,9 +4412,9 @@
    "due_date": null,
    "currency": null
   },
-  "ms": 2075,
+  "ms": 2855,
   "out": {
-   "received_at": "2026-08-30T12:40:18.403Z",
+   "received_at": "2026-08-31T16:42:04.944Z",
    "headers": {
     "message_id": "<200205071437.JAA14328@bocelli.siteprotect.com>",
     "date": "2002-05-07T15:38:27.000Z",
@@ -4455,7 +4466,7 @@
    },
    "tables": [],
    "detected": {
-    "type": "receipt",
+    "type": "generic",
     "emails": [
      "rod-3ds@arsecandle.org"
     ],
@@ -4572,7 +4583,9 @@
      "evidence": "$2.59"
     }
    },
-   "flags": [],
+   "flags": [
+    "no_document_context:currency"
+   ],
    "needs_review": false,
    "parse": {
     "request_id": "ho_ho-real-04-sa-nocte.eml",
@@ -4580,10 +4593,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 2075,
-     "mime": 5,
+     "total": 2855,
+     "mime": 7,
      "deterministic": 3,
-     "llm": 2024,
+     "llm": 2816,
      "persist": 0
     },
     "warnings": []
@@ -4598,9 +4611,9 @@
    "due_date": null,
    "currency": null
   },
-  "ms": 1683,
+  "ms": 1993,
   "out": {
-   "received_at": "2026-08-30T12:40:20.086Z",
+   "received_at": "2026-08-31T16:42:06.937Z",
    "headers": {
     "message_id": "<7910726.0.27May2002215326@mp.opensrs.net>",
     "date": "2002-05-28T02:53:26.000Z",
@@ -4679,10 +4692,10 @@
      "evidence": null
     },
     "due_date": {
-     "value": "2002-06-26",
-     "confidence": 0.93,
-     "source": "llm",
-     "evidence": "nutmegclothing.com, 2002-06-26"
+     "value": null,
+     "confidence": 0,
+     "source": "none",
+     "evidence": null
     },
     "currency": {
      "value": null,
@@ -4699,10 +4712,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 1683,
+     "total": 1993,
      "mime": 1,
      "deterministic": 0,
-     "llm": 1679,
+     "llm": 1989,
      "persist": 0
     },
     "warnings": []
@@ -4717,9 +4730,9 @@
    "due_date": null,
    "currency": null
   },
-  "ms": 1948,
+  "ms": 9599,
   "out": {
-   "received_at": "2026-08-30T12:40:22.034Z",
+   "received_at": "2026-08-31T16:42:16.536Z",
    "headers": {
     "message_id": "<000101c228eb$e04cf280$a883a8c0@wl.opentext.com>",
     "date": "2002-07-11T15:01:45.000Z",
@@ -4838,13 +4851,13 @@
    "parse": {
     "request_id": "ho_ho-real-06-sa-multipart_mixed.eml",
     "schema_version": null,
-    "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
+    "model": "moonshotai/Kimi-K3-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 1948,
+     "total": 9599,
      "mime": 3,
      "deterministic": 0,
-     "llm": 1941,
+     "llm": 9592,
      "persist": 0
     },
     "warnings": []
@@ -4859,9 +4872,9 @@
    "due_date": null,
    "currency": null
   },
-  "ms": 1694,
+  "ms": 2338,
   "out": {
-   "received_at": "2026-08-30T12:40:23.729Z",
+   "received_at": "2026-08-31T16:42:18.875Z",
    "headers": {
     "message_id": "<200207240013.g6O0D2k32482@server1.enterprisedesktop.com>",
     "date": "2002-07-24T00:13:02.000Z",
@@ -4972,6 +4985,8 @@
     }
    },
    "flags": [
+    "no_document_context:total",
+    "no_document_context:currency",
     "low_confidence:total"
    ],
    "needs_review": true,
@@ -4981,10 +4996,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 1694,
+     "total": 2338,
      "mime": 4,
      "deterministic": 0,
-     "llm": 1683,
+     "llm": 2328,
      "persist": 0
     },
     "warnings": []
@@ -4999,9 +5014,9 @@
    "due_date": null,
    "currency": null
   },
-  "ms": 2151,
+  "ms": 2186,
   "out": {
-   "received_at": "2026-08-30T12:40:25.880Z",
+   "received_at": "2026-08-31T16:42:21.061Z",
    "headers": {
     "message_id": "<I-0-270241-5399979-2-24365-DE1-FE8DD260@xmr3.com>",
     "date": "2002-06-25T10:01:25.000Z",
@@ -5090,7 +5105,7 @@
     },
     "total": {
      "value": 5,
-     "confidence": 0.85,
+     "confidence": 0.8,
      "source": "llm",
      "evidence": "einen Warengutschein in Höhe von 5 EUR"
     },
@@ -5102,12 +5117,15 @@
     },
     "currency": {
      "value": "EUR",
-     "confidence": 0.95,
+     "confidence": 0.85,
      "source": "rule+llm",
      "evidence": "5 EUR"
     }
    },
-   "flags": [],
+   "flags": [
+    "no_document_context:total",
+    "no_document_context:currency"
+   ],
    "needs_review": false,
    "parse": {
     "request_id": "ho_ho-real-08-sa-html_latin1.eml",
@@ -5115,10 +5133,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 2151,
-     "mime": 6,
-     "deterministic": 0,
-     "llm": 2139,
+     "total": 2186,
+     "mime": 10,
+     "deterministic": 1,
+     "llm": 2164,
      "persist": 0
     },
     "warnings": []
@@ -5133,9 +5151,9 @@
    "due_date": null,
    "currency": null
   },
-  "ms": 1433,
+  "ms": 2252,
   "out": {
-   "received_at": "2026-08-30T12:40:27.313Z",
+   "received_at": "2026-08-31T16:42:23.314Z",
    "headers": {
     "message_id": "<1100198.1026255272511.JavaMail.root@abv-sfo1-ac-agent2>",
     "date": "2002-07-09T22:54:30.000Z",
@@ -5325,10 +5343,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 1433,
-     "mime": 11,
+     "total": 2252,
+     "mime": 15,
      "deterministic": 1,
-     "llm": 1408,
+     "llm": 2212,
      "persist": 0
     },
     "warnings": []
@@ -5343,9 +5361,9 @@
    "due_date": null,
    "currency": null
   },
-  "ms": 1715,
+  "ms": 2718,
   "out": {
-   "received_at": "2026-08-30T12:40:29.028Z",
+   "received_at": "2026-08-31T16:42:26.032Z",
    "headers": {
     "message_id": "<E17NMUf-00051u-00@mx08.web.de>",
     "date": "2002-06-27T00:34:04.000Z",
@@ -5461,7 +5479,9 @@
      "evidence": "$299"
     }
    },
-   "flags": [],
+   "flags": [
+    "no_document_context:currency"
+   ],
    "needs_review": false,
    "parse": {
     "request_id": "ho_ho-real-10-sa-multipart_alt.eml",
@@ -5469,10 +5489,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 1715,
-     "mime": 7,
-     "deterministic": 2,
-     "llm": 1680,
+     "total": 2718,
+     "mime": 4,
+     "deterministic": 0,
+     "llm": 2700,
      "persist": 0
     },
     "warnings": []
@@ -5487,9 +5507,9 @@
    "due_date": null,
    "currency": null
   },
-  "ms": 1259,
+  "ms": 2158,
   "out": {
-   "received_at": "2026-08-30T12:40:30.287Z",
+   "received_at": "2026-08-31T16:42:28.190Z",
    "headers": {
     "message_id": "<E17PYNo-0004r2-00@mx10.web.de>",
     "date": "2002-07-03T00:54:22.000Z",
@@ -5607,7 +5627,9 @@
      "evidence": "$499"
     }
    },
-   "flags": [],
+   "flags": [
+    "no_document_context:currency"
+   ],
    "needs_review": false,
    "parse": {
     "request_id": "ho_ho-real-11-sa-multipart_alt.eml",
@@ -5615,10 +5637,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 1259,
-     "mime": 3,
-     "deterministic": 0,
-     "llm": 1244,
+     "total": 2158,
+     "mime": 5,
+     "deterministic": 2,
+     "llm": 2132,
      "persist": 0
     },
     "warnings": []
@@ -5633,9 +5655,9 @@
    "due_date": null,
    "currency": null
   },
-  "ms": 1719,
+  "ms": 2133,
   "out": {
-   "received_at": "2026-08-30T12:40:32.006Z",
+   "received_at": "2026-08-31T16:42:30.324Z",
    "headers": {
     "message_id": "<DU0PR08MB77130536283702C1D1D121B0C4E62@DU0PR08MB7713.eurprd08.prod.outlook.com>",
     "date": "2025-01-21T09:53:02.000Z",
@@ -5718,10 +5740,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 1719,
+     "total": 2133,
      "mime": 0,
      "deterministic": 1,
-     "llm": 1713,
+     "llm": 2127,
      "persist": 0
     },
     "warnings": []
@@ -5736,9 +5758,9 @@
    "due_date": null,
    "currency": null
   },
-  "ms": 1655,
+  "ms": 2515,
   "out": {
-   "received_at": "2026-08-30T12:40:33.661Z",
+   "received_at": "2026-08-31T16:42:32.839Z",
    "headers": {
     "message_id": "<173746324809.3112921.8001946878278546381@mail.mailman3.org>",
     "date": "2025-01-21T12:40:48.000Z",
@@ -5821,10 +5843,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 1655,
+     "total": 2515,
      "mime": 1,
      "deterministic": 0,
-     "llm": 1649,
+     "llm": 2509,
      "persist": 0
     },
     "warnings": []
@@ -5839,9 +5861,9 @@
    "due_date": null,
    "currency": null
   },
-  "ms": 1526,
+  "ms": 2020,
   "out": {
-   "received_at": "2026-08-30T12:40:35.187Z",
+   "received_at": "2026-08-31T16:42:34.859Z",
    "headers": {
     "message_id": "<Z5lGWryzBbPsTxE1@yuggoth.org>",
     "date": "2025-01-28T21:04:26.000Z",
@@ -5936,10 +5958,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 1526,
+     "total": 2020,
      "mime": 2,
      "deterministic": 1,
-     "llm": 1515,
+     "llm": 2009,
      "persist": 0
     },
     "warnings": []
@@ -5954,9 +5976,9 @@
    "due_date": null,
    "currency": null
   },
-  "ms": 1560,
+  "ms": 2468,
   "out": {
-   "received_at": "2026-08-30T12:40:36.747Z",
+   "received_at": "2026-08-31T16:42:37.327Z",
    "headers": {
     "message_id": "<24e930da-e3e9-4901-954b-afd5435c0afe@msapiro.net>",
     "date": "2025-02-01T20:36:13.000Z",
@@ -6046,10 +6068,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 1560,
-     "mime": 0,
+     "total": 2468,
+     "mime": 1,
      "deterministic": 1,
-     "llm": 1552,
+     "llm": 2453,
      "persist": 0
     },
     "warnings": []
@@ -6064,9 +6086,9 @@
    "due_date": null,
    "currency": null
   },
-  "ms": 1363,
+  "ms": 2425,
   "out": {
-   "received_at": "2026-08-30T12:40:38.110Z",
+   "received_at": "2026-08-31T16:42:39.753Z",
    "headers": {
     "message_id": "<175433048408.3698617.2250558669626735832@mail.mailman3.org>",
     "date": "2025-08-04T18:01:24.000Z",
@@ -6151,10 +6173,10 @@
     "model": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
     "llm_used": true,
     "timings_ms": {
-     "total": 1363,
-     "mime": 2,
-     "deterministic": 1,
-     "llm": 1353,
+     "total": 2425,
+     "mime": 4,
+     "deterministic": 0,
+     "llm": 2414,
      "persist": 0
     },
     "warnings": []

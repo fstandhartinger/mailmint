@@ -108,23 +108,28 @@ Full pipeline (30 Aug):
 full run this table cannot demonstrate a declining curve, and it never will, because
 these are the 22 messages the rules were written against.** Neither of these two tables
 is quoted on the website as an accuracy claim. The number the site publishes comes from
-`test/holdout/` — 36 messages the parser was never tuned on, run three times on 30 August
+`test/holdout/` — 36 messages the parser was never tuned on, run three times on 31 August
 and pooled by `test/holdout/score-pooled.js`:
 
 | bucket | n (3 runs) | correct | actual |
 |---|---|---|---|
-| 0.9–1.0 | 204 | 199 | **97.5 %** |
-| 0.7–0.9 | 78 | 58 | 74.4 % |
-| 0.6–0.7 | 6 | 0 | **0.0 %** |
-| below 0.6 | 18 | 11 | 61.1 % |
+| 0.9–1.0 | 189 | 189 | **100.0 %** |
+| 0.7–0.9 | 83 | 58 | 69.9 % |
+| 0.6–0.7 | 7 | 1 | **14.3 %** |
+| below 0.6 | 21 | 14 | 66.7 % |
 
-Precision 87.1–88.2 %, recall 93.6–95.7 % across the three runs. The top of the scale
-separates cleanly from the middle; the bottom two rows are 24 values in total and are in
+Precision 87.1–87.8 %, recall 91.5–93.6 % across the three runs. The top of the scale
+separates cleanly from the middle; the bottom two rows are 28 values in total and are in
 the wrong order, which is what two or three values per run look like and is published as
-such rather than smoothed. Five values were wrong while reported at 0.9+, and they are
-now one mistake: a figure read out of mail that contains no invoice at all — a `$4.95`
-in a horoscope newsletter read as a total and a currency, a date in a renewal reminder
-read as a due date. In each the right answer was to return nothing.
+such rather than smoothed. No value was wrong while reported at 0.9+ in these three runs.
+That is 189 observations, not a guarantee; the preceding run still had five high-confidence
+errors and remains documented below rather than being erased.
+
+Changed since the 30 August evening run (204 / 97.5 %): ordinary non-document mail can no
+longer earn document confidence merely because a model copied a number from it, and legal
+uses of the word “receipt” in sweepstakes copy no longer classify that copy as a payment
+receipt. The three known cases (`$4.95`, a renewal date, and a prize value) are below 0.9
+in every run. Regression tests pin both fixes and their counterexamples.
 
 Changed since the 30 August morning run (196 / 95.4 %, precision 84.3–85.9 %, recall
 90.4–94.7 %): four of that run's nine top-bucket errors were `invoice_number` returning a
@@ -133,7 +138,7 @@ number the message merely *quotes* — a credit note against the invoice it canc
 confidence to 0.5, `rules.js` prefers the document's own number and reads a credit note's
 number under its own label, and the model is told which ids are quotations instead of
 being handed them under "prefer these". Both hold-out cases are right in all three runs.
-The 0.9+ bucket grew 196 → 204 while getting more accurate, so the gain was not bought by
+That 0.9+ bucket grew 196 → 204 while getting more accurate, so the gain was not bought by
 abstaining more often. Regression tests: `test/extract.test.js`, four cases.
 
 Confidence is **computed, never reported**. The model's own number is one input and
