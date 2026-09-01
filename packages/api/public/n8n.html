@@ -76,7 +76,7 @@ whole thing on the canvas: name a field, give it a type and a sentence of descri
 <em>Execute step</em>, see the value.</p>
 
 <div class="cards">
-  <div class="c"><strong>Package</strong><span><code>n8n-nodes-mailmint</code> · v0.1.0 · MIT</span></div>
+  <div class="c"><strong>Package</strong><span><code>n8n-nodes-mailmint</code> · v0.1.2 · MIT</span></div>
   <div class="c"><strong>Runtime dependencies</strong><span>zero</span></div>
   <div class="c"><strong>Nodes</strong><span>MailMint (11 actions) + MailMint Trigger</span></div>
 </div>
@@ -87,7 +87,7 @@ whole thing on the canvas: name a field, give it a type and a sentence of descri
 
 <div class="note">
 <p><strong><code>n8n-nodes-mailmint</code> is published on npm.</strong> <code>npm view
-n8n-nodes-mailmint version</code> returns <code>0.1.0</code>. On <strong>self-hosted n8n</strong> the
+n8n-nodes-mailmint version</code> returns <code>0.1.2</code>. On <strong>self-hosted n8n</strong> the
 <em>Settings &rarr; Community Nodes &rarr; Install</em> route below works today. <strong>n8n Cloud only
 accepts nodes from its verified registry</strong>. n8n approved this node on 31 August 2026, but says
 publication is pending its next registry batch, so it cannot be installed there yet —
@@ -142,9 +142,9 @@ searching the trigger panel for <em>MailMint</em>:</p>
   <li><strong>API Key</strong> &mdash; the key for your MailMint account. It starts with
     <code>mm_live_</code>.</li>
   <li><strong>Base URL</strong> &mdash; the root URL of the MailMint API you are talking to, with no trailing
-    slash. <strong>There is no default, because there is no hosted MailMint to default to.</strong> Use your
-    own deployment, or <code>http://host.docker.internal:3100</code> when the API runs locally and n8n is in
-    Docker.</li>
+    slash. The hosted service is <code>https://mailmint.app.mintapis.com</code>; use that unless you run
+    your own deployment. For a local API with n8n in Docker, use
+    <code>http://host.docker.internal:3100</code>.</li>
   <li>Save.</li>
 </ol>
 
@@ -154,8 +154,8 @@ build anything rather than an &ldquo;untested&rdquo; badge:</p>
 <figure>
   <img src="/screens/04-credential-tested-against-local-mock-api.png" alt="The n8n credential dialog for a MailMint account, credential type MailMint API, showing a green &quot;Connection tested successfully&quot; banner, a masked API Key field and a Base URL field." loading="lazy" width="1500" height="950">
   <figcaption>&ldquo;Connection tested successfully&rdquo; means the key is valid and the account exists &mdash;
-    the test is a real authenticated call, not a format check. This one was taken against a MailMint API
-    running locally, because there is no hosted one to point it at.</figcaption>
+    the test is a real authenticated call, not a format check. The screenshot was taken against a local
+    test instance; production accounts use <code>https://mailmint.app.mintapis.com</code>.</figcaption>
 </figure>
 </section>
 
@@ -454,14 +454,15 @@ full code list is in <a href="/docs#errors">the API reference</a>.</p>
 <!-- =============================================================== CLOUD -->
 <!-- =========================================================== TEMPLATES -->
 <section id="templates">
-<h2>A workflow you can import right now <a class="anchor" href="#templates">#</a></h2>
+<h2>Two published workflows <a class="anchor" href="#templates">#</a></h2>
 
 <p>Rather than building from an empty canvas: <strong>Screen invoice emails and hold the doubtful
 ones for review</strong> is a finished workflow that takes an invoice email as JSON, reads the
 fields out of it, and answers <code>approved</code>, <code>review</code> with the reasons, or a
 <code>422</code> with the failure text. Twelve nodes, annotated, with both failure paths wired.</p>
 
-<p><a class="l-btn l-btn-primary" href="/templates/mailmint-invoice-screening.json" download>Download the workflow JSON</a></p>
+<p><a class="l-btn l-btn-primary" href="https://n8n.io/workflows/18867">Open the published workflow on n8n</a>
+<a class="l-btn" href="/templates/mailmint-invoice-screening.json" download>Download its JSON</a></p>
 
 <p>In n8n: <strong>Workflows &rarr; Import from File</strong>, pick the file, then add your MailMint
 credential to the <em>Read the invoice fields</em> node and activate it. Nothing else needs editing —
@@ -476,9 +477,11 @@ closed port the caller still got <em>&ldquo;The service refused the connection&r
 hung request.</p>
 
 <div class="note">
-<p><strong>Not yet on n8n&rsquo;s template gallery.</strong> It has been built and run, but n8n allows one
-template per creator in review at a time and that slot is currently taken by another submission. The
-file above is the same workflow, and it works today on self-hosted n8n.</p>
+<p><strong>Both MailMint workflows were approved and published by n8n on 31 August 2026.</strong>
+The second, <a href="https://n8n.io/workflows/18943"><em>File supplier invoice emails into Google
+Sheets with MailMint</em></a>, starts with IMAP and appends the extracted invoice fields to a sheet.
+Use the screening workflow when a human approval gate matters; use the Sheets workflow when the
+destination is a ledger or review list.</p>
 </div>
 </section>
 
