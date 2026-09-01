@@ -730,13 +730,12 @@ curl -X POST <span class="tok-n">$MAILMINT_URL</span>/v1/mailboxes/mbx_01JQ8Y…
           <a class="l-btn l-btn-ghost" href="/n8n#templates">Import a ready-made workflow</a>
         </div>
         <div class="provisional" style="margin-top:1.6rem">
-          <p class="tagline">Approved by n8n; registry publication pending</p>
+          <p class="tagline">Published in n8n&rsquo;s verified registry</p>
           <p><b><code>n8n-nodes-mailmint</code> is published.</b> On self-hosted n8n you can install it
             today from <em>Settings &rarr; Community Nodes</em>, or with
             <code>npm&nbsp;install&nbsp;n8n-nodes-mailmint</code> in <code>~/.n8n/nodes</code>. It has zero
-            runtime dependencies and ships with an npm provenance attestation. <b>n8n approved it on
-            31 August 2026 and says publication is pending its next registry batch.</b> Until the entry
-            appears in n8n&rsquo;s public registry, Cloud cannot install it.</p>
+            runtime dependencies and ships with an npm provenance attestation. <b>n8n published version
+            0.1.2 in its verified registry on 1 September 2026.</b> It now installs on n8n Cloud too.</p>
         </div>
       </div>
 
@@ -1010,8 +1009,7 @@ curl -X POST <span class="tok-n">$MAILMINT_URL</span>/v1/mailboxes/mbx_01JQ8Y…
         <p>Yes, with two things still missing and named. The API is live at
           <code>mailmint.app.mintapis.com</code>, the hosted inbound address works — mail sent to your
           <code>@smooth-operator.online</code> address is received, authenticated and parsed — the n8n node
-          is on npm, and paid plans are live through Stripe. n8n approved the node on 31 August 2026,
-          but its registry batch has not appeared yet, so n8n Cloud cannot install it today. What does
+          is on npm and in n8n&rsquo;s verified registry, and paid plans are live through Stripe. What does
           <em>not</em> exist yet: a published uptime history, SLA, SOC&nbsp;2 report, or customer logo and
           testimonial we have permission to quote.</p>
       </details>
@@ -1050,9 +1048,8 @@ curl -X POST <span class="tok-n">$MAILMINT_URL</span>/v1/mailboxes/mbx_01JQ8Y…
       testimonials and no uptime history on this page — and there will not be any invented ones. Every
       number here is either measured on real email and named as such, or fetched from a competitor&rsquo;s
       own page and attributed.</p>
-    <p><strong>What is not true yet, in one list.</strong> The n8n node is approved, but its entry is
-      <b>still pending n8n&rsquo;s registry batch</b>, so it cannot yet be installed on n8n Cloud. Attachment content
-      is not extracted into <code>attachments[].extracted</code> yet, though the extractor exists. There is
+    <p><strong>What is not true yet, in one list.</strong> Attachment content is not extracted into
+      <code>attachments[].extracted</code> yet, though the extractor exists. There is
       <b>no SLA and no SOC&nbsp;2 report</b>, and no uptime history worth quoting. We do not publish
       customer logos or testimonials without permission.</p>
     <p>The measurement method behind the numbers in the hero is in <code>docs/MODEL-BENCH.md</code>, the

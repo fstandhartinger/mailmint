@@ -179,10 +179,9 @@ reported at 0.9+ were right 189 times out of 189 and values at 0.7&ndash;0.9 onl
 it, and the signed message object arrives as the enquiry does. Delivery retries with backoff, a webhook
 that keeps failing auto-disables rather than silently dropping, and one endpoint failing never disables
 another &mdash; so the CRM and the Slack notification are independent.</p>
-<p>In n8n: <code>n8n-nodes-mailmint</code> installs on self-hosted n8n, and its trigger falls back to the
-polling feed when a webhook cannot reach you. On n8n Cloud, verification is n8n's decision and has not
-happened, so use <a href="/n8n">an HTTP Request node against <code>POST /v1/parse</code></a> &mdash; it
-works from any n8n today.</p>
+<p>In n8n: <code>n8n-nodes-mailmint</code> installs on n8n Cloud and self-hosted n8n, and its trigger
+falls back to the polling feed when a webhook cannot reach you. If community nodes are disabled, use
+<a href="/n8n">an HTTP Request node against <code>POST /v1/parse</code></a>.</p>
 <p>And if you later add a field &mdash; nobody asked for <code>source</code> until the first quarterly
 report &mdash; <code>POST /v1/mailboxes/{id}/reparse</code> replays the stored originals against the new
 schema, with <code>dry_run: true</code> to see what would change first. The leads you already have get the

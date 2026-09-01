@@ -88,10 +88,9 @@ whole thing on the canvas: name a field, give it a type and a sentence of descri
 <div class="note">
 <p><strong><code>n8n-nodes-mailmint</code> is published on npm.</strong> <code>npm view
 n8n-nodes-mailmint version</code> returns <code>0.1.2</code>. On <strong>self-hosted n8n</strong> the
-<em>Settings &rarr; Community Nodes &rarr; Install</em> route below works today. <strong>n8n Cloud only
-accepts nodes from its verified registry</strong>. n8n approved this node on 31 August 2026, but says
-publication is pending its next registry batch, so it cannot be installed there yet —
-<a href="#cloud">what to do instead on Cloud</a>.</p>
+<em>Settings &rarr; Community Nodes &rarr; Install</em> route below works today. <strong>n8n published
+version 0.1.2 in its verified registry on 1 September 2026</strong>, so the same node now installs on
+n8n Cloud too. <a href="#cloud">The HTTP Request route</a> remains available when community nodes are disabled.</p>
 <p>Every screenshot on this page is the node running in a real n8n instance, not a mock-up.</p>
 </div>
 </section>
@@ -114,8 +113,8 @@ npm install n8n-nodes-mailmint</code></pre>
 npm provenance attestation, so <code>npm audit signatures</code> can verify which commit built it.</p>
 
 <h3>n8n Cloud</h3>
-<p>Not yet — Cloud only installs nodes n8n has verified. See <a href="#cloud">below</a> for the HTTP Request
-route that works there today.</p>
+<p>Yes — install <code>n8n-nodes-mailmint</code> from n8n&rsquo;s verified community-node registry. See
+<a href="#cloud">below</a> for the HTTP Request route when community nodes are disabled.</p>
 
 <p>Once installed, both nodes appear in the node panel under their own names. The trigger is found by
 searching the trigger panel for <em>MailMint</em>:</p>
@@ -488,9 +487,9 @@ destination is a ledger or review list.</p>
 <section id="cloud">
 <h2>What works on n8n Cloud today <a class="anchor" href="#cloud">#</a></h2>
 
-<p>n8n Cloud only installs community nodes present in its verified registry.
-<code>n8n-nodes-mailmint</code> was approved on 31 August 2026, but its registry publication is still
-pending, so on Cloud an <strong>HTTP Request</strong> node does the same job today:</p>
+<p><code>n8n-nodes-mailmint</code> has been in n8n&rsquo;s verified registry since 1 September 2026 and
+installs directly on Cloud. If your organisation disables community nodes, an <strong>HTTP Request</strong>
+node does the same job:</p>
 
 <div class="code">
 <button class="copy" type="button">Copy</button>

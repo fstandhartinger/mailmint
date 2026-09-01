@@ -214,9 +214,8 @@ set with no recognisable money column is left unverified rather than blamed.</p>
 <p>Point <code>webhook_url</code> at your order intake and the signed message object arrives as the order
 is confirmed &mdash; HMAC-SHA256 over timestamp and body, with the verification worked through
 <a href="/docs#webhooks">in the reference</a>. Or poll <code>GET /v1/events</code> with a cursor. Or use
-<code>n8n-nodes-mailmint</code> on self-hosted n8n; on n8n Cloud, an
-<a href="/n8n">HTTP Request node against <code>POST /v1/parse</code></a> works today while verification
-is outstanding.</p>
+<code>n8n-nodes-mailmint</code> on n8n Cloud or self-hosted n8n; if community nodes are disabled, an
+<a href="/n8n">HTTP Request node against <code>POST /v1/parse</code></a> works too.</p>
 <p>Two order mails for the same order &mdash; the shop's and the marketplace's &mdash; are a normal thing
 to receive. Give each its own mailbox with its own schema and webhook; several endpoints on one mailbox
 are also supported, and one failing endpoint never disables another.</p>

@@ -1879,9 +1879,9 @@ screenshots of it running in a real n8n, is on <a href="/n8n">the n8n page</a>.<
 <p><strong>It is on npm</strong>, so on self-hosted n8n it installs from
 <em>Settings&nbsp;&rarr;&nbsp;Community&nbsp;Nodes</em> or with
 <code>npm install n8n-nodes-mailmint</code> in <code>~/.n8n/nodes</code>.
-<strong>n8n approved it on 31 August 2026, but its registry publication is still pending</strong>;
-until the entry appears, an <strong>HTTP Request</strong> node pointed at <code>POST /v1/parse</code>
-does the same job on Cloud.</p>
+<strong>n8n published version 0.1.2 in its verified registry on 1 September 2026</strong>, so it installs
+on n8n Cloud too. If community nodes are disabled, an <strong>HTTP Request</strong> node pointed at
+<code>POST /v1/parse</code> does the same job.</p>
 </div>
 
 <div class="tw">
@@ -1914,10 +1914,9 @@ does the same job on Cloud.</p>
 <p>Kept here rather than left for you to discover.</p>
 
 <ul>
-  <li><strong>The n8n node is approved, but not yet in n8n&rsquo;s registry.</strong> It is published on npm
-    and installs on self-hosted n8n. n8n approved it on 31 August 2026 and says publication is pending
-    its next registry batch; Cloud cannot install it until that entry appears.
-    <a href="#parse"><code>POST /v1/parse</code></a> works from any n8n through an HTTP Request node.</li>
+  <li><strong>The n8n node is published in n8n&rsquo;s verified registry.</strong> Version 0.1.2 installs on
+    n8n Cloud and self-hosted n8n. <a href="#parse"><code>POST /v1/parse</code></a> also works from
+    any n8n through an HTTP Request node.</li>
   <li><strong>Attachment content extraction is not wired into the parse pipeline.</strong> The extractor
     package is written; <code>attachments[].extracted</code> is reserved for its output and is not
     populated yet.</li>

@@ -242,10 +242,9 @@ anything does.</p>
 <ol>
 <li><strong>Webhook.</strong> Point <code>webhook_url</code> at your accounting system's inbound endpoint.
 The signed body is the same message object the API returns. Nothing to poll.</li>
-<li><strong>n8n.</strong> <code>n8n-nodes-mailmint</code> installs on self-hosted n8n; the trigger runs on
-the polling feed when a webhook cannot reach you. n8n approved the node on 31 August 2026, but its
-registry publication is still pending, so it is not yet available on Cloud. An <a href="/n8n">HTTP Request node against
-<code>POST /v1/parse</code></a> works from any n8n today.</li>
+<li><strong>n8n.</strong> <code>n8n-nodes-mailmint</code> installs on n8n Cloud and self-hosted n8n; the
+trigger runs on the polling feed when a webhook cannot reach you. An <a href="/n8n">HTTP Request node
+against <code>POST /v1/parse</code></a> remains available when community nodes are disabled.</li>
 <li><strong>Polling.</strong> <code>GET /v1/events?cursor=…</code> with an opaque cursor, for anything that
 cannot be reached from outside.</li>
 </ol>
