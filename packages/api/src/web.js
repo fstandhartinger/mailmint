@@ -96,13 +96,14 @@ function authForm(kind, error, values = {}) {
   <p class="sub">${isSignup
     ? `You get an inbound email address straight away. ${PLANS.free.quota} parsed emails a month, free, no card.`
     : 'Welcome back.'}</p>
-  ${isSignup ? '<p class="warnbox">There is no password reset and no confirmation email yet, so nothing can be sent to you if you forget it. Put the password in your password manager now.</p>' : ''}
+  ${isSignup ? '<p class="muted">Use an email address you can access. You can reset your password by email.</p>' : ''}
   ${error ? `<div class="error">${escapeHtml(error)}</div>` : ''}
   <form method="post" action="/${kind}">
     <label>Email<input type="email" name="email" required autocomplete="email" value="${escapeHtml(values.email || '')}"></label>
     <label>Password<input type="password" name="password" required minlength="8" autocomplete="${isSignup ? 'new-password' : 'current-password'}"></label>
     <button type="submit">${isSignup ? 'Create account' : 'Sign in'}</button>
   </form>
+  <p class="alt"><a href="/forgot-password">Forgot password?</a></p>
   <p class="alt">${isSignup ? 'Already have an account? <a href="/login">Sign in</a>' : 'No account yet? <a href="/signup">Create one</a>'}</p>
 </main>`);
 }
@@ -125,6 +126,8 @@ router.get('/', asyncRoute(async (req, res) => {
   <p class="alt">${PLANS.free.quota} parsed emails a month, free, no card. <a href="/login">Sign in</a></p>
 </main>`, { description: 'MailMint gives you an inbound email address and turns the mail sent to it into structured JSON.' }));
 }));
+
+require('./recovery').install(router, { product: 'MailMint', shell, minLength: 8 });
 
 router.get('/signup', asyncRoute(async (req, res) => {
   if (await currentAccount(req)) return res.redirect('/dashboard');
@@ -302,7 +305,7 @@ router.get('/dashboard', requireAccount, asyncRoute(async (req, res) => {
     ${req.query.pw === 'ok' ? '<div class="notice ok">Password changed.</div>' : ''}
     ${req.query.pw === 'wrong' ? '<div class="error">That is not your current password.</div>' : ''}
     ${req.query.pw === 'short' ? '<div class="error">The new password must be at least 8 characters.</div>' : ''}
-    <p class="muted small">There is no password reset by email. Change it here while you are signed in.</p>
+    <p class="muted"><a href="/forgot-password">Reset a forgotten password by email.</a></p>
     <form method="post" action="/dashboard/password" class="inline">
       <label>Current<input type="password" name="current" required autocomplete="current-password"></label>
       <label>New<input type="password" name="next" required minlength="8" autocomplete="new-password"></label>

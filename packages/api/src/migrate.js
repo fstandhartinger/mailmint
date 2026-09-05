@@ -340,6 +340,7 @@ const MIGRATIONS = [
       `ALTER TABLE messages ADD COLUMN IF NOT EXISTS auth_details JSONB`,
     ],
   },
+  { id: 8, name: 'password recovery', statements: require('./recovery').migration },
 ];
 
 async function migrate() {
