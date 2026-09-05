@@ -18,18 +18,32 @@ const TYPES = new Set([
 const NAME_RE = /^[A-Za-z_][A-Za-z0-9_]{0,63}$/;
 const MAX_FIELDS = 60;
 
+function optionalString(value, path, maxLength) {
+  if (value === undefined || value === null || value === '') return '';
+  if (typeof value !== 'string') {
+    throw bad('invalid_schema', `${path} must be a string.`, {
+      hint: 'Send human-readable text, not an object or array.',
+      docs: '/docs#schema',
+    });
+  }
+  return value.slice(0, maxLength);
+}
+
 function validateField(f, path, depth) {
   if (!f || typeof f !== 'object' || Array.isArray(f)) {
     throw bad('invalid_schema', `${path} must be an object like {"name":"total","type":"number"}.`, { docs: '/docs#schema' });
   }
   const name = f.name;
-  if (!NAME_RE.test(String(name || ''))) {
+  if (typeof name !== 'string' || !NAME_RE.test(name)) {
     throw bad('invalid_schema', `${path}.name "${name}" is not usable as a JSON key.`, {
       hint: 'Use letters, digits and underscores, starting with a letter or underscore — it becomes a key in the "fields" object.',
       docs: '/docs#schema',
     });
   }
-  const type = f.type || 'string';
+  const type = f.type === undefined || f.type === null || f.type === '' ? 'string' : f.type;
+  if (typeof type !== 'string') {
+    throw bad('invalid_schema', `${path}.type must be a string.`, { docs: '/docs#schema' });
+  }
   if (!TYPES.has(type)) {
     throw bad('invalid_schema', `${path}.type "${type}" is not a field type.`, {
       hint: `Accepted types: ${[...TYPES].join(', ')}.`,
@@ -37,12 +51,13 @@ function validateField(f, path, depth) {
     });
   }
   const out = {
-    name: String(name),
+    name,
     type,
-    description: f.description ? String(f.description).slice(0, 500) : '',
+    description: optionalString(f.description, `${path}.description`, 500),
     required: Boolean(f.required),
   };
-  if (f.hint) out.hint = String(f.hint).slice(0, 300);
+  const hint = optionalString(f.hint, `${path}.hint`, 300);
+  if (hint) out.hint = hint;
 
   if (type === 'enum') {
     if (!Array.isArray(f.options) || !f.options.length) {
@@ -51,7 +66,14 @@ function validateField(f, path, depth) {
         docs: '/docs#schema',
       });
     }
-    out.options = f.options.map((o) => String(o)).slice(0, 200);
+    const invalidOption = f.options.findIndex((o) => typeof o !== 'string');
+    if (invalidOption !== -1) {
+      throw bad('invalid_schema', `${path}.options[${invalidOption}] must be a string.`, {
+        hint: 'Enum options are labels such as "open", "paid" or "overdue".',
+        docs: '/docs#schema',
+      });
+    }
+    out.options = f.options.slice(0, 200);
   }
   if (type === 'array') {
     const itemType = (f.items && f.items.type) || 'string';
@@ -61,7 +83,13 @@ function validateField(f, path, depth) {
       if (depth >= 2) throw bad('invalid_schema', `${path} nests too deeply; two levels of objects is the limit.`, { docs: '/docs#schema' });
       out.items.fields = validateSchema(f.items.fields || [], `${path}.items.fields`, depth + 1);
     }
-    if (itemType === 'enum') out.items.options = (f.items.options || []).map(String);
+    if (itemType === 'enum') {
+      const options = f.items.options || [];
+      if (!Array.isArray(options) || options.some((o) => typeof o !== 'string')) {
+        throw bad('invalid_schema', `${path}.items.options must be an array of strings.`, { docs: '/docs#schema' });
+      }
+      out.items.options = options;
+    }
   }
   if (type === 'object') {
     if (depth >= 2) throw bad('invalid_schema', `${path} nests too deeply; two levels of objects is the limit.`, { docs: '/docs#schema' });
