@@ -21,6 +21,29 @@ const withMessageId = (to, messageId, subject = 'Invoice INV-77 from Acme Ltd') 
   '', 'Total: $31.50\r\n',
 ].join('\r\n'), 'utf8');
 
+const withAttachment = (to, messageId) => Buffer.from([
+  'From: Acme Billing <billing@acme.com>',
+  `To: ${to}`,
+  'Subject: Invoice with the same logo',
+  `Message-Id: <${messageId}>`,
+  `Date: ${new Date().toUTCString()}`,
+  'MIME-Version: 1.0',
+  'Content-Type: multipart/mixed; boundary="same-file"',
+  '',
+  '--same-file',
+  'Content-Type: text/plain; charset=utf-8',
+  '',
+  'Total: $31.50',
+  '--same-file',
+  'Content-Type: image/png; name="logo.png"',
+  'Content-Disposition: attachment; filename="logo.png"',
+  'Content-Transfer-Encoding: base64',
+  '',
+  'c2FtZS1sb2dvLWJ5dGVz',
+  '--same-file--',
+  '',
+].join('\r\n'), 'utf8');
+
 describe('delivery is exactly-once, whatever the sender does', () => {
   test('the same Message-ID twice makes one message, one event and one webhook', async () => {
     const listener = H.webhookListener();
@@ -101,6 +124,26 @@ describe('delivery is exactly-once, whatever the sender does', () => {
     const second = await H.deliver(b, { raw: withMessageId(b.address, mid), wait: true });
     assert.notEqual(second.json.message_id, first.json.message_id,
       'deduplication is scoped to one mailbox, not to the whole service');
+  });
+
+  test('two messages may contain the same attachment bytes', async () => {
+    const mb = await H.newMailbox(key);
+    const suffix = crypto.randomBytes(6).toString('hex');
+    const first = await H.deliver(mb, {
+      raw: withAttachment(mb.address, `same-attachment-a-${suffix}@acme.com`), wait: true,
+    });
+    const second = await H.deliver(mb, {
+      raw: withAttachment(mb.address, `same-attachment-b-${suffix}@acme.com`), wait: true,
+    });
+    assert.equal(first.res.status, 200);
+    assert.equal(second.res.status, 200, 'content-derived parser ids must not collide in storage');
+
+    const { rows } = await H.query(
+      `SELECT id, message_id FROM attachments WHERE message_id = ANY($1) ORDER BY message_id`,
+      [[first.json.message_id, second.json.message_id]],
+    );
+    assert.equal(rows.length, 2);
+    assert.notEqual(rows[0].id, rows[1].id, 'stored attachment ids are row identities, not content hashes');
   });
 });
 

@@ -368,7 +368,11 @@ async function persistResult(message, mailbox, result) {
     for (const att of attachments) {
       const bytes = att.bytes && Buffer.isBuffer(att.bytes) ? att.bytes
         : (att.content_base64 ? Buffer.from(att.content_base64, 'base64') : null);
-      const id = att.id && String(att.id).startsWith('att_') ? att.id : ids.attachmentId();
+      // Parser ids are content-derived. The same logo or invoice can therefore
+      // have the same parser id in several messages, while attachments.id is a
+      // global primary key. Mint the storage id here so repeated bytes never
+      // make an otherwise valid message fail with attachments_pkey.
+      const id = ids.attachmentId();
       let storageRef = null;
       if (bytes && bytes.length <= config.maxAttachmentBytes) {
         storageRef = await storeBlob(client, message.account_id, 'attachment', bytes, att.content_type || 'application/octet-stream', plan);
