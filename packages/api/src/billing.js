@@ -25,7 +25,16 @@ function client() {
   if (!stripe) {
     // eslint-disable-next-line global-require
     const Stripe = require('stripe');
-    stripe = new Stripe(config.stripe.secretKey, { apiVersion: '2025-01-27.acacia' });
+    stripe = new Stripe(config.stripe.secretKey, {
+  apiVersion: '2025-01-27.acacia',
+  // Bounded on purpose. The checkout path makes several sequential Stripe
+  // calls while it holds a database connection and a row lock, and the pool
+  // is small. With the library's defaults (80 s, two retries) one Stripe
+  // slowdown would hold every connection long enough to take the whole
+  // service down, not just billing.
+  timeout: 10000,
+  maxNetworkRetries: 1,
+});
   }
   return stripe;
 }
@@ -84,6 +93,18 @@ async function createCheckoutSession(account, planId) {
     });
   }
   const stripe = client();
+  // The Stripe customer is created and committed in its OWN short transaction.
+  // Inside the long one below, any later failure rolled the stored id back while
+  // the Stripe object survived — so every failed checkout during a Stripe incident
+  // minted another orphaned customer carrying the buyer's email address, and
+  // nothing ever reclaimed them. The row lock is held across it, so two
+  // simultaneous clicks still cannot produce two customers.
+  const customerId = await tx(async (tclient) => {
+    const run = tclient.query.bind(tclient);
+    const { rows } = await run('SELECT * FROM accounts WHERE id = $1 FOR UPDATE', [account.id]);
+    if (!rows[0]) throw new ApiError(404, 'account_not_found', 'Account not found.');
+    return ensureCustomer(rows[0], run);
+  });
   // Serialize clicks across all instances, and re-read the authoritative row:
   // two quick clicks on "Choose Pro" used to open two checkouts and could end in
   // two subscriptions on one account, both charged.
@@ -92,14 +113,18 @@ async function createCheckoutSession(account, planId) {
     const { rows } = await run('SELECT * FROM accounts WHERE id = $1 FOR UPDATE', [account.id]);
     account = rows[0];
     if (!account) throw new ApiError(404, 'account_not_found', 'Account not found.');
-    const customerId = await ensureCustomer(account, run);
 
     // An account that already subscribes is UPGRADED in place. Sending it through
     // Checkout again creates a second subscription next to the first and bills
     // both.
     const listed = await stripe.subscriptions.list({ customer: customerId, status: 'all', limit: 100 });
     if (listed.has_more) throw new ApiError(409, 'billing_review_required', 'Please manage subscriptions through the billing portal.');
-    const current = listed.data.filter((sub) => !['canceled', 'incomplete_expired'].includes(sub.status)
+    // `incomplete` means the very first payment has not cleared. Stripe leaves
+    // it that way for about a day before expiring it, and it never granted
+    // anything — treating it as "current" sent a buyer whose 3-D Secure failed
+    // to a billing portal with nothing to manage, for 24 hours, instead of
+    // letting them simply pay again.
+    const current = listed.data.filter((sub) => !['canceled', 'incomplete', 'incomplete_expired'].includes(sub.status)
       && sub.items.data.some((item) => planForPriceId(item.price.id)));
     if (current.length > 1) throw new ApiError(409, 'multiple_subscriptions', 'Multiple subscriptions exist. Contact support before changing your plan.');
     if (current.length) {
@@ -159,7 +184,7 @@ async function createCheckoutSession(account, planId) {
       customer_update: { name: 'auto', address: 'auto' },
       client_reference_id: String(account.id),
       subscription_data: { metadata: { account_id: String(account.id), plan: planId, service: 'mailmint' } },
-      metadata: { account_id: String(account.id), plan: planId },
+      metadata: { account_id: String(account.id), plan: planId, service: 'mailmint' },
     }, { idempotencyKey: `mailmint-checkout-${account.id}-${planId}-${Math.floor(Date.now() / 1800000)}` });
   });
 }
@@ -176,11 +201,17 @@ async function createPortalSession(account) {
 }
 
 /** Applies a plan change. The single place the quota column is allowed to move. */
-async function applyPlan(accountId, planId, subscriptionId, run = query) {
+async function applyPlan(accountId, planId, subscriptionId, run = query, customerId = null) {
   const plan = PLANS[planId] || PLANS.free;
+  // The customer id is bound here as well as at checkout, the way PDFMint and
+  // DocMint do it. An account that acquired a subscription some other way used to
+  // keep a null customer id for ever, which put it permanently outside the
+  // ownership guard in applySubscription.
   await run(
-    `UPDATE accounts SET plan = $2, quota_month = $3, stripe_subscription_id = $4 WHERE id = $1`,
-    [accountId, plan.id, plan.quota, subscriptionId || null],
+    `UPDATE accounts SET plan = $2, quota_month = $3, stripe_subscription_id = $4,
+            stripe_customer_id = COALESCE(stripe_customer_id, $5)
+      WHERE id = $1`,
+    [accountId, plan.id, plan.quota, subscriptionId || null, customerId || null],
   );
   log.info('billing.plan_applied', { account_id: Number(accountId), plan: plan.id, quota: plan.quota });
 }
@@ -210,11 +241,11 @@ async function applySubscription(subscription, run = query) {
 
   let target = null;
   if (accountId) {
-    const { rows } = await run(`SELECT * FROM accounts WHERE id = $1`, [accountId]);
+    const { rows } = await run(`SELECT * FROM accounts WHERE id = $1 FOR UPDATE`, [accountId]);
     target = rows[0] || null;
   }
   if (!target && customerId) {
-    const { rows } = await run(`SELECT * FROM accounts WHERE stripe_customer_id = $1`, [customerId]);
+    const { rows } = await run(`SELECT * FROM accounts WHERE stripe_customer_id = $1 FOR UPDATE`, [customerId]);
     target = rows[0] || null;
   }
   if (!target) {
@@ -239,7 +270,7 @@ async function applySubscription(subscription, run = query) {
     return { ignored: 'stale_subscription' };
   }
 
-  await applyPlan(target.id, active ? plan.id : 'free', active ? subscription.id : null, run);
+  await applyPlan(target.id, active ? plan.id : 'free', active ? subscription.id : null, run, customerId);
   return { applied: active ? plan.id : 'free' };
 }
 
@@ -330,7 +361,7 @@ async function verifyCheckoutReturn(account, sessionId) {
 
   let session;
   try {
-    session = await client().checkout.sessions.retrieve(sessionId);
+    session = await client().checkout.sessions.retrieve(sessionId, { expand: ['line_items'] });
   } catch (e) {
     log.warn('billing.checkout_return_unverifiable', { session: sessionId, error: e.message });
     return state('unverified', { reason: 'lookup_failed' });
@@ -341,6 +372,15 @@ async function verifyCheckoutReturn(account, sessionId) {
   if (String(claimed || '') !== String(account.id)) return state('foreign', { reason: 'account_mismatch' });
   if (account.stripe_customer_id && sessionCustomer && sessionCustomer !== account.stripe_customer_id) {
     return state('foreign', { reason: 'customer_mismatch' });
+  }
+  // All three products live on ONE Stripe account and all three number their
+  // accounts from 1, so a matching account id is not proof either: a sibling
+  // product's genuinely paid session would otherwise be accepted here and tell
+  // someone who has paid US nothing that their payment is being activated. The
+  // line item has to be a price we sell.
+  const lineItems = session.line_items?.data || [];
+  if (!lineItems.length || !lineItems.some((item) => planForPriceId(item.price?.id))) {
+    return state('foreign', { reason: 'not_our_price' });
   }
   if (session.status === 'expired') return state('expired');
   if (!['paid', 'no_payment_required'].includes(session.payment_status)) {
@@ -362,7 +402,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), asyncRoute(as
     event = client().webhooks.constructEvent(req.body, req.get('stripe-signature'), config.stripe.webhookSecret);
   } catch (e) {
     log.warn('billing.bad_signature', { error: e.message });
-    return res.status(400).send(`signature: ${e.message}`);
+    return res.status(400).json({ error: { code: 'invalid_signature' } });
   }
   const out = await handleEvent(event);
   return res.json({ received: true, ...out });
