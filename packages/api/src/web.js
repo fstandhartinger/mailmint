@@ -182,6 +182,13 @@ router.post('/logout', asyncRoute(async (req, res) => {
 
 router.get('/dashboard', requireAccount, asyncRoute(async (req, res) => {
   const account = req.account;
+  // C3: `?checkout=success` is a query parameter, not a receipt. Nothing about
+  // the banner is decided from the URL — billing.verifyCheckoutReturn asks Stripe
+  // whether THIS session, belonging to THIS account, was actually paid, and
+  // whether our own fulfilment has landed. Everything else gets neutral text.
+  const checkoutReturn = req.query.checkout === 'success'
+    ? await billing.verifyCheckoutReturn(account, typeof req.query.session_id === 'string' ? req.query.session_id : null)
+    : null;
   const boxes = await mailboxes.list(account.id);
   const { rows: keys } = await query(
     `SELECT prefix, name, created_at, last_used_at FROM api_keys WHERE account_id = $1 AND revoked_at IS NULL ORDER BY created_at`,
@@ -204,7 +211,9 @@ router.get('/dashboard', requireAccount, asyncRoute(async (req, res) => {
   res.type('html').send(shell('MailMint dashboard', `${topbar(reviewCount[0].n)}
 <main>
   ${req.query.welcome ? '<div class="notice"><strong>Your address is live.</strong> Copy the API key below — it is shown once — then open your mailbox and send it an email.</div>' : ''}
-  ${req.query.checkout === 'success' ? '<div class="notice ok"><strong>Payment received.</strong> Your new quota is shown below.</div>' : ''}
+  ${checkoutReturn ? `<div class="notice${checkoutReturn.ok ? ' ok' : ''}">${escapeHtml(checkoutReturn.message)}</div>` : ''}
+  ${req.query.checkout === 'updated' ? '<div class="notice">Your plan change has been sent to Stripe. The plan shown below is the one you are on right now; it updates as soon as Stripe confirms.</div>' : ''}
+  ${req.query.checkout === 'pending' ? '<div class="notice">Your upgrade is waiting on payment. Nothing has changed yet — your plan below is the one you are on.</div>' : ''}
   ${req.query.checkout === 'cancelled' ? '<div class="notice">Checkout cancelled. Nothing was charged.</div>' : ''}
   ${req.query.err ? `<div class="error">${escapeHtml(String(req.query.err))}</div>` : ''}
   <h1>Dashboard</h1>
