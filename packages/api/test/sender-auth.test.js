@@ -16,8 +16,16 @@ const { verifyRaw, headlineFor } = require('../src/sender-auth');
  */
 const RAW = fs.readFileSync(path.join(__dirname, 'fixtures', 'forwarded-gmail.eml'));
 
+/**
+ * The capture's Date header. Gmail signs with `x=` and this signature expired on
+ * 2026-09-01, after which it fails on policy before its body hash is compared —
+ * so verifying an archived message at today's clock stops testing what these
+ * assertions are about. The live-clock behaviour is asserted separately below.
+ */
+const RECEIVED_AT = Date.parse('2026-08-25T20:24:12Z');
+
 test('a real signed message gets a DKIM verdict, not null', async () => {
-  const a = await verifyRaw(RAW);
+  const a = await verifyRaw(RAW, { now: RECEIVED_AT });
   assert.equal(a.dkim, 'body_altered',
     'a forwarded Gmail message is body-altered, which is not a failure');
   assert.equal(a.dkim_details.body_altered, true);
@@ -29,7 +37,7 @@ test('a real signed message gets a DKIM verdict, not null', async () => {
 });
 
 test('SPF and DMARC say "unavailable", never null', async () => {
-  const a = await verifyRaw(RAW);
+  const a = await verifyRaw(RAW, { now: RECEIVED_AT });
   assert.equal(a.spf, 'unavailable');
   assert.equal(a.dmarc, 'unavailable');
   assert.match(a.reason, /envelope|connecting IP/i,
@@ -54,4 +62,16 @@ test('the headline mapping matches smtpd/src/auth/index.js exactly', () => {
   assert.equal(headlineFor({ result: 'fail', bodyAltered: false }), 'fail');
   assert.equal(headlineFor({ result: 'pass', bodyAltered: false }), 'pass');
   assert.equal(headlineFor({ result: 'none' }), 'none');
+});
+
+test('an expired signature is reported as expired, not as a forged body', async () => {
+  const a = await verifyRaw(RAW);   // today's clock, which is past the x=
+  assert.equal(a.dkim, 'fail');
+  assert.equal(a.dkim_details.body_altered, false);
+  assert.equal(a.dkim_details.signatures[0].failure_type, 'policy');
+  assert.match(a.dkim_details.reason, /expired/);
+
+  // And the same bytes, verified as of when they arrived, are the forwarded case.
+  const then = await verifyRaw(RAW, { now: RECEIVED_AT });
+  assert.equal(then.dkim, 'body_altered');
 });

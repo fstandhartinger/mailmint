@@ -44,6 +44,44 @@ const withAttachment = (to, messageId) => Buffer.from([
   '',
 ].join('\r\n'), 'utf8');
 
+/**
+ * The same message, but the attachments are given explicitly, so a test can vary
+ * bytes and filename independently. `attachments.id` used to be the parser's
+ * content-derived id, which made the FILENAME irrelevant and the BYTES the
+ * primary key — so both axes have to be exercised, not just the easy one.
+ */
+const withAttachments = (to, messageId, attachments, subject = 'Invoice with attachments') => {
+  const b = `bnd-${crypto.randomBytes(6).toString('hex')}`;
+  const parts = [
+    [`--${b}`, 'Content-Type: text/plain; charset=utf-8', '', 'Total: $31.50'].join('\r\n'),
+    ...attachments.map((a) => [
+      `--${b}`,
+      `Content-Type: ${a.contentType || 'image/png'}; name="${a.filename}"`,
+      `Content-Disposition: attachment; filename="${a.filename}"`,
+      'Content-Transfer-Encoding: base64',
+      '',
+      Buffer.from(a.bytes).toString('base64'),
+    ].join('\r\n')),
+  ];
+  return Buffer.from([
+    'From: Acme Billing <billing@acme.com>',
+    `To: ${to}`,
+    `Subject: ${subject}`,
+    `Message-Id: <${messageId}>`,
+    `Date: ${new Date().toUTCString()}`,
+    'MIME-Version: 1.0',
+    `Content-Type: multipart/mixed; boundary="${b}"`,
+    '',
+    parts.join('\r\n') + `\r\n--${b}--\r\n`,
+  ].join('\r\n'), 'utf8');
+};
+
+/** The attachment rows a message actually produced, in insertion order. */
+const attachmentRows = async (messageId) => (await H.query(
+  `SELECT id, filename, sha256, size, storage_ref FROM attachments WHERE message_id = $1 ORDER BY id`,
+  [messageId],
+)).rows;
+
 describe('delivery is exactly-once, whatever the sender does', () => {
   test('the same Message-ID twice makes one message, one event and one webhook', async () => {
     const listener = H.webhookListener();
@@ -144,6 +182,135 @@ describe('delivery is exactly-once, whatever the sender does', () => {
     );
     assert.equal(rows.length, 2);
     assert.notEqual(rows[0].id, rows[1].id, 'stored attachment ids are row identities, not content hashes');
+  });
+});
+
+/**
+ * The attachment-collision defect, along every axis it has.
+ *
+ * `attachments.id` is a global primary key; the parser's id is derived from the
+ * CONTENT. Taking one from the other meant that any two messages carrying the
+ * same bytes — a company logo, a repeated terms-and-conditions PDF, the same
+ * invoice sent to two mailboxes — collided on `attachments_pkey` and the second
+ * message failed to persist.
+ *
+ * Every message below carries its OWN Message-Id. Nothing here can be satisfied
+ * by message-level de-duplication: that is a different mechanism, it is proved
+ * directly above, and it would hide this defect rather than fix it.
+ */
+describe('the same bytes may arrive many times over', () => {
+  const LOGO = Buffer.from('89504e470d0a1a0a-the-shared-logo-bytes', 'utf8');
+  const OTHER = Buffer.from('89504e470d0a1a0a-a-different-logo!!!!', 'utf8');
+  const shaOf = (b) => crypto.createHash('sha256').update(b).digest('hex');
+
+  const send = async (mailbox, attachments, subject) => {
+    const messageId = `att-${crypto.randomBytes(8).toString('hex')}@acme.com`;
+    const r = await H.deliver(mailbox, {
+      raw: withAttachments(mailbox.address, messageId, attachments, subject), wait: true,
+    });
+    assert.equal(r.res.status, 200, `delivery must succeed: ${JSON.stringify(r.json)}`);
+    assert.notEqual(r.json.duplicate, true, 'each of these is a genuinely different message');
+    return r.json.message_id;
+  };
+
+  test('same bytes, same filename, two messages: two rows, two ids, both readable', async () => {
+    const mb = await H.newMailbox(key);
+    const a = await send(mb, [{ bytes: LOGO, filename: 'logo.png' }], 'One');
+    const b = await send(mb, [{ bytes: LOGO, filename: 'logo.png' }], 'Two');
+    assert.notEqual(a, b);
+    const [ra] = await attachmentRows(a);
+    const [rb] = await attachmentRows(b);
+    assert.equal(ra.sha256, shaOf(LOGO));
+    assert.equal(ra.sha256, rb.sha256, 'the bytes are genuinely identical');
+    assert.notEqual(ra.id, rb.id, 'the ids are row identities, not content hashes');
+    assert.notEqual(ra.storage_ref, rb.storage_ref, 'each row owns its own blob');
+    for (const [msg, row] of [[a, ra], [b, rb]]) {
+      // eslint-disable-next-line no-await-in-loop
+      const got = await H.req(`/v1/attachments/${row.id}`, { key, raw: true });
+      assert.equal(got.res.status, 200, `${msg}: its attachment must download`);
+      assert.ok(got.buffer.equals(LOGO));
+    }
+  });
+
+  test('same bytes under different filenames keep their own names', async () => {
+    const mb = await H.newMailbox(key);
+    const a = await send(mb, [{ bytes: LOGO, filename: 'header-logo.png' }], 'Header');
+    const b = await send(mb, [{ bytes: LOGO, filename: 'footer-logo.png' }], 'Footer');
+    const [ra] = await attachmentRows(a);
+    const [rb] = await attachmentRows(b);
+    assert.equal(ra.sha256, rb.sha256);
+    assert.notEqual(ra.id, rb.id);
+    assert.equal(ra.filename, 'header-logo.png');
+    assert.equal(rb.filename, 'footer-logo.png');
+  });
+
+  test('different bytes under the same filename never serve each other', async () => {
+    const mb = await H.newMailbox(key);
+    const a = await send(mb, [{ bytes: LOGO, filename: 'logo.png' }], 'v1');
+    const b = await send(mb, [{ bytes: OTHER, filename: 'logo.png' }], 'v2');
+    const [ra] = await attachmentRows(a);
+    const [rb] = await attachmentRows(b);
+    assert.notEqual(ra.sha256, rb.sha256);
+    const ga = await H.req(`/v1/attachments/${ra.id}`, { key, raw: true });
+    const gb = await H.req(`/v1/attachments/${rb.id}`, { key, raw: true });
+    assert.ok(ga.buffer.equals(LOGO), 'the first id serves the first bytes');
+    assert.ok(gb.buffer.equals(OTHER), 'the second id serves the second bytes');
+  });
+
+  test('the same bytes in two mailboxes of one account', async () => {
+    const x = await H.newMailbox(key);
+    const y = await H.newMailbox(key);
+    const a = await send(x, [{ bytes: LOGO, filename: 'logo.png' }], 'To X');
+    const b = await send(y, [{ bytes: LOGO, filename: 'logo.png' }], 'To Y');
+    const [ra] = await attachmentRows(a);
+    const [rb] = await attachmentRows(b);
+    assert.notEqual(ra.id, rb.id);
+  });
+
+  test('the same bytes in two different accounts, and neither can read the other', async () => {
+    const other = await H.newAccount();
+    const mine = await H.newMailbox(key);
+    const theirs = await H.newMailbox(other.key);
+    const a = await send(mine, [{ bytes: LOGO, filename: 'logo.png' }], 'Mine');
+    const b = await send(theirs, [{ bytes: LOGO, filename: 'logo.png' }], 'Theirs');
+    const [ra] = await attachmentRows(a);
+    const [rb] = await attachmentRows(b);
+    assert.notEqual(ra.id, rb.id);
+    const cross = await H.req(`/v1/attachments/${ra.id}`, { key: other.key });
+    assert.equal(cross.res.status, 404, 'an attachment id belonging to another account must not resolve');
+  });
+
+  test('the same bytes attached twice to ONE message make two rows', async () => {
+    const mb = await H.newMailbox(key);
+    const id = await send(mb, [
+      { bytes: LOGO, filename: 'logo.png' },
+      { bytes: LOGO, filename: 'logo-copy.png' },
+    ], 'Twice');
+    const rows = await attachmentRows(id);
+    assert.equal(rows.length, 2, 'a message that attaches the same file twice keeps both parts');
+    assert.notEqual(rows[0].id, rows[1].id);
+    assert.equal(rows[0].sha256, rows[1].sha256);
+  });
+
+  test('re-parsing rewrites the attachment rows without colliding with itself', async () => {
+    const mb = await H.newMailbox(key);
+    const id = await send(mb, [{ bytes: LOGO, filename: 'logo.png' }], 'Reparse');
+    const before = await attachmentRows(id);
+    const r = await H.req(`/v1/messages/${id}/reparse`, { method: 'POST', key, body: {} });
+    assert.equal(r.res.status, 200, JSON.stringify(r.json));
+    const after = await attachmentRows(id);
+    assert.equal(after.length, 1, 'the old row is replaced, not duplicated');
+    assert.equal(after[0].sha256, before[0].sha256);
+    const got = await H.req(`/v1/attachments/${after[0].id}`, { key, raw: true });
+    assert.equal(got.res.status, 200);
+    assert.ok(got.buffer.equals(LOGO));
+  });
+
+  test('no two rows in the attachments table share a primary key', async () => {
+    const { rows } = await H.query(
+      `SELECT id FROM attachments GROUP BY id HAVING count(*) > 1`,
+    );
+    assert.equal(rows.length, 0);
   });
 });
 

@@ -56,7 +56,14 @@ function headlineFor(res) {
  * parse request. Anything unexpected comes back as `temperror`, which
  * `authFlags()` already treats as "not a failure".
  */
-async function verifyRaw(raw, { requestId = null, timeoutMs = 5000 } = {}) {
+/**
+ * `now` exists because DKIM signatures expire. Gmail and others set `x=`, and an
+ * archived message verified with today's clock fails on policy long before its
+ * body hash is looked at — which says nothing about whether the message is
+ * genuine. Live mail is verified at the live clock, which is the default; a
+ * caller holding a message it knows the receipt time of can say so.
+ */
+async function verifyRaw(raw, { requestId = null, timeoutMs = 5000, now = undefined, ignoreExpiry = false } = {}) {
   const unavailable = {
     spf: 'unavailable', dkim: 'unavailable', dmarc: 'unavailable', spam_score: null,
     reason: 'SPF and DMARC need the SMTP envelope and the connecting IP, which a stateless HTTP request does not carry.',
@@ -71,7 +78,7 @@ async function verifyRaw(raw, { requestId = null, timeoutMs = 5000 } = {}) {
 
   try {
     const res = await Promise.race([
-      verify(raw, { dnsTimeoutMs: timeoutMs }),
+      verify(raw, { dnsTimeoutMs: timeoutMs, ...(now === undefined ? {} : { now }), ...(ignoreExpiry ? { ignoreExpiry: true } : {}) }),
       new Promise((resolve) => setTimeout(() => resolve({ result: 'temperror', reason: 'DKIM lookup timed out', signatures: [] }), timeoutMs + 500)),
     ]);
     return {

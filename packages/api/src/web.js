@@ -428,23 +428,101 @@ function fieldEditor(schema) {
       var b=e.target.closest('.rmfield'); if(!b) return;
       b.closest('.fieldrow').remove();
     });
+    // The options box belongs to enums only. It is always submitted, so hiding
+    // it is presentation and nothing depends on it being visible.
+    box.addEventListener('change',function(e){
+      if(!e.target.matches('select')) return;
+      var o=e.target.closest('.fieldrow').querySelector('.opts');
+      if(o) o.hidden = e.target.value !== 'enum';
+    });
   })();
   </script>`;
 }
 
-const fieldRow = (f, i) => `<div class="fieldrow">
+/**
+ * The structural half of a field — an `array`'s `items`, an `object`'s `fields`,
+ * an `enum`'s `options` — carried through the form in a hidden control.
+ *
+ * The editor is four visible controls per row. Everything else about a field is
+ * invisible to it, and a form submits only what it renders, so a save that
+ * changed nothing used to rebuild the field from those four values alone: an
+ * array of objects came back as an array of strings, silently, and an enum or
+ * an object could not be saved at all because the parts they require were gone.
+ * The type it was captured for travels with it, so changing the dropdown still
+ * discards the structure that no longer applies.
+ */
+/**
+ * The cap is a parse limit, not a design limit, and it has to be comfortably
+ * above anything the schema validator will accept — a field silently too big to
+ * carry would put the original defect back for exactly the widest schemas.
+ * validateSchema allows 60 fields, two levels deep, with a 64-character name, a
+ * 500-character description and a 300-character hint each, so one field's
+ * structure tops out around 55 KB. This is nearly four times that.
+ */
+const MAX_STRUCT_CHARS = 200000;
+
+const structOf = (f) => {
+  const struct = {};
+  if (f.items) struct.items = f.items;
+  if (f.fields) struct.fields = f.fields;
+  if (f.options) struct.options = f.options;
+  if (!Object.keys(struct).length) return null;
+  const json = JSON.stringify({ type: f.type || 'string', ...struct });
+  return json.length > MAX_STRUCT_CHARS ? null : json;
+};
+
+/** What the nested part of a field looks like in one line, for a human. */
+const structSummary = (f) => {
+  if (f.type === 'array' && f.items && f.items.type === 'object') {
+    return `list of objects: ${(f.items.fields || []).map((x) => x.name).join(', ') || 'no fields'}`;
+  }
+  if (f.type === 'array' && f.items) return `list of ${f.items.type}`;
+  if (f.type === 'object') return `object: ${(f.fields || []).map((x) => x.name).join(', ') || 'no fields'}`;
+  return null;
+};
+
+const fieldRow = (f, i) => {
+  const struct = structOf(f);
+  const summary = structSummary(f);
+  return `<div class="fieldrow">
   <input type="text" name="f_${i}_name" value="${escapeHtml(f.name)}" placeholder="invoice_number" pattern="[A-Za-z_][A-Za-z0-9_]*">
   <select name="f_${i}_type">${TYPE_OPTIONS.map((t) => `<option value="${t}"${t === (f.type || 'string') ? ' selected' : ''}>${t}</option>`).join('')}</select>
   <input type="text" name="f_${i}_description" value="${escapeHtml(f.description || '')}" placeholder="what this field is, in one line">
+  <input type="text" class="opts" name="f_${i}_options" value="${escapeHtml((f.options || []).join(', '))}" placeholder="options: open, paid"${(f.type === 'enum') ? '' : ' hidden'}>
   <label class="chk"><input type="checkbox" name="f_${i}_required" value="1"${f.required ? ' checked' : ''}> required</label>
   <button type="button" class="link danger rmfield">remove</button>
+  ${struct ? `<input type="hidden" name="f_${i}_struct" value="${escapeHtml(struct)}">` : ''}
+  ${summary ? `<span class="muted small structnote">${escapeHtml(summary)} — the nested part is kept as it is; edit it with <code>PATCH /v1/mailboxes/:id</code></span>` : ''}
 </div>`;
+};
+
+/**
+ * Reads back the hidden structural payload of one row.
+ *
+ * Hidden or not, this arrives from a browser and is therefore input: it is
+ * length-capped, parsed defensively, and only ever merged into a field whose
+ * type still matches the one it was captured for. Whatever survives that still
+ * goes through validateSchema, which is the same gate the API uses — nothing
+ * can be smuggled in here that PATCH /v1/mailboxes would refuse.
+ */
+function structFromForm(raw, type) {
+  if (typeof raw !== 'string' || !raw || raw.length > MAX_STRUCT_CHARS) return null;
+  let parsed;
+  try { parsed = JSON.parse(raw); } catch { return null; }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+  if (parsed.type !== type) return null;      // the dropdown was changed; the old shape no longer applies
+  const out = {};
+  if (parsed.items && typeof parsed.items === 'object' && !Array.isArray(parsed.items)) out.items = parsed.items;
+  if (Array.isArray(parsed.fields)) out.fields = parsed.fields;
+  if (Array.isArray(parsed.options)) out.options = parsed.options;
+  return Object.keys(out).length ? out : null;
+}
 
 /** Rebuilds the schema array from the flat form fields the editor posts. */
 function schemaFromForm(body) {
   const byIndex = new Map();
   for (const [k, v] of Object.entries(body || {})) {
-    const m = /^f_(\w+)_(name|type|description|required|options)$/.exec(k);
+    const m = /^f_(\w+)_(name|type|description|required|options|struct)$/.exec(k);
     if (!m) continue;
     const entry = byIndex.get(m[1]) || {};
     entry[m[2]] = m[2] === 'required' ? Boolean(v) : String(v);
@@ -452,13 +530,27 @@ function schemaFromForm(body) {
   }
   const list = [...byIndex.values()]
     .filter((f) => f.name && f.name.trim())
-    .map((f) => ({
-      name: f.name.trim(),
-      type: f.type || 'string',
-      description: f.description || '',
-      required: Boolean(f.required),
-      ...(f.type === 'enum' && f.options ? { options: String(f.options).split(',').map((s) => s.trim()).filter(Boolean) } : {}),
-    }));
+    .map((f) => {
+      const type = f.type || 'string';
+      const struct = structFromForm(f.struct, type) || {};
+      const typed = String(f.options === undefined ? '' : f.options)
+        .split(',').map((s) => s.trim()).filter(Boolean);
+      // The visible box is what the user edits, so it wins — except when it is
+      // exactly the box we rendered, in which case the original array is used
+      // verbatim. That way an option that legitimately contains a comma is not
+      // quietly split in two by a save that changed nothing.
+      const options = struct.options && typed.join(', ') === struct.options.join(', ')
+        ? struct.options : typed;
+      return {
+        name: f.name.trim(),
+        type,
+        description: f.description || '',
+        required: Boolean(f.required),
+        ...(struct.items ? { items: struct.items } : {}),
+        ...(struct.fields ? { fields: struct.fields } : {}),
+        ...(type === 'enum' && options.length ? { options } : {}),
+      };
+    });
   return validateSchema(list);
 }
 

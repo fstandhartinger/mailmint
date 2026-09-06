@@ -16,6 +16,7 @@ const site = require('./site');   // static landing page + docs; serves '/' and 
 const billing = require('./billing');
 const webhooks = require('./webhooks');
 const reparse = require('./reparse');
+const resume = require('./resume');
 const { startReaper } = require('./reaper');
 const { parserAvailable } = require('./parser');
 
@@ -136,6 +137,9 @@ async function main() {
   // Only a process that says it is the worker runs one.
   if (process.env.WEBHOOK_WORKER !== '0') webhooks.startWorker();
   if (process.env.REPARSE_WORKER !== '0') reparse.startWorker();
+  // A message accepted by a process that then died would otherwise sit at
+  // 'received' for ever: parsed by nobody, delivered to nobody.
+  if (process.env.RESUME_WORKER !== '0') resume.startWorker();
   if (!parserAvailable()) {
     log.warn('boot.parser_missing', { note: 'mailmint-parser could not be required; parsing will fail or fall back' });
   }

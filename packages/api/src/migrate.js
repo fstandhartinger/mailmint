@@ -341,6 +341,20 @@ const MIGRATIONS = [
     ],
   },
   { id: 8, name: 'password recovery', statements: require('./recovery').migration },
+  {
+    id: 9,
+    name: 'resume stranded parses',
+    statements: [
+      // A message is written and answered for BEFORE it is parsed, so the parse
+      // belongs to a process rather than to the row. When that process dies —
+      // a deploy, an OOM, a SIGKILL — the row stays 'received' and nothing ever
+      // looks at it again. resume.js re-drives those; this counter is what keeps
+      // a message that kills the process from being re-driven for ever.
+      `ALTER TABLE messages ADD COLUMN IF NOT EXISTS parse_attempts INTEGER NOT NULL DEFAULT 0`,
+      `CREATE INDEX IF NOT EXISTS messages_stranded_idx ON messages(received_at)
+         WHERE status = 'received'`,
+    ],
+  },
 ];
 
 async function migrate() {
