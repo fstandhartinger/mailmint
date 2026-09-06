@@ -226,16 +226,17 @@ async function applyPlan(accountId, planId, subscriptionId, run = query, custome
  * cancelled DocMint subscription tagged `account_id: 71` silently downgraded
  * MailMint account 71. The price, not the metadata, says whose subscription it is.
  */
-async function applySubscription(subscription, run = query) {
+async function applySubscription(subscription, run = query, { refresh = true } = {}) {
   const accountId = subscription.metadata?.account_id;
   const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id;
-  const priceId = subscription.items?.data?.[0]?.price?.id;
-  const plan = planForPriceId(priceId);
-  const active = ['active', 'trialing', 'past_due'].includes(subscription.status);
 
-  // A price we cannot map is a sibling product's. Not ours to act on.
-  if (!plan) {
-    log.warn('billing.foreign_price_ignored', { subscription: subscription.id, price: priceId });
+  // A price we cannot map is a sibling product's. Checked on the event body
+  // before anything else, because a foreign subscription must not cause us to
+  // lock one of our account rows or to call Stripe at all.
+  if (!planForPriceId(subscription.items?.data?.[0]?.price?.id)) {
+    log.warn('billing.foreign_price_ignored', {
+      subscription: subscription.id, price: subscription.items?.data?.[0]?.price?.id,
+    });
     return { ignored: 'foreign_price' };
   }
 
@@ -260,11 +261,59 @@ async function applySubscription(subscription, run = query) {
     return { ignored: 'foreign_customer' };
   }
 
+  /**
+   * The event body is a SNAPSHOT of the moment Stripe emitted it, and Stripe
+   * delivers a purchase's four events concurrently and in no particular order.
+   * `customer.subscription.created` is emitted the instant the subscription
+   * exists — which for a card payment is before the card is charged — so its
+   * body says `status: "incomplete"` every single time. Acted on as written,
+   * and processed last, it set a paying customer back to `free` and cleared the
+   * subscription id. Observed happening on 2026-09-06.
+   *
+   * So the status and the price are read from Stripe as they are NOW, after the
+   * account row is locked, which is what makes the outcome independent of
+   * delivery order. Stripe says the same thing to every one of the four events;
+   * their snapshots do not.
+   *
+   * A failure here falls back to the snapshot. An outage must not mean a paying
+   * customer silently gets nothing — the snapshot is what this used to do in all
+   * cases, so the fallback is no worse than before and is loud in the log.
+   */
+  let current = subscription;
+  if (refresh && subscription.id) {
+    try {
+      const fresh = await client().subscriptions.retrieve(String(subscription.id));
+      if (fresh && fresh.id) {
+        // Metadata is ours and may only exist on the body we were handed (the
+        // checkout path stamps account_id onto it from client_reference_id).
+        current = { ...fresh, metadata: { ...(subscription.metadata || {}), ...(fresh.metadata || {}) } };
+        if (fresh.status !== subscription.status) {
+          log.info('billing.subscription_refreshed', {
+            subscription: subscription.id, event_said: subscription.status, stripe_says: fresh.status,
+          });
+        }
+      }
+    } catch (e) {
+      log.warn('billing.subscription_refresh_failed', {
+        subscription: subscription.id, error: String(e.message || e),
+        note: 'falling back to the event body, which may be out of date',
+      });
+    }
+  }
+
+  const priceId = current.items?.data?.[0]?.price?.id;
+  const plan = planForPriceId(priceId);
+  const active = ['active', 'trialing', 'past_due'].includes(current.status);
+  if (!plan) {
+    log.warn('billing.foreign_price_ignored', { subscription: current.id, price: priceId });
+    return { ignored: 'foreign_price' };
+  }
+
   // A cancellation only speaks for the subscription it names. An older one ending
   // must not revoke the one the customer is paying for now.
   if (!active && target.stripe_subscription_id && target.stripe_subscription_id !== subscription.id) {
     log.warn('billing.stale_subscription_ignored', {
-      subscription: subscription.id, status: subscription.status,
+      subscription: subscription.id, status: current.status,
       account_id: target.id, current: target.stripe_subscription_id,
     });
     return { ignored: 'stale_subscription' };
@@ -300,7 +349,9 @@ async function handleEvent(event) {
           if (!sub.metadata?.account_id && obj.client_reference_id) {
             sub.metadata = { ...(sub.metadata || {}), account_id: obj.client_reference_id };
           }
-          await applySubscription(sub, run);
+          // Already fetched, and the account_id patched onto it would be lost by
+          // a second fetch.
+          await applySubscription(sub, run, { refresh: false });
         }
         break;
       }

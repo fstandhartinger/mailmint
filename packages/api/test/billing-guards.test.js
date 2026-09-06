@@ -39,6 +39,8 @@ function load(opts = {}) {
   const priceOf = (id) => (id === 'free' ? null : `price_test_${id}`);
 
   const calls = { checkoutCreate: [], subUpdate: [], portal: [], expire: [], sessionRetrieve: null };
+  /** Subscription bodies the test has fired events about, by id. */
+  const firedSubjects = new Map();
   const dbUpdates = [];
   const seenEvents = new Set();
   let failDb = false;
@@ -63,9 +65,21 @@ function load(opts = {}) {
         if (opts.failAfterCustomer) throw new Error('injected Stripe outage after customer creation');
         return { data: subscriptions, has_more: false };
       },
-      retrieve: async (id) => subscriptions.find((s) => s.id === id) || {
-        id, customer: account.stripe_customer_id || 'cus_guards', status: 'active',
-        metadata: {}, items: { data: [{ id: 'si_x', price: { id: priceOf('pro') } }] },
+      /**
+       * What Stripe holds right now.
+       *
+       * A subscription a test seeded with addSubscription() is Stripe's current
+       * truth and wins. Otherwise Stripe is assumed to agree with the event body
+       * the test fired — which is what makes a test that only fires an event
+       * mean what it says, rather than silently being told by this stub that
+       * every unknown subscription is an active Pro one.
+       */
+      retrieve: async (id) => {
+        if (opts.failRetrieve) throw new Error('injected Stripe outage on subscriptions.retrieve');
+        return subscriptions.find((s) => s.id === id) || firedSubjects.get(id) || {
+          id, customer: account.stripe_customer_id || 'cus_guards', status: 'active',
+          metadata: {}, items: { data: [{ id: 'si_x', price: { id: priceOf('pro') } }] },
+        };
       },
       update: async (id, args, options) => {
         calls.subUpdate.push({ id, args, options });
@@ -191,6 +205,10 @@ function load(opts = {}) {
 
   const api = mod.exports;
   const fireEvent = async (event) => {
+    const subject = event && event.data && event.data.object;
+    if (subject && typeof subject.id === 'string' && subject.id.startsWith('sub_') && subject.items) {
+      firedSubjects.set(subject.id, subject);
+    }
     if (typeof api.handleEvent === 'function') return api.handleEvent(event);
     const route = api.router._routes['/webhook'];
     return new Promise((resolve, reject) => {
@@ -495,5 +513,93 @@ describe(`C4 — the Checkout page says ${BRAND}, not the portfolio's name`, () 
     await h.api.createCheckoutSession(h.account, 'pro');
     const args = h.calls.checkoutCreate[0].args;
     assert.match(args.success_url, /\{CHECKOUT_SESSION_ID\}/);
+  });
+});
+
+/**
+ * C5 — Stripe delivers a purchase's four events CONCURRENTLY, and the event body
+ * is a snapshot of the moment it was emitted, not of now.
+ *
+ * `customer.subscription.created` is emitted the instant the subscription
+ * exists, which for a card payment is BEFORE the card is charged: its snapshot
+ * says `status: "incomplete"` every time. Whether the customer keeps the plan
+ * they paid for therefore came down to which of the four events happened to be
+ * processed last. Observed on 2026-09-06 in a real test-mode purchase, in the
+ * deployed logs, three accounts in a row:
+ *
+ *   account 20  completed(starter) after created(free)  -> starter   (lucky)
+ *   account 21  created(free)      after completed      -> FREE      (paid $9)
+ *
+ * The account was left on the free plan with its subscription id cleared, while
+ * Stripe held an active, paid subscription. A coin flip on every purchase.
+ */
+describe('C5 — a stale event body must not revoke a paid plan', () => {
+  /** What Stripe puts in `customer.subscription.created` for a card payment. */
+  const incompleteSnapshot = (h) => ({
+    id: 'sub_existing', customer: 'cus_guards', status: 'incomplete',
+    metadata: { account_id: '71' },
+    items: { data: [{ id: 'si_existing', price: { id: h.priceOf('starter') }, quantity: 1 }] },
+  });
+
+  test('an "incomplete" snapshot arriving last does not undo the payment', async () => {
+    const h = load({ account: paying({ plan: 'starter', stripe_subscription_id: 'sub_existing' }) });
+    // Stripe's current truth: the payment went through.
+    h.addSubscription(existingSub(h));
+
+    await h.fireEvent({
+      id: 'evt_created_late', type: 'customer.subscription.created',
+      data: { object: incompleteSnapshot(h) },
+    });
+
+    assert.equal(h.account.plan, 'starter',
+      'the plan the customer paid for must survive an out-of-order event body');
+    assert.equal(h.account.stripe_subscription_id, 'sub_existing',
+      'and the subscription id must not be cleared, or nothing can manage or cancel it later');
+    assert.equal(h.quota(), h.PLANS.starter.quota);
+  });
+
+  test('the same snapshot arriving FIRST still grants the plan once Stripe is asked', async () => {
+    const h = load({ account: paying({ plan: 'free', stripe_subscription_id: null }) });
+    h.addSubscription(existingSub(h));
+    await h.fireEvent({
+      id: 'evt_created_first', type: 'customer.subscription.created',
+      data: { object: incompleteSnapshot(h) },
+    });
+    assert.equal(h.account.plan, 'starter', 'order must stop deciding the outcome in either direction');
+  });
+
+  test('a payment that really did fail still grants nothing', async () => {
+    const h = load({ account: paying({ plan: 'free', stripe_subscription_id: null }) });
+    // Stripe's current truth: still incomplete, because the card was declined.
+    h.addSubscription({ ...incompleteSnapshot(h) });
+    await h.fireEvent({
+      id: 'evt_declined', type: 'customer.subscription.created',
+      data: { object: incompleteSnapshot(h) },
+    });
+    assert.equal(h.account.plan, 'free', 'an unpaid subscription must not entitle anyone');
+    assert.equal(h.account.stripe_subscription_id, null);
+  });
+
+  test('a real cancellation still downgrades', async () => {
+    const h = load({ account: paying({ plan: 'starter', stripe_subscription_id: 'sub_existing' }) });
+    const canceled = { ...existingSub(h), status: 'canceled' };
+    h.addSubscription(canceled);
+    await h.fireEvent({
+      id: 'evt_deleted', type: 'customer.subscription.deleted',
+      data: { object: canceled },
+    });
+    assert.equal(h.account.plan, 'free', 'cancelling must still work');
+    assert.equal(h.account.stripe_subscription_id, null);
+  });
+
+  test('if Stripe cannot be reached the event is still acted on, not dropped', async () => {
+    const h = load({ account: paying({ plan: 'free', stripe_subscription_id: null }), failRetrieve: true });
+    h.addSubscription(existingSub(h));
+    await h.fireEvent({
+      id: 'evt_offline', type: 'customer.subscription.updated',
+      data: { object: existingSub(h) },
+    });
+    assert.equal(h.account.plan, 'starter',
+      'a Stripe outage must not mean a paid customer silently gets nothing');
   });
 });
