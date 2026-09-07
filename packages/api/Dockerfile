@@ -37,6 +37,11 @@ RUN npm ci --omit=dev --workspace mailmint-api --include-workspace-root \
 COPY shared ./shared
 COPY packages/parser ./packages/parser
 COPY packages/api ./packages/api
+# /v1/parse verifies raw MIME with the SMTP package's dependency-free verifier.
+# Copy only the auth library, not the SMTP listener or its service configuration.
+COPY packages/smtpd/src/auth ./packages/smtpd/src/auth
+# Exercise the packaged dependency, not just a source checkout where it exists.
+RUN node --test packages/api/test/sender-auth.test.js
 
 # The service handles other people's email and calls out to an LLM with it.
 # Nothing here needs root, so nothing here runs as root.
