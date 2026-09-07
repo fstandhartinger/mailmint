@@ -52,16 +52,29 @@ function post(host, path, headers, body, timeoutMs) {
   });
 }
 
-/** Which chutes models exist right now. Empty set means "could not check". */
+/**
+ * Which chutes models exist right now. Empty set means "could not check".
+ *
+ * Two things here were measured on 2026-09-07 while working out why
+ * packages/api/test/reparse.test.js appeared to hang: this runs on EVERY
+ * complete(), the POST is bounded at 20 s, and the GET that follows it had no
+ * timeout at all — so a host that accepts the connection and never answers hangs
+ * the caller for as long as the socket lives. In the test environment, where
+ * there is no Chutes key, the whole probe is also pointless: callOnce() refuses a
+ * keyless provider immediately, so nothing the probe learns can be used.
+ */
 async function liveChutesModels() {
+  if (!process.env.CHUTES_API_KEY) return new Set();
   try {
     const r = await post('llm.chutes.ai', '/v1/models', {}, {}, 20_000).catch(() => null);
     if (r && r.status === 200) return new Set(JSON.parse(r.body).data.map((m) => m.id));
     const got = await new Promise((resolve) => {
-      https.get({ host: 'llm.chutes.ai', path: '/v1/models',
+      const req = https.get({ host: 'llm.chutes.ai', path: '/v1/models',
         headers: { authorization: `Bearer ${process.env.CHUTES_API_KEY}` } }, (res) => {
         let o = ''; res.on('data', (c) => { o += c; }); res.on('end', () => resolve(o));
-      }).on('error', () => resolve(null));
+      });
+      req.on('error', () => resolve(null));
+      req.setTimeout(20_000, () => { req.destroy(); resolve(null); });
     });
     return got ? new Set(JSON.parse(got).data.map((m) => m.id)) : new Set();
   } catch { return new Set(); }
