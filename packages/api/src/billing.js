@@ -350,6 +350,24 @@ async function applyPlan(accountId, planId, subscriptionId, run = query, custome
  * cancelled DocMint subscription tagged `account_id: 71` silently downgraded
  * MailMint account 71. The price, not the metadata, says whose subscription it is.
  */
+/** Asks Stripe what a subscription is now, classifying a failure the same way
+ * applySubscription does: transient means the delivery fails and Stripe
+ * redelivers; only "no such subscription" is answered instead. */
+async function confirmSubscription(id) {
+  try {
+    return await client().subscriptions.retrieve(String(id), { timeout: 5000, maxNetworkRetries: 0 });
+  } catch (e) {
+    const permanent = Boolean(e && (e.code === 'resource_missing' || e.statusCode === 404));
+    log[permanent ? 'error' : 'warn']('billing.subscription_unverifiable', {
+      subscription: id, permanent, error: String(e.message || e),
+    });
+    const failure = new ApiError(503, 'subscription_unverifiable',
+      `Could not confirm subscription ${id} with Stripe; refusing to act on the event body.`);
+    failure.stripePermanent = permanent;
+    throw failure;
+  }
+}
+
 async function applySubscription(subscription, run = query, { refresh = true } = {}) {
   const accountId = subscription.metadata?.account_id;
   const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id;
@@ -408,8 +426,11 @@ async function applySubscription(subscription, run = query, { refresh = true } =
     try {
       // Bounded: this happens with the account row locked, and a Stripe incident
       // must not hold that lock and a pool connection for the client's full timeout.
+      // Bounded and deliberately WITHOUT an in-process retry: this runs while the
+      // account row is locked and the pool is small, and a 429 carrying Retry-After
+      // would hold both for up to a minute. Stripe's redelivery is the retry.
       const fresh = await client().subscriptions.retrieve(String(subscription.id), {
-        timeout: 5000, maxNetworkRetries: 1,
+        timeout: 5000, maxNetworkRetries: 0,
       });
       if (fresh && fresh.id) {
         // Metadata is ours and may only exist on the body we were handed (the
@@ -444,9 +465,11 @@ async function applySubscription(subscription, run = query, { refresh = true } =
        *     deliveries that DO work down with it. So the delivery is answered, the
        *     event id is still not consumed, and it is logged at error level.
        */
-      const permanent = Boolean(e && (e.code === 'resource_missing' || e.statusCode === 404
-        || e.statusCode === 401 || e.statusCode === 403
-        || e.type === 'StripeAuthenticationError' || e.type === 'StripePermissionError'));
+      // Only "no such subscription" is permanent. A wrong or restricted key looks
+      // permanent but is fixed by somebody, and Stripe redelivers for three days —
+      // answering 200 would destroy those events silently AND hide them from
+      // Stripe's own failed-delivery list, which is where an operator would see it.
+      const permanent = Boolean(e && (e.code === 'resource_missing' || e.statusCode === 404));
       log[permanent ? 'error' : 'warn']('billing.subscription_unverifiable', {
         subscription: subscription.id, event_status: subscription.status,
         permanent, error: String(e.message || e),
@@ -518,7 +541,9 @@ async function handleEventInTransaction(event) {
           break;
         }
         if (obj.subscription) {
-          const sub = await client().subscriptions.retrieve(String(obj.subscription));
+          // Bounded and classified like the verification read: an earlier commit
+          // claimed this call was bounded and in fact never touched it.
+          const sub = await confirmSubscription(String(obj.subscription));
           if (!sub.metadata?.account_id && obj.client_reference_id) {
             sub.metadata = { ...(sub.metadata || {}), account_id: obj.client_reference_id };
           }
