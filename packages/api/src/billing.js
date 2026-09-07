@@ -227,22 +227,36 @@ async function createCheckoutSession(account, planId) {
         return stripe.billingPortal.sessions.create({ customer: customerId, return_url: `${config.publicUrl}/dashboard` });
       }
       if (item.price.id === priceId) {
-        await applySubscription(sub, run);
+        // `sub` came from the listing a few lines up, inside this transaction, so it
+        // IS the authoritative answer. Verifying it again would only add a way for a
+        // blip to turn a harmless re-click into a 503 — and this branch is what now
+        // absorbs the double click the removed key used to.
+        await applySubscription(sub, run, { refresh: false });
         return { url: `${config.publicUrl}/dashboard?checkout=updated` };
       }
+      // No idempotency key on the update, for the same reason there is none on the
+      // checkout: a key that spans a window replays the response it stored. Measured
+      // on 2026-09-07 against the deployed image, three clicks in one window on a
+      // fresh subscription — pro, starter, pro — left Stripe on starter and told the
+      // customer their plan change had been sent. PDFMint measured the same key
+      // mis-granting outright on its copy. What collapses a genuine double click is
+      // the row lock plus the re-read under it: the second click sees the price the
+      // first one set and takes the "already on this plan" branch above.
       const updated = await stripe.subscriptions.update(sub.id, {
         items: [{ id: item.id, price: priceId, quantity: item.quantity || 1 }],
         proration_behavior: 'always_invoice',
         payment_behavior: 'pending_if_incomplete',
         expand: ['latest_invoice'],
-      }, { idempotencyKey: `mailmint-upgrade-${sub.id}-${item.price.id}-${priceId}-${Math.floor(Date.now() / 1800000)}` });
+      });
       // A pending update is an UNPAID upgrade: Stripe keeps the old price until
       // the prorated invoice clears, so the entitlement stays where it is.
       if (updated.pending_update) {
         const invoiceUrl = updated.latest_invoice?.hosted_invoice_url;
         return { url: invoiceUrl || `${config.publicUrl}/dashboard?checkout=pending` };
       }
-      await applySubscription(updated, run);
+      // Stripe just handed back the updated subscription. A second read here would
+      // mean a blip could throw away a change Stripe has already made and prorated.
+      await applySubscription(updated, run, { refresh: false });
       return { url: `${config.publicUrl}/dashboard?checkout=updated` };
     }
 
@@ -392,7 +406,11 @@ async function applySubscription(subscription, run = query, { refresh = true } =
   let current = subscription;
   if (refresh && subscription.id) {
     try {
-      const fresh = await client().subscriptions.retrieve(String(subscription.id));
+      // Bounded: this happens with the account row locked, and a Stripe incident
+      // must not hold that lock and a pool connection for the client's full timeout.
+      const fresh = await client().subscriptions.retrieve(String(subscription.id), {
+        timeout: 5000, maxNetworkRetries: 1,
+      });
       if (fresh && fresh.id) {
         // Metadata is ours and may only exist on the body we were handed (the
         // checkout path stamps account_id onto it from client_reference_id).
@@ -404,10 +422,39 @@ async function applySubscription(subscription, run = query, { refresh = true } =
         }
       }
     } catch (e) {
-      log.warn('billing.subscription_refresh_failed', {
-        subscription: subscription.id, error: String(e.message || e),
-        note: 'falling back to the event body, which may be out of date',
+      /**
+       * This used to fall back to the event body, on the reasoning that an outage
+       * must not leave a paying customer with nothing. Measured on 2026-09-07
+       * against the deployed image, with Stripe genuinely unreachable from the
+       * container, that reasoning was wrong in the worst direction: the `created`
+       * body says `incomplete` every time, so the fallback took a paying account
+       * from `starter / 5000` to `free / 300` with the subscription id cleared —
+       * answered Stripe with HTTP 200, so nothing was retried, and consumed the
+       * event id, so the retry would have been a duplicate.
+       *
+       * A snapshot we cannot confirm is not a fact, so nothing is written either
+       * way. What differs is what we say back:
+       *
+       *   transient (connection, timeout, rate limit, Stripe 5xx) — fail the
+       *     delivery. The event id rolls back with the transaction and Stripe
+       *     redelivers; the customer's plan is decided minutes late, not wrongly.
+       *   permanent (no such subscription, a key in the wrong mode, a restricted
+       *     key) — retrying for three days would not fix it, and a webhook endpoint
+       *     that fails continuously eventually gets disabled, which would take the
+       *     deliveries that DO work down with it. So the delivery is answered, the
+       *     event id is still not consumed, and it is logged at error level.
+       */
+      const permanent = Boolean(e && (e.code === 'resource_missing' || e.statusCode === 404
+        || e.statusCode === 401 || e.statusCode === 403
+        || e.type === 'StripeAuthenticationError' || e.type === 'StripePermissionError'));
+      log[permanent ? 'error' : 'warn']('billing.subscription_unverifiable', {
+        subscription: subscription.id, event_status: subscription.status,
+        permanent, error: String(e.message || e),
       });
+      const failure = new ApiError(503, 'subscription_unverifiable',
+        `Could not confirm subscription ${subscription.id} with Stripe; refusing to act on the event body.`);
+      failure.stripePermanent = permanent;
+      throw failure;
     }
   }
 
@@ -434,6 +481,22 @@ async function applySubscription(subscription, run = query, { refresh = true } =
 }
 
 async function handleEvent(event) {
+  try {
+    return await handleEventInTransaction(event);
+  } catch (e) {
+    // A failure Stripe will never resolve by redelivering: answered, so a
+    // continuously-failing endpoint does not get disabled and take the deliveries
+    // that do work with it. Nothing was written and the event id was not consumed,
+    // because the transaction rolled back.
+    if (e && e.stripePermanent) {
+      log.error('billing.event_unverifiable_permanent', { stripe_event: event.id, type: event.type });
+      return { ignored: 'subscription_unverifiable' };
+    }
+    throw e;
+  }
+}
+
+async function handleEventInTransaction(event) {
   // The idempotency marker and the fulfilment share one transaction. Written
   // separately, a marker that survived a failed fulfilment turned Stripe's retry
   // into `{duplicate:true}` — the customer had paid and nothing was ever applied.
