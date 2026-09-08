@@ -31,9 +31,12 @@ There is a finished workflow to import rather than build —
 [Screen invoice emails and hold the doubtful ones for review](https://mailmint.app.mintapis.com/n8n#templates),
 twelve annotated nodes with both failure paths wired.
 
-## Honest status, 2026-08-30
+## Service status
 
-**Live, and a stranger can use it.** Every row below was checked on 2026-08-30, not recalled.
+**Live, with a free signup and working parsing API.** The original service inventory
+below dates from 2026-08-30, with later publication updates. Production SMTP intake,
+attachment downloads, schema versioning, re-parsing and quota behavior were checked
+again on 2026-09-08 using our own temporary QA account.
 
 | Piece | State |
 | --- | --- |
@@ -46,11 +49,13 @@ twelve annotated nodes with both failure paths wired.
 | Billing | Live. Free is 300 parsed emails a month; Starter $9, Pro $29, Scale $99 through Stripe Checkout |
 | SMTP TLS certificate | **Still self-signed.** Sending servers using opportunistic STARTTLS deliver anyway; one enforcing strict TLS would refuse |
 | n8n verification | **Published 1 September 2026.** n8n Cloud and self-hosted n8n can install version 0.1.2 from n8n's verified registry |
-| Paying customers | **Yes.** No customer logos or testimonials are quoted without permission |
+| Paying customers | No independently verified paying MailMint customer is claimed here. Our QA accounts and Stripe test-mode payments are not customer adoption |
 
-Two things follow from that table and are worth saying out loud: the parts a stranger
-touches — signup, an address, a parse, a webhook, a card — all work today; and the two
-only part in that path that does not is a public CA certificate.
+Technical acceptance and customer adoption are different facts. Controlled tests
+exercise the service; they do not establish sales or certify every customer setup.
+The inbound SMTP certificate remains self-signed: strict public-PKI clients cannot
+validate it. Receiving and downloading PDF/image attachments also does not imply
+that attachment text extraction or OCR is wired into the hosted parsing pipeline.
 
 ## What the JSON looks like
 
