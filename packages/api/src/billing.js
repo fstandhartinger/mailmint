@@ -547,9 +547,11 @@ async function handleEventInTransaction(event) {
           if (!sub.metadata?.account_id && obj.client_reference_id) {
             sub.metadata = { ...(sub.metadata || {}), account_id: obj.client_reference_id };
           }
-          // Already fetched, and the account_id patched onto it would be lost by
-          // a second fetch.
-          await applySubscription(sub, run, { refresh: false });
+          // The first lookup precedes the account lock. Re-confirm under that
+          // lock so a delayed completion cannot undo a concurrent paid upgrade.
+          // applySubscription merges our account_id fallback into the fresh
+          // metadata; failure rolls back both entitlement and event marker.
+          await applySubscription(sub, run);
         }
         break;
       }
