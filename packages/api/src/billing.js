@@ -315,13 +315,29 @@ async function createCheckoutSession(account, planId) {
 
 async function createPortalSession(account) {
   if (!enabled()) throw unavailable();
-  if (!account.stripe_customer_id) {
-    throw new ApiError(400, 'no_subscription', 'This account has never had a paid subscription.');
-  }
-  return client().billingPortal.sessions.create({
-    customer: account.stripe_customer_id,
-    return_url: `${config.publicUrl}/dashboard`,
+  // Resolve ownership under the same account lock as checkout/webhook writers;
+  // the dashboard's account snapshot may predate a replacement customer.
+  const result = await tx(async (tclient) => {
+    const run = tclient.query.bind(tclient);
+    const { rows } = await run('SELECT * FROM accounts WHERE id = $1 FOR UPDATE', [account.id]);
+    const current = rows[0];
+    if (!current) throw new ApiError(404, 'account_not_found', 'Account not found.');
+    if (!current.stripe_customer_id) return null;
+    if (!(await isUsableCustomer(current.stripe_customer_id))) {
+      await run('UPDATE accounts SET stripe_customer_id = NULL, stripe_subscription_id = NULL WHERE id = $1', [current.id]);
+      // Commit only stale references. Throwing here would roll the cleanup back.
+      // Quota/usage stay unchanged; transient provider errors propagate instead.
+      return null;
+    }
+    return client().billingPortal.sessions.create({
+      customer: current.stripe_customer_id,
+      return_url: `${config.publicUrl}/dashboard`,
+    });
   });
+  if (!result) throw new ApiError(400, 'no_subscription', 'There is no billing record for this account.', {
+    hint: 'Choose a plan to start a subscription.',
+  });
+  return result;
 }
 
 /** Applies a plan change. The single place the quota column is allowed to move. */
