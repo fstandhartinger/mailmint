@@ -75,17 +75,31 @@ async function enqueueForMailbox({ messageId, accountId, mailboxId }) {
   return queued;
 }
 
-/** Claims one due delivery. SKIP LOCKED so two workers never take the same row. */
-function claim() {
+/**
+ * The persisted deadline is also visible to pre-lease workers, which only
+ * inspect next_attempt_at. xmin is an opaque ownership fence: a superseded
+ * attempt must not acknowledge a newer owner (including after a DB outage).
+ * No migration is required. Direct old->new rolling activation is still unsafe
+ * for an OLD attempt already in flight; deploy new workers disabled first.
+ */
+const LEASE_MS = Math.max(1000, config.webhookTimeoutMs + 30000);
+function claim(deliveryId = null) {
   return tx(async (client) => {
     const { rows } = await client.query(
-      `SELECT * FROM webhook_deliveries
+      `SELECT id FROM webhook_deliveries
         WHERE delivered_at IS NULL AND failed_at IS NULL AND next_attempt_at <= now()
+          AND ($1::text IS NULL OR id = $1)
         ORDER BY next_attempt_at LIMIT 1 FOR UPDATE SKIP LOCKED`,
+      [deliveryId],
     );
     if (!rows.length) return null;
-    await client.query(`UPDATE webhook_deliveries SET locked_at = now() WHERE id = $1`, [rows[0].id]);
-    return rows[0];
+    const claimed = await client.query(
+      `UPDATE webhook_deliveries SET locked_at = now(),
+              next_attempt_at = now() + ($2 * interval '1 millisecond')
+        WHERE id = $1 RETURNING *, xmin::text AS claim_version`,
+      [rows[0].id, LEASE_MS],
+    );
+    return claimed.rows[0];
   });
 }
 
@@ -97,6 +111,16 @@ function claim() {
 const retriable = (status) => !(status >= 400 && status < 500) || status === 408 || status === 429;
 
 async function attemptOnce(delivery) {
+  // Targeted direct callers also acquire a due claim; they cannot bypass a
+  // live worker's lease by passing a previously read queue row.
+  if (!delivery.claim_version) delivery = await claim(delivery.id);
+  if (!delivery) return;
+  delivery = { ...delivery };
+  const acknowledge = (sql, params) => query(
+    `${sql} AND xmin::text = $${params.length + 1}
+       AND delivered_at IS NULL AND failed_at IS NULL RETURNING id`,
+    [...params, delivery.claim_version],
+  );
   // The signing secret comes from the ENDPOINT when there is one, so rotating
   // one workflow's secret cannot invalidate another's. Deliveries queued before
   // endpoints existed fall back to the mailbox secret they were signed with.
@@ -110,7 +134,8 @@ async function attemptOnce(delivery) {
     [delivery.message_id, delivery.endpoint_id || null],
   );
   if (!rows.length) {
-    await query(`UPDATE webhook_deliveries SET failed_at = now(), error = $2 WHERE id = $1`,
+    await acknowledge(`UPDATE webhook_deliveries SET failed_at = now(), error = $2,
+                       locked_at = NULL, next_attempt_at = NULL WHERE id = $1`,
       [delivery.id, 'message no longer exists']);
     return;
   }
@@ -123,6 +148,19 @@ async function attemptOnce(delivery) {
   const { buildPayload } = require('./delivery-payload');
   const payload = await buildPayload(delivery.message_id);
   const body = JSON.stringify(payload);
+  // DB/payload preparation can outlive the claim after an outage. Do not
+  // start a request once ownership has been replaced or its deadline passed.
+  const owns = await query(
+    `UPDATE webhook_deliveries SET locked_at = now(),
+            next_attempt_at = now() + ($3 * interval '1 millisecond')
+       WHERE id = $1 AND xmin::text = $2 AND next_attempt_at > now()
+         AND delivered_at IS NULL AND failed_at IS NULL
+       RETURNING xmin::text AS claim_version`,
+    [delivery.id, delivery.claim_version, LEASE_MS],
+  );
+  if (!owns.rows.length) return;
+  // Start a full transport budget AFTER preparation; keep the refreshed fence.
+  delivery.claim_version = owns.rows[0].claim_version;
   const attempt = delivery.attempt + 1;
   const { header, timestamp } = sign(meta.webhook_secret, body);
   const started = Date.now();
@@ -161,18 +199,18 @@ async function attemptOnce(delivery) {
   });
 
   if (ok) {
-    await query(
+    const accepted = await acknowledge(
       `UPDATE webhook_deliveries SET attempt = $2, status_code = $3, delivered_at = now(),
               error = NULL, locked_at = NULL, next_attempt_at = NULL WHERE id = $1`,
       [delivery.id, attempt, status],
     );
-    await endpoints.recordSuccess(delivery.endpoint_id, status);
+    if (accepted.rows.length) await endpoints.recordSuccess(delivery.endpoint_id, status);
     return;
   }
 
   const giveUp = attempt >= MAX_ATTEMPTS || (status !== null && !retriable(status));
   if (giveUp) {
-    await query(
+    const accepted = await acknowledge(
       `UPDATE webhook_deliveries SET attempt = $2, status_code = $3, error = $4,
               failed_at = now(), locked_at = NULL, next_attempt_at = NULL WHERE id = $1`,
       [delivery.id, attempt, status, error || `HTTP ${status}`],
@@ -185,12 +223,12 @@ async function attemptOnce(delivery) {
     });
     // Only a delivery that has given up counts against the endpoint. One failed
     // attempt out of six is a hiccup, not a dead receiver.
-    await endpoints.recordFailure(delivery.endpoint_id, status, error || `HTTP ${status}`);
+    if (accepted.rows.length) await endpoints.recordFailure(delivery.endpoint_id, status, error || `HTTP ${status}`);
     return;
   }
 
   const wait = SCHEDULE_SECONDS[attempt - 1];
-  await query(
+  await acknowledge(
     `UPDATE webhook_deliveries SET attempt = $2, status_code = $3, error = $4, locked_at = NULL,
             next_attempt_at = now() + ($5 || ' seconds')::interval WHERE id = $1`,
     [delivery.id, attempt, status, error || `HTTP ${status}`, String(wait)],
@@ -199,6 +237,9 @@ async function attemptOnce(delivery) {
 
 /** The background worker. One tick, one delivery; back off when the queue is empty. */
 function startWorker() {
+  // Two-stage rollout: replace all legacy processes with this dispatcher off,
+  // then enable only after provider/native process retirement is verified.
+  if (process.env.WEBHOOK_WORKER === '0') return () => {};
   let stopped = false;
   const tick = async () => {
     if (stopped) return;
@@ -214,14 +255,8 @@ function startWorker() {
   };
   setTimeout(tick, 200).unref();
 
-  // A delivery locked by a process that then died would sit locked forever.
-  // Nothing here trusts the lock for correctness — SKIP LOCKED does that — so
-  // this only clears the flag for the dashboard's benefit.
-  setInterval(() => {
-    query(`UPDATE webhook_deliveries SET locked_at = NULL
-            WHERE locked_at < now() - interval '5 minutes' AND delivered_at IS NULL AND failed_at IS NULL`)
-      .catch(() => {});
-  }, 60000).unref();
+  // A crashed worker's persisted next_attempt_at becomes due automatically.
+  // Do not mutate its row in a reaper: every mutation invalidates the fence.
 
   return () => { stopped = true; };
 }
