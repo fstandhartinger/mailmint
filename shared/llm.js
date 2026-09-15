@@ -16,6 +16,38 @@ const https = require('node:https');
 
 const MIN_TOKENS = 512;          // below this a reasoning model returns nothing
 const ATTEMPT_TIMEOUT_MS = 90_000;
+const ALLOWED_EXTRA_PROVIDERS = new Set(['gemini', 'openai']);
+const warnedDisabledProviders = new Set();
+
+function providerName(entry) {
+  return String(entry && entry.provider || '').toLowerCase();
+}
+
+function enabledExtraProviders(env) {
+  const raw = env && env.MAILMINT_LLM_EXTRA_PROVIDERS;
+  return new Set(String(raw || '').split(',').map((p) => p.trim().toLowerCase())
+    .filter((p) => ALLOWED_EXTRA_PROVIDERS.has(p)));
+}
+
+function effectiveChain(chain, env = process.env) {
+  const enabled = enabledExtraProviders(env);
+  return (chain || []).filter((entry) => {
+    const provider = providerName(entry);
+    return provider === 'chutes' || enabled.has(provider);
+  });
+}
+
+function warnDisabledProviders(chain, effective, log) {
+  const removed = new Set(chain.map((entry) => providerName(entry)));
+  for (const provider of removed) {
+    if (provider === 'chutes' || effective.some((entry) => providerName(entry) === provider)
+      || warnedDisabledProviders.has(provider)) continue;
+    const ep = ENDPOINTS[provider];
+    if (!ep || !ep.key?.() || warnedDisabledProviders.has(provider)) continue;
+    warnedDisabledProviders.add(provider);
+    log.warn?.(`[llm] ${provider} provider disabled`);
+  }
+}
 
 /** Ordered by capability, then cost. Each entry is tried until one answers. */
 const CHAIN = [
@@ -125,14 +157,17 @@ async function callOnce(entry, messages, maxTokens, log) {
  * quietly lands on the weakest model is how quality regresses unnoticed.
  */
 async function complete(messages, { maxTokens = 2048, log = console, chain = null } = {}) {
+  const requestedChain = chain || CHAIN;
+  const useChain = effectiveChain(requestedChain);
+  warnDisabledProviders(requestedChain, useChain, log);
   const live = await liveChutesModels();
-  const useChain = (chain || CHAIN).filter((e) =>
+  const filteredChain = useChain.filter((e) =>
     e.provider !== 'chutes' || live.size === 0 || live.has(e.model));
-  if (live.size && useChain.length < (chain || CHAIN).length) {
-    log.warn?.(`[llm] ${(chain || CHAIN).length - useChain.length} chutes model(s) no longer offered; skipping`);
+  if (live.size && filteredChain.length < useChain.length) {
+    log.warn?.(`[llm] ${useChain.length - filteredChain.length} chutes model(s) no longer offered; skipping`);
   }
   const attempts = [];
-  for (const entry of useChain) {
+  for (const entry of filteredChain) {
     try {
       const res = await callOnce(entry, messages, maxTokens, log);
       attempts.push({ ...entry, ok: true, ms: res.ms });
@@ -149,4 +184,4 @@ async function complete(messages, { maxTokens = 2048, log = console, chain = nul
   throw err;
 }
 
-module.exports = { complete, CHAIN, MIN_TOKENS, liveChutesModels };
+module.exports = { complete, effectiveChain, CHAIN, MIN_TOKENS, liveChutesModels };

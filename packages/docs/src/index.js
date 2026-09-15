@@ -195,11 +195,17 @@ async function fromPdf(buffer, ctx) {
  * CONTRACT §7 economics: never spend an LLM call on a document whose text layer
  * already answered.
  */
+function ocrEnabled(env = process.env) {
+  const raw = env && env.MAILMINT_LLM_EXTRA_PROVIDERS;
+  return String(raw || '').split(',').map((p) => p.trim().toLowerCase()).includes('gemini');
+}
+
 async function maybeOcr(buffer, mimeType, ctx, pageCount) {
   const { limits, dl, warnings, timings, log, requestId, opts } = ctx;
   if (opts.ocr === false) { warnings.push('ocr_disabled'); return null; }
   const apiKey = opts.googleApiKey || process.env.GOOGLE_API_KEY;
   if (!apiKey) { warnings.push('ocr_unavailable:no_google_api_key'); return null; }
+  if (!ocrEnabled(opts.env || process.env)) { warnings.push('ocr_unavailable:gemini_not_enabled'); return null; }
   if (buffer.length > limits.maxOcrBytes) { warnings.push('ocr_skipped:too_large'); return null; }
   if (dl.expired()) { warnings.push('ocr_skipped:deadline'); return null; }
 
@@ -359,5 +365,6 @@ module.exports = {
   extractCsv,
   makeTable,
   gemini,
+  ocrEnabled,
   VERSION,
 };
