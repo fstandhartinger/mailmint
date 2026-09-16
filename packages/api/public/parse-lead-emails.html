@@ -98,7 +98,7 @@ lead that never became a record at all is lost revenue. This is exactly the case
 <h2>The schema <a class="anchor" href="#schema">#</a></h2>
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code>[
+<pre tabindex="0"><code>[
   { "name": "contact_name", "type": "string", "description": "full name of the person enquiring" },
   { "name": "company",      "type": "string", "description": "company name" },
   { "name": "email",        "type": "string", "description": "reply-to email address of the enquirer" },
@@ -117,7 +117,7 @@ lead that never became a record at all is lost revenue. This is exactly the case
 a footer with a timestamp and an IP. Back in <strong>2,205&nbsp;ms</strong>. All eight fields, nothing
 omitted:</p>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Field</th><th>Value</th><th>Conf.</th><th>Source</th><th>Verdict</th></tr></thead>
 <tbody>
@@ -157,7 +157,7 @@ lead pipeline usually wants the opposite of an invoice pipeline: <strong>create 
 the fields.</strong> A lead held in a queue for review is a lead going cold.</p>
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code><span class="tok-c"># create every lead; mark the thin fields for the owner to confirm</span>
+<pre tabindex="0"><code><span class="tok-c"># create every lead; mark the thin fields for the owner to confirm</span>
 const lead = Object.fromEntries(
   Object.entries(msg.fields).map(([k, f]) =&gt; [k, f.value]));
 

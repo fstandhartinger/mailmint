@@ -112,7 +112,7 @@ parsed output as data rather than instructions.</li>
 own pricing page or pricing endpoint on <strong>29 August 2026</strong> and re-checked on <strong>30 August 2026</strong>; capability findings from their
 own help centres and published API schemas, 25 August 2026. Where a vendor publishes no figure, the
 cell is empty rather than guessed.</p>
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Product</th><th>Entry price</th><th>Per unit</th><th>Reads email body</th><th>Reads PDF contents</th><th>Per-field confidence</th></tr></thead>
 <tbody>
@@ -155,7 +155,7 @@ and DMARC verdicts, <code>tables</code> detected in the message, and <code>field
 schema, filled in. Each field looks like this:</p>
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code>"total": {
+<pre tabindex="0"><code>"total": {
   "value": 31.50,
   "confidence": 0.97,
   "source": "rules+model",
@@ -169,7 +169,7 @@ naming the field, so nothing is ever silently dropped. There are
 to.</p>
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code>curl -X POST https://mailmint.app.mintapis.com/v1/parse \
+<pre tabindex="0"><code>curl -X POST https://mailmint.app.mintapis.com/v1/parse \
   -H "Authorization: Bearer $MAILMINT_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{ "subject": "Invoice INV-2291 from Acme Ltd",
@@ -198,7 +198,7 @@ double-process a message.</li>
 
 <section id="price">
 <h2>Price <a class="anchor" href="#price">#</a></h2>
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Plan</th><th>Price</th><th>Parsed emails / month</th><th>Per email</th><th>Raw message kept</th></tr></thead>
 <tbody>

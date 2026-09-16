@@ -13,6 +13,9 @@ html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6}
 a{color:var(--accent-ink);text-decoration:none}
 a:hover{text-decoration:underline}
+/* A link inside a sentence must be distinguishable without relying on colour. */
+p a,li a{text-decoration:underline}
+.vh{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
 code,pre{font-family:var(--mono)}
 code{background:var(--code);padding:.12em .35em;border-radius:4px;font-size:.9em}
 pre{background:var(--code);padding:1rem 1.1rem;border-radius:var(--radius);overflow-x:auto;border:1px solid var(--rule);font-size:.82rem;line-height:1.5;max-height:22rem}
@@ -51,9 +54,13 @@ h3{font-size:1rem;margin:1.2rem 0 .4rem}
 .steps li.done::before{content:"✓";background:#2f855a}
 .keybox{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin:.5rem 0}
 .keybox code{font-size:.95rem;word-break:break-all}
+/* Tables scroll inside this wrapper instead of widening the page on phones;
+   tabindex makes the scroll region reachable by keyboard. */
+.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .rows{width:100%;border-collapse:collapse;font-size:.87rem;margin:.7rem 0}
 .rows th{text-align:left;color:var(--muted);font-weight:600;border-bottom:1px solid var(--rule);padding:.4rem .5rem}
 .rows td{padding:.4rem .5rem;border-bottom:1px solid var(--rule);vertical-align:top}
+.rows td code{overflow-wrap:anywhere}
 .big{font-size:1.7rem;font-weight:650;margin:.3rem 0}
 .big .muted{font-size:1rem;font-weight:400}
 .meter{height:8px;background:var(--rule);border-radius:99px;overflow:hidden}
