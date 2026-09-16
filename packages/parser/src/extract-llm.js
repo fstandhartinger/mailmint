@@ -26,6 +26,7 @@ const DEFAULT_CHAIN = [
   { provider: 'chutes', model: 'deepseek-ai/DeepSeek-V4-Flash-0731-TEE' },
   { provider: 'chutes', model: 'moonshotai/Kimi-K3-TEE' },
   { provider: 'chutes', model: 'zai-org/GLM-5.2-TEE' },
+  { provider: 'chutes', model: 'Qwen/Qwen3.8-27B-TEE' },
   { provider: 'gemini', model: 'gemini-3-flash-preview' },
   { provider: 'openai', model: 'gpt-5-mini' },
 ];

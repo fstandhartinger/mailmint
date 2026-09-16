@@ -18,6 +18,10 @@ const MIN_TOKENS = 512;          // below this a reasoning model returns nothing
 const ATTEMPT_TIMEOUT_MS = 90_000;
 const ALLOWED_EXTRA_PROVIDERS = new Set(['gemini', 'openai']);
 const warnedDisabledProviders = new Set();
+const UTILIZATION_TIMEOUT_MS = 5_000;      // hard bound on the utilization probe
+const UTILIZATION_MAX_AGE_MS = 15 * 60_000; // older than this, a reading skips nothing
+const UTILIZATION_TTL_MS = 120_000;        // default cache lifetime for a reading
+let utilizationStarvationWarned = false;
 
 function providerName(entry) {
   return String(entry && entry.provider || '').toLowerCase();
@@ -112,6 +116,146 @@ async function liveChutesModels() {
   } catch { return new Set(); }
 }
 
+/**
+ * Chutes utilization gate.
+ *
+ * A model that is already saturated (utilization_5m >= threshold) adds queue
+ * latency to every extraction, so a busy chutes entry is skipped in favour of
+ * the next one. The gate is fail-open by design: an outage of the utilization
+ * API can never stop email processing, so no key, no reading, a stale reading
+ * or a busy host all mean "skip nothing". And if the gate would drop EVERY
+ * chutes entry, the original order is kept — better a busy model than no
+ * extraction.
+ *
+ * The reading comes from GET https://api.chutes.ai/chutes/utilization (a JSON
+ * array of {name, utilization_5m, rate_limit_ratio_5m, ...}). The `name` is
+ * the chute name and is not always identical to the chain's model id, so
+ * matching is case-insensitive on the full id first, then on the part after
+ * the last "/". A model with no matching row is "unknown" and is never
+ * skipped.
+ */
+function defaultUtilizationReader() {
+  // No key means no network at all: the test suite runs keyless, and a probe
+  // here would hang it (same lesson as liveChutesModels above).
+  if (!process.env.CHUTES_API_KEY) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    let settled = false;
+    const done = (v) => { if (!settled) { settled = true; resolve(v); } };
+    const req = https.get({ host: 'api.chutes.ai', path: '/chutes/utilization',
+      headers: { authorization: `Bearer ${process.env.CHUTES_API_KEY}` } }, (res) => {
+      if (res.statusCode !== 200) { res.resume(); return done(null); }
+      let out = '';
+      res.on('data', (c) => { out += c; });
+      res.on('end', () => {
+        try { done({ rows: JSON.parse(out), at: Date.now() }); }
+        catch { done(null); }
+      });
+    });
+    req.on('error', () => done(null));
+    req.setTimeout(UTILIZATION_TIMEOUT_MS, () => { req.destroy(); done(null); });
+  });
+}
+
+// TEST-ONLY seam: swap in a fake reader (or restore the real one). Setting a
+// reader clears the cache so each test starts clean. Production code never
+// calls these.
+let utilizationReader = defaultUtilizationReader;
+let utilizationCache = null; // { reading, cachedAt }
+function __setUtilizationReaderForTest(fn) {
+  utilizationReader = fn;
+  utilizationCache = null;
+}
+function __resetUtilizationForTest() {
+  utilizationReader = defaultUtilizationReader;
+  utilizationCache = null;
+  utilizationStarvationWarned = false;
+}
+
+function utilizationTtlMs(env) {
+  const ms = Number(env.MAILMINT_LLM_UTILIZATION_TTL_MS);
+  return Number.isFinite(ms) && ms >= 0 ? ms : UTILIZATION_TTL_MS;
+}
+
+function utilizationThreshold(env) {
+  const max = Number(env.MAILMINT_LLM_UTILIZATION_MAX);
+  return Number.isFinite(max) && max > 0 && max <= 1 ? max : 0.75;
+}
+
+function validUtilizationReading(r) {
+  return Boolean(r) && Array.isArray(r.rows) && Number.isFinite(r.at);
+}
+
+async function currentUtilizationReading(env) {
+  const now = Date.now();
+  if (utilizationCache && now - utilizationCache.cachedAt <= utilizationTtlMs(env)) {
+    return utilizationCache.reading;
+  }
+  let reading = null;
+  try { reading = await utilizationReader(); } catch { reading = null; }
+  if (!validUtilizationReading(reading)) reading = null;
+  // A failed probe is cached too: while the utilization API is down, every
+  // extraction would otherwise wait up to UTILIZATION_TIMEOUT_MS for it again.
+  utilizationCache = { reading, cachedAt: now };
+  return reading;
+}
+
+function findUtilizationRow(rows, model) {
+  if (!Array.isArray(rows)) return null;
+  const id = String(model).toLowerCase();
+  const short = id.slice(id.lastIndexOf('/') + 1);
+  for (const row of rows) {
+    if (String(row && row.name || '').toLowerCase() === id) return row;
+  }
+  for (const row of rows) {
+    if (String(row && row.name || '').toLowerCase() === short) return row;
+  }
+  return null;
+}
+
+/**
+ * Pure decision for one model: {status: 'skip'|'allow'|'unknown', utilization?}.
+ * "unknown" (no matching row, or a non-numeric reading) never skips.
+ */
+function utilizationDecision(rows, model, threshold) {
+  const row = findUtilizationRow(rows, model);
+  if (!row) return { status: 'unknown' };
+  const u = row.utilization_5m;
+  // Only a real finite number decides; anything else (null, "", NaN) is
+  // "unknown" and never skips — Number(null) === 0 would lie about health.
+  if (typeof u !== 'number' || !Number.isFinite(u)) return { status: 'unknown' };
+  return { status: u >= threshold ? 'skip' : 'allow', utilization: u };
+}
+
+/**
+ * Apply the utilization gate to a chain that has already passed the provider
+ * opt-in (effectiveChain) and the live-model filter (liveChutesModels).
+ * Returns the chain to try; never throws, never drops a non-chutes entry.
+ */
+async function applyUtilizationGate(chain, log, env) {
+  const chutesEntries = chain.filter((e) => providerName(e) === 'chutes');
+  if (!chutesEntries.length) return chain;
+  const reading = await currentUtilizationReading(env);
+  if (!reading || Date.now() - reading.at > UTILIZATION_MAX_AGE_MS) return chain;
+  const threshold = utilizationThreshold(env);
+  const skipped = [];
+  for (const entry of chutesEntries) {
+    const d = utilizationDecision(reading.rows, entry.model, threshold);
+    if (d.status === 'skip') skipped.push({ entry, utilization: d.utilization });
+  }
+  if (skipped.length === chutesEntries.length) {
+    if (!utilizationStarvationWarned) {
+      utilizationStarvationWarned = true;
+      log.warn?.('[llm] utilization gate would drop every chutes model; keeping original order');
+    }
+    return chain;
+  }
+  const drop = new Set(skipped.map((s) => s.entry));
+  for (const s of skipped) {
+    log.warn?.(`[llm] skipping chutes/${s.entry.model}: utilization ${Number(s.utilization.toFixed(2))} >= ${threshold}`);
+  }
+  return chain.filter((e) => !drop.has(e));
+}
+
 async function callOnce(entry, messages, maxTokens, log) {
   const { provider, model } = entry;
   const ep = ENDPOINTS[provider];
@@ -166,8 +310,10 @@ async function complete(messages, { maxTokens = 2048, log = console, chain = nul
   if (live.size && filteredChain.length < useChain.length) {
     log.warn?.(`[llm] ${useChain.length - filteredChain.length} chutes model(s) no longer offered; skipping`);
   }
+  // Filter order: provider opt-in (effectiveChain) -> live models -> utilization.
+  const gatedChain = await applyUtilizationGate(filteredChain, log, process.env);
   const attempts = [];
-  for (const entry of filteredChain) {
+  for (const entry of gatedChain) {
     try {
       const res = await callOnce(entry, messages, maxTokens, log);
       attempts.push({ ...entry, ok: true, ms: res.ms });
@@ -184,4 +330,9 @@ async function complete(messages, { maxTokens = 2048, log = console, chain = nul
   throw err;
 }
 
-module.exports = { complete, effectiveChain, CHAIN, MIN_TOKENS, liveChutesModels };
+module.exports = {
+  complete, effectiveChain, CHAIN, MIN_TOKENS, liveChutesModels,
+  utilizationDecision,
+  // TEST-ONLY seams (see above): never call from production code.
+  __setUtilizationReaderForTest, __resetUtilizationForTest,
+};
