@@ -232,13 +232,13 @@ router.get('/admin/stats', requireAdmin, asyncRoute(async (req, res) => {
     Views and visitors identify nobody: the visitor code is re-keyed every day.
     (<a href="/admin/stats.json?days=${days}">as JSON</a>)</p>
   <section class="card">
-    ${rows.length ? `<table class="rows">
+    ${rows.length ? `<div class="table-scroll" tabindex="0" aria-label="Visitor statistics per day"><table class="rows">
       <tr><th>Day (UTC)</th><th>What</th><th>Events</th><th>Visitors</th></tr>
       ${rows.map((r) => `<tr><td>${new Date(r.day).toISOString().slice(0, 10)}</td>
         <td>${escapeHtml(KIND_LABELS[r.kind] || r.kind)}</td>
         <td>${r.events}</td>
         <td>${r.kind === 'visit' ? r.visitors : '—'}</td></tr>`).join('')}
-    </table>` : '<p class="muted">Nothing counted yet.</p>'}
+    </table></div>` : '<p class="muted">Nothing counted yet.</p>'}
   </section>
 </main>`));
 }));
