@@ -217,6 +217,10 @@ function load(opts = {}) {
       };
     }
     if (name === './db') return { query: runQuery, tx, pool: {} };
+    // billing.js records paid conversions fire-and-forget through analytics.js;
+    // the guard suite watches the DB write path, so the counter is stubbed.
+    const noop = () => {};
+    if (name === './analytics') return { recordEvent: noop };
     if (name === './log') return Object.assign({}, logStub, { log: logStub });
     if (name === './errors') {
       return {

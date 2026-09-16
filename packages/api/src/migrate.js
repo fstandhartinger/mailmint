@@ -355,6 +355,29 @@ const MIGRATIONS = [
          WHERE status = 'received'`,
     ],
   },
+  {
+    id: 10,
+    name: 'analytics events',
+    statements: [
+      // First-party visitor statistics, counted in our own database (see
+      // analytics.js). Deliberately sparse: no IP column and no user-agent
+      // column — a visit only stores a one-way visitor_hash whose daily salt
+      // is never persisted, so the same visitor cannot be recognised across
+      // days and the raw identifiers cannot be recovered from the table.
+      // `day` duplicates occurred_at truncated to UTC so the reporting query
+      // (and its index) group by calendar day without a per-row computation.
+      `CREATE TABLE IF NOT EXISTS analytics_events (
+         id           BIGSERIAL PRIMARY KEY,
+         occurred_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+         day          DATE NOT NULL DEFAULT (now() AT TIME ZONE 'utc')::date,
+         kind         TEXT NOT NULL CHECK (kind IN ('visit','signup','trial_start','paid_conversion')),
+         path         TEXT,
+         visitor_hash TEXT,
+         account_id   BIGINT
+       )`,
+      `CREATE INDEX IF NOT EXISTS analytics_events_day_kind_idx ON analytics_events(day, kind)`,
+    ],
+  },
 ];
 
 async function migrate() {

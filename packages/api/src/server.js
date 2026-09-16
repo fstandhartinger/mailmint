@@ -17,6 +17,7 @@ const billing = require('./billing');
 const webhooks = require('./webhooks');
 const reparse = require('./reparse');
 const resume = require('./resume');
+const analytics = require('./analytics');
 const { startReaper } = require('./reaper');
 const { parserAvailable } = require('./parser');
 
@@ -68,6 +69,10 @@ app.get('/healthz', (req, res) => res.json({
 
 app.use('/internal', internal.router);
 app.use('/v1', api.router);
+// First-party visit counting. Before the site/web routers so every public
+// page is covered; the row is written at res 'finish', so it costs the
+// response nothing and only 2xx answers on public paths count.
+app.use(analytics.visitMiddleware);
 app.use('/', site.router);   // static /, /docs, /quickstart, /n8n — must precede web.router
 app.use('/', web.router);
 app.use(express.static(path.join(__dirname, '..', 'public'), { maxAge: '1h' }));

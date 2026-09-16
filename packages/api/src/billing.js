@@ -343,6 +343,12 @@ async function createPortalSession(account) {
 /** Applies a plan change. The single place the quota column is allowed to move. */
 async function applyPlan(accountId, planId, subscriptionId, run = query, customerId = null) {
   const plan = PLANS[planId] || PLANS.free;
+  // Read the outgoing plan first, inside the same `run` so a caller's
+  // transaction sees its own locked row: "free became paid" is what the
+  // funnel's paid-conversion count hangs on. A downgrade or a sideways paid
+  // plan change is not a new conversion.
+  const { rows: before } = await run(`SELECT plan FROM accounts WHERE id = $1`, [accountId]);
+  const previousPlan = before[0] ? String(before[0].plan) : null;
   // The customer id is bound here as well as at checkout, the way PDFMint and
   // DocMint do it. An account that acquired a subscription some other way used to
   // keep a null customer id for ever, which put it permanently outside the
@@ -353,6 +359,12 @@ async function applyPlan(accountId, planId, subscriptionId, run = query, custome
       WHERE id = $1`,
     [accountId, plan.id, plan.quota, subscriptionId || null, customerId || null],
   );
+  if (previousPlan === 'free' && plan.priceUsd > 0) {
+    // Fire-and-forget (recordEvent never throws) and outside the caller's
+    // transaction — a failed count must never roll back a paid plan change.
+    // eslint-disable-next-line global-require
+    require('./analytics').recordEvent('paid_conversion', { accountId });
+  }
   log.info('billing.plan_applied', { account_id: Number(accountId), plan: plan.id, quota: plan.quota });
 }
 

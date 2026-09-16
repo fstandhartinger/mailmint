@@ -43,6 +43,15 @@ const config = {
   sessionSecret: process.env.SESSION_SECRET || 'dev-only-insecure-secret',
   logLevel: process.env.LOG_LEVEL || 'info',
 
+  // First-party visitor statistics (see analytics.js). No cookies, no third
+  // parties: page views, sign-ups and paid upgrades are counted in our own
+  // database. `analyticsAdminEmails` gates /admin/stats; `analyticsExcludeIps`
+  // keeps machines we operate (CI, monitoring) out of the numbers by IP.
+  analyticsAdminEmails: (process.env.MAILMINT_ADMIN_EMAILS || '')
+    .split(',').map((s) => s.trim().toLowerCase()).filter(Boolean),
+  analyticsExcludeIps: (process.env.ANALYTICS_EXCLUDE_IPS || '')
+    .split(',').map((s) => s.trim()).filter(Boolean),
+
   // Identifies this deployment in usage_events, so a developer's laptop sharing
   // the database does not show up in the production numbers.
   origin: process.env.MAILMINT_ORIGIN

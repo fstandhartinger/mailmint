@@ -18,7 +18,7 @@ const { PAGES } = require('../src/site.js');
 
 const LEGAL_PAGES = [
   { url: '/impressum', file: 'impressum.html', mustContain: ['productivity-boost.com Betriebs UG', 'HRB 8453'] },
-  { url: '/privacy', file: 'privacy.html', mustContain: ['Chutes', 'Stripe', 'Hetzner', 'Google'] },
+  { url: '/privacy', file: 'privacy.html', mustContain: ['Chutes', 'Stripe', 'Hetzner', 'Google', 'Visitor statistics'] },
   { url: '/terms', file: 'terms.html', mustContain: ['Last updated'] },
 ];
 

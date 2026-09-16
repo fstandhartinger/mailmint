@@ -42,6 +42,7 @@
         <li><a href="#logs">Server logs</a></li>
         <li><a href="#retention">Retention</a></li>
         <li><a href="#cookies">Cookies &amp; analytics</a></li>
+        <li><a href="#visitor-statistics">Visitor statistics</a></li>
         <li><a href="#requests">Requests &amp; deletion</a></li>
       </ul>
     </div>
@@ -164,7 +165,22 @@ production configuration enforces:</p>
 <h2>Cookies &amp; analytics <a class="anchor" href="#cookies">#</a></h2>
 <p>MailMint uses <strong>no tracking cookies</strong> and <strong>no third-party analytics</strong>.
 Signing in sets one first-party session cookie (<code>mailmint_session</code>) whose only job is to keep
-you logged in; it is not used to track you.</p>
+you logged in; it is not used to track you. The first-party statistics we do keep are described in
+<a href="#visitor-statistics">Visitor statistics</a> below.</p>
+</section>
+
+<section id="visitor-statistics">
+<h2>Visitor statistics <a class="anchor" href="#visitor-statistics">#</a></h2>
+<p>We count page views, sign-ups and paid upgrades in our own database on our own server. There are
+<strong>no cookies</strong> and <strong>no third-party tracker</strong> involved.</p>
+<p>For a page view, the visitor's IP address and browser identifier (user agent) are combined into a
+one-way code with a key that changes daily and is never stored, so visitors cannot be recognised
+across days and the identifiers cannot be recovered from the stored row. Automated and internal
+traffic is excluded.</p>
+<p>Each counted event is stored as one row holding its type (page view, sign-up, trial start or paid
+upgrade), the page path, the time and, for page views, that daily one-way code. Sign-up and upgrade
+events also carry the internal number of the account concerned. The operator view shows only totals
+per day.</p>
 </section>
 
 <section id="requests">

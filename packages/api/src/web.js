@@ -21,6 +21,7 @@ const webhooks = require('./webhooks');
 const reparse = require('./reparse');
 const endpoints = require('./webhook-endpoints');
 const billing = require('./billing');
+const analytics = require('./analytics');
 const { validateSchema, TYPES } = require('./schema');
 
 const router = express.Router();
@@ -165,6 +166,13 @@ router.post('/signup', asyncRoute(async (req, res) => {
   setSessionCookie(res, sessionId);
   stashKeyForSession(sessionId, apiKey);
   log.info('account.created', { account_id: Number(account.id) });
+  // First-party funnel statistics (fire-and-forget inside). A new account on
+  // the free plan is a sign-up and a trial start in one, and it is the only
+  // account-creation path the service has. Our own QA and scripts don't count.
+  if (!analytics.isInternalTraffic(req)) {
+    analytics.recordEvent('signup', { accountId: account.id });
+    analytics.recordEvent('trial_start', { accountId: account.id });
+  }
   return res.redirect('/dashboard?welcome=1');
 }));
 
@@ -181,6 +189,72 @@ router.post('/logout', asyncRoute(async (req, res) => {
   if (id) await destroySession(id);
   res.clearCookie(SESSION_COOKIE, { path: '/' });
   return res.redirect('/');
+}));
+
+/* ---------------------------------------------------------- operator stats */
+
+/**
+ * First-party visitor statistics for the operator (analytics.js).
+ *
+ * There is no role column, so a separate allowlist gates this: a logged-in
+ * account whose email is named in MAILMINT_ADMIN_EMAILS. Everyone else — the
+ * logged-out included — gets the ordinary 404 page, the same answer as for a
+ * URL that truly has nothing behind it; an operator-only endpoint should not
+ * announce that it exists. These requests are also not counted as visits:
+ * the middleware only covers public marketing paths.
+ */
+const statsNotFound = (req, res) => res.status(404).type('html').send(shell('Not found', `
+  <main class="auth">
+    <a class="logo" href="/">Mail<span>Mint</span></a><h1>Not found</h1>
+    <p class="sub">There is nothing at <code>${escapeHtml(req.path)}</code>.</p>
+    <p class="alt"><a href="/dashboard">Dashboard</a> · <a href="/docs">Docs</a></p></main>`));
+
+const requireAdmin = asyncRoute(async (req, res, next) => {
+  const account = await currentAccount(req);
+  if (!account || !config.analyticsAdminEmails.includes(String(account.email).toLowerCase())) {
+    return statsNotFound(req, res);
+  }
+  req.account = account;
+  return next();
+});
+
+const KIND_LABELS = {
+  visit: 'Page views', signup: 'Sign-ups', trial_start: 'Trial starts', paid_conversion: 'Paid conversions',
+};
+
+router.get('/admin/stats', requireAdmin, asyncRoute(async (req, res) => {
+  const days = Math.min(365, Math.max(1, Number(req.query.days) || 30));
+  const rows = await analytics.stats(days);
+  res.type('html').send(shell('MailMint — visitor statistics', `${topbar()}
+<main>
+  <h1>Visitor statistics</h1>
+  <p class="muted">Own counts, kept per UTC day — no cookies and no third-party tracker.
+    Views and visitors identify nobody: the visitor code is re-keyed every day.
+    (<a href="/admin/stats.json?days=${days}">as JSON</a>)</p>
+  <section class="card">
+    ${rows.length ? `<table class="rows">
+      <tr><th>Day (UTC)</th><th>What</th><th>Events</th><th>Visitors</th></tr>
+      ${rows.map((r) => `<tr><td>${new Date(r.day).toISOString().slice(0, 10)}</td>
+        <td>${escapeHtml(KIND_LABELS[r.kind] || r.kind)}</td>
+        <td>${r.events}</td>
+        <td>${r.kind === 'visit' ? r.visitors : '—'}</td></tr>`).join('')}
+    </table>` : '<p class="muted">Nothing counted yet.</p>'}
+  </section>
+</main>`));
+}));
+
+router.get('/admin/stats.json', requireAdmin, asyncRoute(async (req, res) => {
+  const days = Math.min(365, Math.max(1, Number(req.query.days) || 30));
+  const rows = await analytics.stats(days);
+  res.json({
+    days,
+    rows: rows.map((r) => ({
+      day: new Date(r.day).toISOString().slice(0, 10),
+      kind: r.kind,
+      events: r.events,
+      ...(r.kind === 'visit' ? { visitors: r.visitors } : {}),
+    })),
+  });
 }));
 
 /* ------------------------------------------------------------- dashboard */
