@@ -62,16 +62,20 @@ async function main() {
   // Drain whatever survived the last restart.
   deliverer.drain().then((s) => log.info('mail.spool_startup_drain', s)).catch(() => {});
 
-  const shutdown = async (sig) => {
+  let shutdownPromise = null;
+  const shutdown = (sig) => {
+    if (shutdownPromise) return shutdownPromise;
     log.info('smtp.shutdown', { signal: sig, sessions: server.sessions.size, spooled: spool.sizeSync() });
-    deliverer.stop();
-    try { await server.close(); } catch { /* ignore */ }
-    if (intake) { try { await intake.close(); } catch { /* ignore */ } }
-    // Give in-flight sessions a moment, then go.
-    setTimeout(() => process.exit(0), 5000).unref();
-    const wait = setInterval(() => {
-      if (server.sessions.size === 0) { clearInterval(wait); process.exit(0); }
-    }, 200);
+    const hardExit = setTimeout(() => process.exit(0), 10000);
+    hardExit.unref();
+    shutdownPromise = (async () => {
+      deliverer.stop();
+      try { await server.close(); } catch { /* ignore */ }
+      if (intake) { try { await intake.close(); } catch { /* ignore */ } }
+      clearTimeout(hardExit);
+      process.exit(0);
+    })();
+    return shutdownPromise;
   };
   process.on('SIGTERM', () => shutdown('SIGTERM'));
   process.on('SIGINT', () => shutdown('SIGINT'));

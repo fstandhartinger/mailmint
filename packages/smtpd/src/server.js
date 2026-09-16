@@ -65,6 +65,8 @@ class Session {
     this.unknownRcpt = 0;
     this.messages = 0;
     this.closed = false;
+    this._shutdown = false;
+    this._messageInProgress = false;
     this.startedAt = Date.now();
 
     this.buf = Buffer.alloc(0);
@@ -131,6 +133,18 @@ class Session {
     try { this.socket.end(); } catch { /* ignore */ }
     setTimeout(() => { try { this.socket.destroy(); } catch { /* ignore */ } }, 1000).unref();
     this.logSession(reason);
+  }
+
+  markShutdown() {
+    this._shutdown = true;
+    if (this._messageInProgress || this.state === S.DATA || this.state === S.BDAT) return;
+    this.respond(421, '4.3.2', 'Service shutting down');
+    try { this.socket.end(); } catch { this.socket.destroy(); }
+  }
+
+  _finishShutdownIfIdle() {
+    if (!this._shutdown || this._messageInProgress || this.state === S.DATA || this.state === S.BDAT) return;
+    try { this.socket.end(); } catch { this.socket.destroy(); }
   }
 
   logSession(reason) {
@@ -437,6 +451,7 @@ class Session {
     if (!this.recipients.length) return this.fail(503, '5.5.1', 'need RCPT before DATA');
     if (this.bdatChunks.length) return this.fail(503, '5.5.1', 'cannot mix BDAT and DATA');
 
+    this._messageInProgress = true;
     this.state = S.DATA;
     this.dataChunks = [];
     this.dataLen = 0;
@@ -522,6 +537,7 @@ class Session {
       return this.fail(501, '5.5.4', 'syntax: BDAT <size> [LAST]');
     }
     this.bdatLast = parts.length === 2;
+    this._messageInProgress = true;
     this.bdatRemaining = size;
     this.state = S.BDAT;
     // The pump takes it from here: it will read exactly `size` octets out of
@@ -574,98 +590,107 @@ class Session {
   // -------------------------------------------------------- end of message --
 
   async endOfMessage(rawBody, via) {
-    const recipients = this.recipients;
-    const mailFrom = this.mailFrom;
-    const declaredSize = this.declaredSize;
-    const oversize = rawBody === null || this.dataOversize || this.bdatOversize;
-    this.resetTransaction();
-
-    if (oversize) {
-      return this.fail(552, '5.3.4',
-        `message exceeds the ${this.cfg.maxMessageBytes} byte limit`, 'oversize');
-    }
-    if (declaredSize && rawBody.length > this.cfg.maxMessageBytes) {
-      return this.fail(552, '5.3.4', `message exceeds the ${this.cfg.maxMessageBytes} byte limit`, 'oversize');
-    }
-
-    const messageRequestId = requestId();
-    const receivedAt = new Date();
-    const envelope = {
-      from: mailFrom,
-      to: recipients.map((r) => r.rcptTo),
-      helo: this.helo,
-      remote_ip: this.remoteIp,
-      tls: this.secure,
-    };
-
-    log.info('mail.received', {
-      request_id: messageRequestId, session: this.id, remote_ip: this.remoteIp,
-      helo: this.helo, mail_from: mailFrom, rcpt_count: recipients.length,
-      bytes: rawBody.length, tls: this.secure, via,
-    });
-
-    // --- authentication (SPF/DKIM/DMARC/spam) on the message AS RECEIVED ----
-    let authResult;
     try {
-      authResult = await authenticateWithDeadline(rawBody, envelope, {
-        dns: this.server.dnsClient,
-        spfEnabled: this.cfg.spfEnabled,
-        dkimEnabled: this.cfg.dkimEnabled,
-        dmarcEnabled: this.cfg.dmarcEnabled,
-        timeoutMs: this.cfg.authTimeoutMs,
-      });
-    } catch (e) {
-      log.error('mail.auth_error', { request_id: messageRequestId, error: e.message });
-      authResult = {
-        auth: { spf: 'temperror', dkim: 'temperror', dmarc: 'temperror', spam_score: 0 },
-        flags: [], details: {}, timings_ms: {},
-      };
-    }
+      const recipients = this.recipients;
+      const mailFrom = this.mailFrom;
+      const declaredSize = this.declaredSize;
+      const oversize = rawBody === null || this.dataOversize || this.bdatOversize;
+      this.resetTransaction();
+      // resetTransaction() re-opens the shutdown gate, but this message is
+      // still in flight until its final reply is written: keep the gate shut
+      // for the delivery await. The finally below clears it for good.
+      this._messageInProgress = true;
 
-    // --- trace headers ------------------------------------------------------
-    const trace =
-      receivedHeader({
+      if (oversize) {
+        return this.fail(552, '5.3.4',
+          `message exceeds the ${this.cfg.maxMessageBytes} byte limit`, 'oversize');
+      }
+      if (declaredSize && rawBody.length > this.cfg.maxMessageBytes) {
+        return this.fail(552, '5.3.4', `message exceeds the ${this.cfg.maxMessageBytes} byte limit`, 'oversize');
+      }
+
+      const messageRequestId = requestId();
+      const receivedAt = new Date();
+      const envelope = {
+        from: mailFrom,
+        to: recipients.map((r) => r.rcptTo),
         helo: this.helo,
-        remoteIp: this.remoteIp,
-        reverseDns: this.reverseDns,
-        hostname: this.cfg.hostname,
-        id: this.id,
+        remote_ip: this.remoteIp,
         tls: this.secure,
-        tlsInfo: this.tlsInfo,
-        esmtp: this.esmtp,
-        smtputf8: this.smtputf8,
-        forAddress: recipients.length === 1 ? recipients[0].rcptTo : null,
-        date: receivedAt,
-      }) +
-      authenticationResultsHeader(this.cfg.hostname, authResult) +
-      `Return-Path: <${mailFrom}>\r\n`;
+      };
 
-    const raw = Buffer.concat([Buffer.from(trace, 'utf8'), rawBody]);
-
-    const meta = {
-      id: this.id + '-' + crypto.randomBytes(4).toString('hex'),
-      request_id: messageRequestId,
-      received_at: receivedAt.toISOString(),
-      envelope,
-      recipients: recipients.map((r) => ({
-        address: r.address, token: r.token, slug: r.slug, tag: r.tag,
-        rcpt_to: r.rcptTo, mailbox: r.mailbox,
-      })),
-      auth: authResult.auth,
-      flags: authResult.flags,
-      auth_details: authResult.details,
-      via,
-    };
-
-    const outcome = await this.server.deliverer.handle(raw, meta);
-    this.messages++;
-    const [code, enhanced] = outcome.code.split(' ');
-    this.respond(Number(code), enhanced, outcome.message);
-    if (outcome.action !== 'accepted') {
-      log.warn('smtp.rejected', {
-        request_id: messageRequestId, session: this.id, code: outcome.code,
-        reason: outcome.message, action: outcome.action,
+      log.info('mail.received', {
+        request_id: messageRequestId, session: this.id, remote_ip: this.remoteIp,
+        helo: this.helo, mail_from: mailFrom, rcpt_count: recipients.length,
+        bytes: rawBody.length, tls: this.secure, via,
       });
+
+      // --- authentication (SPF/DKIM/DMARC/spam) on the message AS RECEIVED ----
+      let authResult;
+      try {
+        authResult = await authenticateWithDeadline(rawBody, envelope, {
+          dns: this.server.dnsClient,
+          spfEnabled: this.cfg.spfEnabled,
+          dkimEnabled: this.cfg.dkimEnabled,
+          dmarcEnabled: this.cfg.dmarcEnabled,
+          timeoutMs: this.cfg.authTimeoutMs,
+        });
+      } catch (e) {
+        log.error('mail.auth_error', { request_id: messageRequestId, error: e.message });
+        authResult = {
+          auth: { spf: 'temperror', dkim: 'temperror', dmarc: 'temperror', spam_score: 0 },
+          flags: [], details: {}, timings_ms: {},
+        };
+      }
+
+      // --- trace headers ------------------------------------------------------
+      const trace =
+        receivedHeader({
+          helo: this.helo,
+          remoteIp: this.remoteIp,
+          reverseDns: this.reverseDns,
+          hostname: this.cfg.hostname,
+          id: this.id,
+          tls: this.secure,
+          tlsInfo: this.tlsInfo,
+          esmtp: this.esmtp,
+          smtputf8: this.smtputf8,
+          forAddress: recipients.length === 1 ? recipients[0].rcptTo : null,
+          date: receivedAt,
+        }) +
+        authenticationResultsHeader(this.cfg.hostname, authResult) +
+        `Return-Path: <${mailFrom}>\r\n`;
+
+      const raw = Buffer.concat([Buffer.from(trace, 'utf8'), rawBody]);
+
+      const meta = {
+        id: this.id + '-' + crypto.randomBytes(4).toString('hex'),
+        request_id: messageRequestId,
+        received_at: receivedAt.toISOString(),
+        envelope,
+        recipients: recipients.map((r) => ({
+          address: r.address, token: r.token, slug: r.slug, tag: r.tag,
+          rcpt_to: r.rcptTo, mailbox: r.mailbox,
+        })),
+        auth: authResult.auth,
+        flags: authResult.flags,
+        auth_details: authResult.details,
+        via,
+      };
+
+      const outcome = await this.server.deliverer.handle(raw, meta);
+      this.messages++;
+      const [code, enhanced] = outcome.code.split(' ');
+      this.respond(Number(code), enhanced, outcome.message);
+      if (outcome.action !== 'accepted') {
+        log.warn('smtp.rejected', {
+          request_id: messageRequestId, session: this.id, code: outcome.code,
+          reason: outcome.message, action: outcome.action,
+        });
+      }
+    } finally {
+      this._messageInProgress = false;
+      this._finishShutdownIfIdle();
     }
   }
 
@@ -690,6 +715,10 @@ class Session {
     this.bdatRemaining = 0;
     this.bdatLast = false;
     this.bdatOversize = false;
+    // The transaction is over: an oversize BDAT 552, an RSET between BDAT
+    // chunks or an EHLO/STARTTLS reset must not keep the shutdown gate shut,
+    // or close() would burn the whole grace period on an idle session.
+    this._messageInProgress = false;
     if (this.state === S.DATA || this.state === S.BDAT) this.state = S.COMMAND;
   }
 }
@@ -778,6 +807,10 @@ class SmtpServer extends EventEmitter {
   tooManyFromIp(ip) { return (this.perIp.get(ip) || 0) > this.cfg.maxSessionsPerIp; }
 
   onConnection(socket) {
+    if (this._closing) {
+      try { socket.destroy(); } catch { /* ignore */ }
+      return;
+    }
     socket.setNoDelay(true);
     this.stats.connections++;
     const session = new Session(socket, this);
@@ -792,6 +825,10 @@ class SmtpServer extends EventEmitter {
     const n = (this.perIp.get(session.remoteIp) || 1) - 1;
     if (n <= 0) this.perIp.delete(session.remoteIp);
     else this.perIp.set(session.remoteIp, n);
+    // Lets close() settle the moment the last drained session is gone, instead
+    // of waiting for the deadline fallback: the listener's close callback can
+    // fire BEFORE the session's own 'close' handler released it.
+    this.emit('sessionClosed', session);
   }
 
   async reverseLookup(ip) {
@@ -825,9 +862,59 @@ class SmtpServer extends EventEmitter {
 
   address() { return this.server.address(); }
 
-  async close({ force = false } = {}) {
-    await new Promise((resolve) => this.server.close(resolve));
-    if (force) for (const s of this.sessions) { try { s.socket.destroy(); } catch { /* ignore */ } }
+  async close({ graceMs = 5000, force = false } = {}) {
+    if (this._closePromise) return this._closePromise;
+    const grace = force ? 0 : Math.max(0, Number.isFinite(Number(graceMs)) ? Number(graceMs) : 5000);
+    this._closing = true;
+    this._closePromise = new Promise((resolve) => {
+      let listenerClosed = false;
+      let deadline;
+      let settleTimer;
+      let settled = false;
+      const settle = () => {
+        if (settled || !listenerClosed || this.sessions.size !== 0) return;
+        settled = true;
+        this.removeListener('sessionClosed', settle);
+        clearTimeout(deadline);
+        clearTimeout(settleTimer);
+        resolve();
+      };
+      this.on('sessionClosed', settle);
+      try {
+        this.server.close(() => {
+          listenerClosed = true;
+          settle();
+        });
+      } catch {
+        listenerClosed = true;
+        settle();
+      }
+
+      for (const session of [...this.sessions]) {
+        if (force || session._messageInProgress || session.state === S.DATA || session.state === S.BDAT) {
+          session._shutdown = true;
+          if (force) {
+            try { session.socket.destroy(); } catch { /* ignore */ }
+          }
+        } else {
+          session.markShutdown();
+        }
+      }
+
+      deadline = setTimeout(() => {
+        for (const session of [...this.sessions]) {
+          session._shutdown = true;
+          try { session.socket.destroy(); } catch { /* ignore */ }
+        }
+        settleTimer = setTimeout(() => {
+          for (const session of [...this.sessions]) this._release(session);
+          listenerClosed = true;
+          settle();
+        }, 500);
+      }, grace);
+      settle();
+    });
+    return this._closePromise;
   }
 }
 
