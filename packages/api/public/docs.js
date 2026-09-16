@@ -44,6 +44,7 @@
       buttons.forEach(function (b) {
         var on = b === btn;
         b.setAttribute('aria-selected', on ? 'true' : 'false');
+        b.setAttribute('tabindex', on ? '0' : '-1');
         var panel = document.getElementById(b.dataset.panel);
         if (panel) panel.hidden = !on;
       });

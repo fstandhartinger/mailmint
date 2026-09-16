@@ -88,7 +88,7 @@ against your quota — use that one in CI.</p>
 
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code>export MAILMINT_API_KEY="mm_live_..."</code></pre>
+<pre tabindex="0"><code>export MAILMINT_API_KEY="mm_live_..."</code></pre>
 </div>
 
 <div class="note warn">
@@ -107,7 +107,7 @@ unchanged against either one:</p>
 
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code><span class="tok-c"># the hosted service - this is the one you are reading right now</span>
+<pre tabindex="0"><code><span class="tok-c"># the hosted service - this is the one you are reading right now</span>
 export MAILMINT_URL="https://mailmint.app.mintapis.com"
 
 <span class="tok-c"># or running it yourself, from the repository</span>
@@ -130,7 +130,7 @@ message to fetch afterwards and nothing to delete.</p>
 <div class="code">
 <div class="cap">the whole quickstart, in one command</div>
 <button class="copy" type="button">Copy</button>
-<pre><code>curl -s -X POST "$MAILMINT_URL/v1/parse" \
+<pre tabindex="0"><code>curl -s -X POST "$MAILMINT_URL/v1/parse" \
   -H "Authorization: Bearer $MAILMINT_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -148,7 +148,7 @@ message to fetch afterwards and nothing to delete.</p>
 
 <div class="code">
 <div class="cap">response · fields</div>
-<pre><code>"fields": {
+<pre tabindex="0"><code>"fields": {
   "invoice_number": { "value": "INV-2291",   "confidence": 0.97, "source": "rule+llm",
                       "evidence": "Invoice INV-2291" },
   "total":          { "value": 31.5,         "confidence": 0.97, "source": "rule",
@@ -198,7 +198,7 @@ the mail actually uses.</p>
 
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code>{ "name": "total", "type": "number", "description": "grand total incl. tax",
+<pre tabindex="0"><code>{ "name": "total", "type": "number", "description": "grand total incl. tax",
   "required": true, "hint": "labelled Total or Amount Due" }</code></pre>
 </div>
 
@@ -207,14 +207,14 @@ same thing:</p>
 
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code>"schema": { "invoice_number": "string", "total": "number", "due_date": "date" }</code></pre>
+<pre tabindex="0"><code>"schema": { "invoice_number": "string", "total": "number", "due_date": "date" }</code></pre>
 </div>
 
 <p>Line items are an <code>array</code> of <code>object</code>:</p>
 
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code>{ "name": "line_items", "type": "array",
+<pre tabindex="0"><code>{ "name": "line_items", "type": "array",
   "items": { "type": "object", "fields": [
     { "name": "description", "type": "string" },
     { "name": "qty",         "type": "integer" },
@@ -235,7 +235,7 @@ configured. Everything else about it works now, including the webhook.</p>
 
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code>curl -s -X POST "$MAILMINT_URL/v1/mailboxes" \
+<pre tabindex="0"><code>curl -s -X POST "$MAILMINT_URL/v1/mailboxes" \
   -H "Authorization: Bearer $MAILMINT_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -251,7 +251,7 @@ configured. Everything else about it works now, including the webhook.</p>
 
 <div class="code">
 <div class="cap">201 Created</div>
-<pre><code>{
+<pre tabindex="0"><code>{
   "mailbox": {
     "id": "mbx_01JQ8Y7X6W5V4U3T2S1R",
     "name": "Invoices",
@@ -291,7 +291,7 @@ delivered to your webhook. This is how you test the whole pipeline end to end be
 
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code>curl -s -X POST "$MAILMINT_URL/v1/test/deliver" \
+<pre tabindex="0"><code>curl -s -X POST "$MAILMINT_URL/v1/test/deliver" \
   -H "Authorization: Bearer $MAILMINT_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -375,7 +375,7 @@ also detect a forwarding-confirmation code, which is what makes a Gmail auto-for
 
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code>IMAP_HOST=imap.example.com IMAP_USER=you@example.com IMAP_PASS=… \
+<pre tabindex="0"><code>IMAP_HOST=imap.example.com IMAP_USER=you@example.com IMAP_PASS=… \
 MAILBOX_TOKEN=k7m2xq4h9bwz \
 MAILMINT_API_URL="$MAILMINT_URL" INTERNAL_SECRET=… \
   npx mailmint-intake watch</code></pre>

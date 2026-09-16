@@ -103,14 +103,16 @@
       </div>
 
       <div class="code-card">
-        <div class="code-tabs" role="tablist" aria-label="Example request and response">
-          <button role="tab" id="tab-curl" aria-controls="panel-curl" aria-selected="true">request</button>
-          <button role="tab" id="tab-json" aria-controls="panel-json" aria-selected="false">response</button>
-          <button role="tab" id="tab-hook" aria-controls="panel-hook" aria-selected="false">webhook</button>
+        <div class="code-tabs">
+          <div class="code-tablist" role="tablist" aria-label="Example request and response">
+            <button role="tab" id="tab-curl" aria-controls="panel-curl" aria-selected="true" tabindex="0">request</button>
+            <button role="tab" id="tab-json" aria-controls="panel-json" aria-selected="false" tabindex="-1">response</button>
+            <button role="tab" id="tab-hook" aria-controls="panel-hook" aria-selected="false" tabindex="-1">webhook</button>
+          </div>
           <button class="code-copy" type="button" id="copyBtn">Copy</button>
         </div>
 
-        <div class="code-panel" role="tabpanel" id="panel-curl" aria-labelledby="tab-curl"><pre><code><span class="tok-c"># Stateless. No address, no DNS, nothing stored.</span>
+        <div class="code-panel" role="tabpanel" id="panel-curl" aria-labelledby="tab-curl"><pre tabindex="0"><code><span class="tok-c"># Stateless. No address, no DNS, nothing stored.</span>
 curl -X POST <span class="tok-n">$MAILMINT_URL</span>/v1/parse \
   -H <span class="tok-s">"Authorization: Bearer $MAILMINT_API_KEY"</span> \
   -H <span class="tok-s">"Content-Type: application/json"</span> \
@@ -132,7 +134,7 @@ curl -X POST <span class="tok-n">$MAILMINT_URL</span>/v1/parse \
   ]
 }'</span></code></pre></div>
 
-        <div class="code-panel" role="tabpanel" id="panel-json" aria-labelledby="tab-json" hidden><pre><code>{
+        <div class="code-panel" role="tabpanel" id="panel-json" aria-labelledby="tab-json" hidden><pre tabindex="0"><code>{
   <span class="tok-n">"id"</span>: <span class="tok-k">null</span>, <span class="tok-c">// /v1/parse stores nothing, so there is no message id</span>
   <span class="tok-n">"mailbox"</span>: <span class="tok-k">null</span>,
   <span class="tok-n">"received_at"</span>: <span class="tok-s">"2026-08-25T09:14:03.221Z"</span>,
@@ -178,7 +180,7 @@ curl -X POST <span class="tok-n">$MAILMINT_URL</span>/v1/parse \
   <span class="tok-n">"raw_url"</span>: <span class="tok-k">null</span>
 }</code></pre></div>
 
-        <div class="code-panel" role="tabpanel" id="panel-hook" aria-labelledby="tab-hook" hidden><pre><code><span class="tok-c"># Mail sent to your address is POSTed to your webhook_url.</span>
+        <div class="code-panel" role="tabpanel" id="panel-hook" aria-labelledby="tab-hook" hidden><pre tabindex="0"><code><span class="tok-c"># Mail sent to your address is POSTed to your webhook_url.</span>
 <span class="tok-c"># The body is exactly the object in the "response" tab, with</span>
 <span class="tok-c"># id, mailbox and raw_url filled in.</span>
 
@@ -477,8 +479,8 @@ x-mailmint-signature: t=1787648043,v1=6a1f…c07b
       </div>
       <div class="split-media">
         <div class="code-card">
-          <div class="code-tabs"><button role="tab" aria-selected="true" style="pointer-events:none">attachments[]</button></div>
-          <pre><code><span class="tok-n">"attachments"</span>: [
+          <div class="code-tabs"><span class="tablabel">attachments[]</span></div>
+          <pre tabindex="0"><code><span class="tok-n">"attachments"</span>: [
   {
     <span class="tok-n">"id"</span>: <span class="tok-s">"att_01JQ8Z3K4M5N6P7Q8R9S"</span>,
     <span class="tok-n">"filename"</span>: <span class="tok-s">"invoice-2291.pdf"</span>,
@@ -509,8 +511,8 @@ x-mailmint-signature: t=1787648043,v1=6a1f…c07b
     <div class="split rev">
       <div class="split-media">
         <div class="code-card">
-          <div class="code-tabs"><button role="tab" aria-selected="true" style="pointer-events:none">line items, as an array</button></div>
-          <pre><code><span class="tok-c">// Any number of rows. One array. row_count and truncated</span>
+          <div class="code-tabs"><span class="tablabel">line items, as an array</span></div>
+          <pre tabindex="0"><code><span class="tok-c">// Any number of rows. One array. row_count and truncated</span>
 <span class="tok-c">// are published so a short array can never be silent.</span>
 <span class="tok-n">"tables"</span>: [{
   <span class="tok-n">"source"</span>: <span class="tok-s">"html"</span>, <span class="tok-n">"index"</span>: 0,
@@ -602,8 +604,8 @@ x-mailmint-signature: t=1787648043,v1=6a1f…c07b
     <div class="split rev">
       <div class="split-media">
         <div class="code-card">
-          <div class="code-tabs"><button role="tab" aria-selected="true" style="pointer-events:none">the tuning loop</button></div>
-          <pre><code><span class="tok-c"># 1. The sender changed their layout a fortnight ago.</span>
+          <div class="code-tabs"><span class="tablabel">the tuning loop</span></div>
+          <pre tabindex="0"><code><span class="tok-c"># 1. The sender changed their layout a fortnight ago.</span>
 <span class="tok-c">#    Fix the schema over the API.</span>
 curl -X PATCH <span class="tok-n">$MAILMINT_URL</span>/v1/mailboxes/mbx_01JQ8Y… \
   -H <span class="tok-s">"Authorization: Bearer $MAILMINT_API_KEY"</span> \
@@ -806,7 +808,7 @@ curl -X POST <span class="tok-n">$MAILMINT_URL</span>/v1/mailboxes/mbx_01JQ8Y…
       <table class="cmp">
         <thead>
           <tr>
-            <th scope="col">&nbsp;</th>
+            <th scope="col"><span class="vh">Feature</span></th>
             <th scope="col" class="us">MailMint</th>
             <th scope="col">Mailparser</th>
             <th scope="col">Parseur</th>
@@ -1130,6 +1132,7 @@ curl -X POST <span class="tok-n">$MAILMINT_URL</span>/v1/mailboxes/mbx_01JQ8Y…
   function select(i) {
     tabs.forEach(function (t, j) {
       t.setAttribute('aria-selected', j === i ? 'true' : 'false');
+      t.setAttribute('tabindex', j === i ? '0' : '-1');
       panels[j].hidden = j !== i;
     });
   }

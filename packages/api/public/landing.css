@@ -105,10 +105,16 @@ h1.hero-title em{font-style:normal;color:var(--accent-ink);}
 .code-tabs{display:flex;align-items:center;gap:.2rem;padding:.4rem .45rem;border-bottom:1px solid var(--l-term-rule);
   background:rgba(255,255,255,.02);overflow-x:auto;scrollbar-width:none}
 .code-tabs::-webkit-scrollbar{display:none}
+/* The tablist itself is the inner div: role=tablist may only contain tabs,
+   so the copy button sits next to it, not inside it. */
+.code-tablist{display:flex;align-items:center;gap:.2rem}
 .code-tabs button{background:none;color:var(--l-term-muted);font-size:.82rem;font-weight:600;
   padding:.35rem .7rem;border-radius:7px;font-family:var(--mono);white-space:nowrap}
 .code-tabs button:hover{background:rgba(255,255,255,.06);color:var(--l-term-ink)}
 .code-tabs button[aria-selected="true"]{background:rgba(43,108,176,.18);color:#7fc4f5}
+/* Single non-interactive label where a card has no real tabs. */
+.code-tabs .tablabel{background:rgba(43,108,176,.18);color:#7fc4f5;font-size:.82rem;font-weight:600;
+  padding:.35rem .7rem;border-radius:7px;font-family:var(--mono);white-space:nowrap}
 .code-copy{margin-left:auto;background:none;color:var(--l-term-muted);font-size:.78rem;padding:.35rem .6rem;border-radius:7px;font-weight:600}
 .code-copy:hover{background:rgba(255,255,255,.06);color:var(--l-term-ink)}
 .code-card pre{margin:0;background:transparent;border:0;border-radius:0;color:var(--l-term-ink);
@@ -120,7 +126,7 @@ h1.hero-title em{font-style:normal;color:var(--accent-ink);}
 .code-panel[hidden]{display:none}
 .tok-k{color:#7fd7ff}
 .tok-s{color:#8ee2b2}
-.tok-c{color:#6f7c8d}
+.tok-c{color:#8b98a9}
 .tok-f{color:#f0c987}
 .tok-n{color:#e39ac7}
 .code-foot{border-top:1px solid var(--l-term-rule);padding:.6rem 1.1rem;display:flex;flex-wrap:wrap;gap:.4rem 1.1rem;

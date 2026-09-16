@@ -76,7 +76,7 @@ sees dollar figures at different absolute values. Compare like for like before y
 <section id="credit">
 <h2>What a credit costs <a class="anchor" href="#credit">#</a></h2>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Parseur plan</th><th>Price</th><th>Pages / month</th><th>Per page</th></tr></thead>
 <tbody>
@@ -95,7 +95,7 @@ three-page PDF is three. That is honest metering for a product built around docu
 that if your workload is <em>email bodies</em> rather than PDFs, you are paying document prices for
 messages.</p>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>MailMint plan</th><th>Price</th><th>Parsed emails / month</th><th>Per email</th></tr></thead>
 <tbody>
@@ -133,7 +133,7 @@ API, webhooks, polling and n8n.</li>
 <section id="table">
 <h2>Side by side <a class="anchor" href="#table">#</a></h2>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th></th><th>MailMint</th><th>Parseur</th></tr></thead>
 <tbody>
@@ -186,7 +186,7 @@ the API, and <code>PATCH /v1/mailboxes/:id</code> changes the fields later witho
 
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code>curl -X POST https://mailmint.app.mintapis.com/v1/mailboxes \
+<pre tabindex="0"><code>curl -X POST https://mailmint.app.mintapis.com/v1/mailboxes \
   -H "Authorization: Bearer $MAILMINT_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{ "name": "acme-invoices",
@@ -209,7 +209,7 @@ we actually do.</p>
 <p>Stateless, nothing stored, no mailbox needed:</p>
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code>curl -X POST https://mailmint.app.mintapis.com/v1/parse \
+<pre tabindex="0"><code>curl -X POST https://mailmint.app.mintapis.com/v1/parse \
   -H "Authorization: Bearer $MAILMINT_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{

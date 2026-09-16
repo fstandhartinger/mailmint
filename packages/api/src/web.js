@@ -233,7 +233,7 @@ router.get('/dashboard', requireAccount, asyncRoute(async (req, res) => {
     <p class="muted">No mail has to arrive first and nothing is stored: <code>POST /v1/parse</code>
     takes a message you paste in and hands back the fields you asked for, with a confidence and the
     evidence span for each. Paste this into a terminal.</p>
-    <pre><code id="firstcall">curl -X POST ${escapeHtml(config.publicUrl)}/v1/parse \\
+    <pre tabindex="0"><code id="firstcall">curl -X POST ${escapeHtml(config.publicUrl)}/v1/parse \\
   -H "Authorization: Bearer ${escapeHtml(fullKey || '$MAILMINT_KEY')}" \\
   -H 'content-type: application/json' \\
   -d '{"subject":"Invoice INV-7781",
@@ -252,18 +252,18 @@ router.get('/dashboard', requireAccount, asyncRoute(async (req, res) => {
   <section class="card">
     <div class="mbhead"><h2>Mailboxes</h2>
       <form method="post" action="/dashboard/mailboxes" class="inline" style="margin:0">
-        <input type="text" name="name" placeholder="Invoices" maxlength="80" required>
+        <label>Name<input type="text" name="name" placeholder="Invoices" maxlength="80" required></label>
         <button>New mailbox</button>
       </form></div>
-    ${boxes.length ? `<table class="rows">
-      <tr><th>Address</th><th>Name</th><th>Fields</th><th>Webhook</th><th></th></tr>
+    ${boxes.length ? `<div class="table-scroll" tabindex="0" aria-label="Mailboxes"><table class="rows">
+      <tr><th>Address</th><th>Name</th><th>Fields</th><th>Webhook</th><th><span class="vh">Actions</span></th></tr>
       ${boxes.map((b) => `<tr>
         <td><span class="addr">${escapeHtml(b.token)}@${escapeHtml(config.inboundDomain)}</span></td>
         <td>${escapeHtml(b.name)}</td>
         <td>${(b.schema || []).length || '<span class="muted">none</span>'}</td>
         <td>${b.webhook_url ? '<span class="ok">set</span>' : '<span class="muted">—</span>'}</td>
         <td><a href="/dashboard/mailboxes/${encodeURIComponent(b.id)}">Open</a></td></tr>`).join('')}
-    </table>` : '<p class="muted">No mailboxes yet.</p>'}
+    </table></div>` : '<p class="muted">No mailboxes yet.</p>'}
   </section>
 
   <section class="card">
@@ -271,8 +271,8 @@ router.get('/dashboard', requireAccount, asyncRoute(async (req, res) => {
     ${fullKey ? `<p class="keybox"><code id="k">${escapeHtml(fullKey)}</code><button class="copy" data-target="k">Copy</button></p>
       <p class="muted small">Shown once and never again — not here, not by support. Store it now.
       A key starting <code>mm_test_</code> works everywhere a live key does but is never counted against your quota.</p>` : ''}
-    <table class="rows">
-      <tr><th>Key</th><th>Name</th><th>Created</th><th>Last used</th><th></th></tr>
+    <div class="table-scroll" tabindex="0" aria-label="API keys"><table class="rows">
+      <tr><th>Key</th><th>Name</th><th>Created</th><th>Last used</th><th><span class="vh">Actions</span></th></tr>
       ${keys.map((k) => `<tr><td><code>${escapeHtml(k.prefix)}…</code></td><td>${escapeHtml(k.name)}</td>
         <td>${new Date(k.created_at).toISOString().slice(0, 10)}</td>
         <td>${k.last_used_at ? timeAgo(k.last_used_at) : 'never'}</td>
@@ -280,9 +280,9 @@ router.get('/dashboard', requireAccount, asyncRoute(async (req, res) => {
           onsubmit="return confirm('Revoke ${escapeHtml(k.prefix)}…? Anything using it stops working immediately.')">
           <input type="hidden" name="prefix" value="${escapeHtml(k.prefix)}"><button class="link danger">Revoke</button></form>`
     : '<span class="muted">only key</span>'}</td></tr>`).join('')}
-    </table>
+    </table></div>
     <form method="post" action="/dashboard/keys" class="inline">
-      <input type="text" name="name" placeholder="n8n" maxlength="40">
+      <label>Name<input type="text" name="name" placeholder="n8n" maxlength="40"></label>
       <label class="chk" style="flex-direction:row"><input type="checkbox" name="mode" value="test"> test key (never billed)</label>
       <button class="secondary">Create key</button>
     </form>
@@ -294,11 +294,11 @@ router.get('/dashboard', requireAccount, asyncRoute(async (req, res) => {
     <div class="meter"><i style="width:${pct}%"></i></div>
     <p class="muted small">Plan: <strong>${escapeHtml(plan.name)}</strong>${plan.priceUsd ? ` — $${plan.priceUsd}/month` : ' — free'}. Resets on the 1st.
       Over the quota your mail is still received and stored; only the extraction pass stops.</p>
-    ${recent.length ? `<table class="rows"><tr><th>When</th><th>From</th><th>Subject</th><th>Status</th></tr>
+    ${recent.length ? `<div class="table-scroll" tabindex="0" aria-label="Recent messages"><table class="rows"><tr><th>When</th><th>From</th><th>Subject</th><th>Status</th></tr>
       ${recent.map((m) => `<tr><td>${timeAgo(m.received_at)}</td><td>${escapeHtml(m.from_email || '—')}</td>
         <td><a href="/dashboard/mailboxes/${encodeURIComponent(m.mailbox_id)}#${escapeHtml(m.id)}">${escapeHtml((m.subject || '(no subject)').slice(0, 60))}</a></td>
         <td>${m.status === 'parsed' ? (m.needs_review ? '<span class="flag review">needs review</span>' : '<span class="ok">parsed</span>') : `<span class="bad">${escapeHtml(m.status)}</span>`}</td></tr>`).join('')}
-    </table>` : '<p class="muted">No mail yet.</p>'}
+    </table></div>` : '<p class="muted">No mail yet.</p>'}
   </section>
 
   ${purchasable.length ? `<section class="card">
@@ -390,7 +390,7 @@ function reviewCard(m) {
         <span class="muted small">${escapeHtml(m.mb_name)} · from ${escapeHtml(m.from_email || 'unknown')} · ${timeAgo(m.received_at)}</span></div>
       <div>${issues.map((f) => `<span class="flag review">${escapeHtml(f)}</span>`).join('')}</div>
     </div>
-    <table class="rows">
+    <div class="table-scroll" tabindex="0" aria-label="Problems in this message"><table class="rows">
       <tr><th>Problem</th><th>Field</th><th>Value</th><th>Confidence</th><th>Evidence in the message</th></tr>
       ${issues.map((f) => {
     const name = flagField(f);
@@ -403,8 +403,8 @@ function reviewCard(m) {
         <td class="muted small">${v.evidence ? escapeHtml(String(v.evidence).slice(0, 120)) : '<em>none — the value was not traced to any text in the message</em>'}</td>
       </tr>`;
   }).join('')}
-    </table>
-    <details><summary>Full JSON</summary><pre><code>${json(m.result || {})}</code></pre></details>
+    </table></div>
+    <details><summary>Full JSON</summary><pre tabindex="0"><code>${json(m.result || {})}</code></pre></details>
     <form method="post" action="/dashboard/messages/${encodeURIComponent(m.id)}/reparse" class="inline">
       <input type="hidden" name="back" value="/dashboard/review">
       <button class="secondary">Re-parse with the current schema</button>
@@ -490,10 +490,10 @@ const fieldRow = (f, i) => {
   const struct = structOf(f);
   const summary = structSummary(f);
   return `<div class="fieldrow">
-  <input type="text" name="f_${i}_name" value="${escapeHtml(f.name)}" placeholder="invoice_number" pattern="[A-Za-z_][A-Za-z0-9_]*">
-  <select name="f_${i}_type">${TYPE_OPTIONS.map((t) => `<option value="${t}"${t === (f.type || 'string') ? ' selected' : ''}>${t}</option>`).join('')}</select>
-  <input type="text" name="f_${i}_description" value="${escapeHtml(f.description || '')}" placeholder="what this field is, in one line">
-  <input type="text" class="opts" name="f_${i}_options" value="${escapeHtml((f.options || []).join(', '))}" placeholder="options: open, paid"${(f.type === 'enum') ? '' : ' hidden'}>
+  <input type="text" name="f_${i}_name" aria-label="Field ${i} name" value="${escapeHtml(f.name)}" placeholder="invoice_number" pattern="[A-Za-z_][A-Za-z0-9_]*">
+  <select name="f_${i}_type" aria-label="Field ${i} type">${TYPE_OPTIONS.map((t) => `<option value="${t}"${t === (f.type || 'string') ? ' selected' : ''}>${t}</option>`).join('')}</select>
+  <input type="text" name="f_${i}_description" aria-label="Field ${i} description" value="${escapeHtml(f.description || '')}" placeholder="what this field is, in one line">
+  <input type="text" class="opts" name="f_${i}_options" aria-label="Field ${i} options" value="${escapeHtml((f.options || []).join(', '))}" placeholder="options: open, paid"${(f.type === 'enum') ? '' : ' hidden'}>
   <label class="chk"><input type="checkbox" name="f_${i}_required" value="1"${f.required ? ' checked' : ''}> required</label>
   <button type="button" class="link danger rmfield">remove</button>
   ${struct ? `<input type="hidden" name="f_${i}_struct" value="${escapeHtml(struct)}">` : ''}
@@ -604,13 +604,13 @@ router.get('/dashboard/mailboxes/:id', requireAccount, asyncRoute(async (req, re
       <p><button>Save schema</button></p>
     </form>
     ${versions.length > 1 ? `<details><summary>${versions.length} versions — roll back</summary>
-      <table class="rows"><tr><th>Version</th><th>When</th><th>Fields</th><th></th></tr>
+      <div class="table-scroll" tabindex="0" aria-label="Schema versions"><table class="rows"><tr><th>Version</th><th>When</th><th>Fields</th><th><span class="vh">Actions</span></th></tr>
       ${versions.map((v) => `<tr><td>v${v.version}</td><td>${timeAgo(v.created_at)}</td>
         <td>${(v.schema || []).map((f) => escapeHtml(f.name)).join(', ') || '<span class="muted">none</span>'}</td>
         <td>${v.version === mb.schema_version ? '<span class="tag">live</span>'
     : `<form method="post" action="/dashboard/mailboxes/${encodeURIComponent(mb.id)}/rollback" class="inline" style="margin:0">
-             <input type="hidden" name="version" value="${v.version}"><button class="link">Restore</button></form>`}</td></tr>`).join('')}
-      </table></details>` : ''}
+              <input type="hidden" name="version" value="${v.version}"><button class="link">Restore</button></form>`}</td></tr>`).join('')}
+      </table></div></details>` : ''}
   </section>
 
   <section class="card">
@@ -620,8 +620,8 @@ router.get('/dashboard/mailboxes/:id', requireAccount, asyncRoute(async (req, re
       <code>"&lt;t&gt;." + rawBody</code> under that endpoint's own secret. Retries at 0s, 30s, 2m,
       10m, 1h, 6h. Each endpoint is independent: adding, rotating or deleting one never touches
       another, so two workflows can safely watch the same mailbox.</p>
-    ${mb.endpoints.length ? `<table class="rows">
-      <tr><th>URL</th><th>What for</th><th>Last</th><th>Secret</th><th></th></tr>
+    ${mb.endpoints.length ? `<div class="table-scroll" tabindex="0" aria-label="Webhook endpoints"><table class="rows">
+      <tr><th>URL</th><th>What for</th><th>Last</th><th>Secret</th><th><span class="vh">Actions</span></th></tr>
       ${mb.endpoints.map((e) => `<tr>
         <td style="word-break:break-all">${escapeHtml(e.url)}
           ${e.disabled_at ? `<br><span class="flag review">switched off</span> <span class="muted small">${escapeHtml(e.disabled_reason || '')}</span>` : ''}
@@ -642,7 +642,7 @@ router.get('/dashboard/mailboxes/:id', requireAccount, asyncRoute(async (req, re
             onsubmit="return confirm('Delete this endpoint? Only this one stops receiving; the others are untouched.')">
             <button class="link danger">Delete</button></form>
         </td></tr>`).join('')}
-    </table>` : '<p class="muted">No endpoints yet. Mail is still received and stored — you can poll for it, or add one here.</p>'}
+    </table></div>` : '<p class="muted">No endpoints yet. Mail is still received and stored — you can poll for it, or add one here.</p>'}
     <form method="post" action="/dashboard/mailboxes/${encodeURIComponent(mb.id)}/webhooks" class="inline">
       <label style="flex:1 1 300px">URL<input type="url" name="url" style="width:100%" required
         placeholder="https://example.com/hooks/mailmint"></label>
@@ -652,13 +652,13 @@ router.get('/dashboard/mailboxes/:id', requireAccount, asyncRoute(async (req, re
     <p class="muted small">An endpoint that fails ${endpoints.MAX_CONSECUTIVE_FAILURES} deliveries in a row
       — each already six attempts over six hours — is switched off rather than retried into a black hole.
       Enable it again once the receiver is back.</p>
-    ${deliveries.length ? `<details><summary>Recent deliveries</summary><table class="rows">
+    ${deliveries.length ? `<details><summary>Recent deliveries</summary><div class="table-scroll" tabindex="0" aria-label="Recent deliveries"><table class="rows">
       <tr><th>When</th><th>Attempt</th><th>Status</th><th>Result</th></tr>
       ${deliveries.map((d) => `<tr><td>${timeAgo(d.created_at)}</td><td>${d.attempt}</td><td>${d.status_code || '—'}</td>
         <td>${d.delivered_at ? '<span class="ok">delivered</span>'
     : d.failed_at ? `<span class="bad">gave up</span> <span class="muted small">${escapeHtml(d.error || '')}</span>`
       : '<span class="muted">retrying</span>'}</td></tr>`).join('')}
-    </table></details>` : ''}
+    </table></div></details>` : ''}
   </section>
 
   <section class="card">
@@ -680,13 +680,13 @@ router.get('/dashboard/mailboxes/:id', requireAccount, asyncRoute(async (req, re
       <label class="chk" style="flex-direction:row"><input type="checkbox" name="confirm" value="1" required> yes, also re-send every one to my webhook</label>
       <button class="link danger">Re-parse and re-deliver</button>
     </form>
-    ${jobs.length ? `<table class="rows"><tr><th>When</th><th>Kind</th><th>Status</th><th>Done</th><th>Changed</th><th></th></tr>
+    ${jobs.length ? `<div class="table-scroll" tabindex="0" aria-label="Re-parse jobs"><table class="rows"><tr><th>When</th><th>Kind</th><th>Status</th><th>Done</th><th>Changed</th><th><span class="vh">Diff</span></th></tr>
       ${jobs.map((j) => `<tr><td>${timeAgo(j.created_at)}</td>
         <td>${j.dry_run ? 'dry run' : (j.redeliver ? 'run + re-deliver' : 'run')}</td>
         <td>${j.status === 'succeeded' ? '<span class="ok">done</span>' : j.status === 'failed' ? `<span class="bad">failed</span>` : escapeHtml(j.status)}</td>
         <td>${j.done}/${j.total}</td><td>${j.changed}</td>
         <td><a href="/dashboard/reparse/${encodeURIComponent(j.id)}">Diff</a></td></tr>`).join('')}
-    </table>` : ''}
+    </table></div>` : ''}
   </section>
 
   <section class="card">
@@ -695,9 +695,10 @@ router.get('/dashboard/mailboxes/:id', requireAccount, asyncRoute(async (req, re
       Nothing leaves this machine — no mail is actually sent.</p>
     <form method="post" action="/dashboard/mailboxes/${encodeURIComponent(mb.id)}/test">
       <div class="fieldrow" style="grid-template-columns:1fr 2fr">
-        <input type="text" name="from" value="billing@acme-example.com" placeholder="from">
-        <input type="text" name="subject" value="Invoice INV-2291 from Acme Ltd" placeholder="subject">
+        <label>From<input type="text" name="from" value="billing@acme-example.com" placeholder="from"></label>
+        <label>Subject<input type="text" name="subject" value="Invoice INV-2291 from Acme Ltd" placeholder="subject"></label>
       </div>
+      <label style="display:block">Message text
       <textarea name="text" rows="6" style="width:100%;font-family:var(--mono);font-size:.82rem;padding:.6rem;border:1px solid var(--rule);border-radius:8px;background:var(--bg);color:var(--ink)">Hello,
 
 Invoice INV-2291 is due.
@@ -706,7 +707,7 @@ Total: $31.50
 Due: Sep 8, 2026
 
 Thanks,
-Acme Billing</textarea>
+Acme Billing</textarea></label>
       <p><button>Send test email</button></p>
     </form>
   </section>
@@ -817,7 +818,7 @@ function renderMessageBlock(m) {
     </div>
     ${(m.flags || []).length ? `<p>${(m.flags || []).map((f) => `<span class="flag${needsReview([f]) ? ' review' : ''}">${escapeHtml(f)}</span>`).join('')}</p>` : ''}
     ${authLine(m)}
-    ${names.length ? `<table class="rows"><tr><th>Field</th><th>Value</th><th>Confidence</th><th>Source</th><th>Evidence</th></tr>
+    ${names.length ? `<div class="table-scroll" tabindex="0" aria-label="Extracted fields"><table class="rows"><tr><th>Field</th><th>Value</th><th>Confidence</th><th>Source</th><th>Evidence</th></tr>
       ${names.map((n) => {
     const f = fields[n] || {};
     return `<tr><td><code>${escapeHtml(n)}</code></td>
@@ -825,8 +826,8 @@ function renderMessageBlock(m) {
         <td>${typeof f.confidence === 'number' ? f.confidence.toFixed(2) : '—'}</td>
         <td class="muted">${escapeHtml(f.source || 'none')}</td>
         <td class="muted small">${escapeHtml(String(f.evidence || '').slice(0, 90))}</td></tr>`;
-  }).join('')}</table>` : '<p class="muted small">No schema was set when this arrived, so no fields were extracted.</p>'}
-    <details><summary>Full JSON</summary><pre><code>${json(result)}</code></pre></details>
+  }).join('')}</table></div>` : '<p class="muted small">No schema was set when this arrived, so no fields were extracted.</p>'}
+    <details><summary>Full JSON</summary><pre tabindex="0"><code>${json(result)}</code></pre></details>
     <form method="post" action="/dashboard/messages/${encodeURIComponent(m.id)}/reparse" class="inline" style="margin-top:.4rem">
       <button class="link">Re-parse with the current schema</button></form>
   </div>`;
@@ -980,10 +981,10 @@ router.get('/dashboard/reparse/:job_id', requireAccount, asyncRoute(async (req, 
   ${job.diffs.length ? job.diffs.map((d) => `<section class="card">
     <strong>${escapeHtml(d.subject || '(no subject)')}</strong>
     <span class="muted small">${escapeHtml(d.message_id)}</span>
-    ${d.fields.length ? `<table class="rows"><tr><th>Field</th><th>Before</th><th>After</th></tr>
+    ${d.fields.length ? `<div class="table-scroll" tabindex="0" aria-label="Field changes"><table class="rows"><tr><th>Field</th><th>Before</th><th>After</th></tr>
       ${d.fields.map((f) => `<tr><td><code>${escapeHtml(f.field)}</code></td>
         <td>${fmtCell(f.before)}</td><td>${fmtCell(f.after)}</td></tr>`).join('')}
-    </table>` : ''}
+    </table></div>` : ''}
     ${d.flags_added.length ? `<p class="small">added ${d.flags_added.map((f) => `<span class="flag review">${escapeHtml(f)}</span>`).join('')}</p>` : ''}
     ${d.flags_removed.length ? `<p class="small">cleared ${d.flags_removed.map((f) => `<span class="flag">${escapeHtml(f)}</span>`).join('')}</p>` : ''}
   </section>`).join('') : (pending ? '' : '<section class="card"><p class="muted">Nothing changed.</p></section>')}
@@ -1078,7 +1079,7 @@ router.get('/docs/reference', asyncRoute(async (req, res) => {
     but is never counted against your quota — use it in CI.</p>
 
   <h2 id="mailboxes">Mailboxes</h2>
-  <pre><code>POST   /v1/mailboxes      {name, schema?, webhook_url?}
+  <pre tabindex="0"><code>POST   /v1/mailboxes      {name, schema?, webhook_url?}
 GET    /v1/mailboxes
 GET    /v1/mailboxes/:id
 PATCH  /v1/mailboxes/:id  {name?, schema?, webhook_url?, webhook_secret?}
@@ -1087,14 +1088,14 @@ DELETE /v1/mailboxes/:id</code></pre>
     <code>slug.token@</code> and <code>token+tag@</code> reach the same mailbox.</p>
 
   <h2 id="schema">Schema</h2>
-  <pre><code>{ "name": "total", "type": "number", "description": "grand total incl. tax",
+  <pre tabindex="0"><code>{ "name": "total", "type": "number", "description": "grand total incl. tax",
   "required": true, "hint": "labelled Total or Amount Due" }</code></pre>
   <p>Types: <code>${TYPE_OPTIONS.join('</code>, <code>')}</code>.
     <code>enum</code> needs <code>options</code>; <code>array</code> needs <code>items</code>;
     <code>object</code> needs <code>fields</code>.</p>
 
   <h2 id="messages">Messages</h2>
-  <pre><code>GET  /v1/messages?mailbox_id=&amp;since=&amp;cursor=&amp;limit=&amp;status=
+  <pre tabindex="0"><code>GET  /v1/messages?mailbox_id=&amp;since=&amp;cursor=&amp;limit=&amp;status=
                  &amp;needs_review=true&amp;flag=arithmetic_mismatch&amp;view=review
 GET  /v1/messages/:id?include=attachments,extracted_text&amp;exclude=extracted
 GET  /v1/messages/:id/raw
@@ -1120,7 +1121,7 @@ POST /v1/messages/:id/reparse  {schema?, schema_version?, deliver?}</code></pre>
     <a href="/dashboard/review">review queue</a> is the same query with a page around it.</p>
 
   <h2 id="reparse">Re-parsing old mail</h2>
-  <pre><code>POST /v1/mailboxes/:id/reparse
+  <pre tabindex="0"><code>POST /v1/mailboxes/:id/reparse
   {since?, until?, limit?, status?, needs_review?, flag?,
    schema?, schema_version?, dry_run?, redeliver?}     -&gt; 202 {job_id, poll}
 GET  /v1/reparse/:job_id   -&gt; {status, done, total, changed, diffs:[…]}</code></pre>
@@ -1138,7 +1139,7 @@ GET  /v1/reparse/:job_id   -&gt; {status, done, total, changed, diffs:[…]}</co
   <p>How far back it reaches is how long the original bytes are kept — see retention below.</p>
 
   <h2 id="webhooks">Webhooks</h2>
-  <pre><code>POST   /v1/mailboxes/:id/webhooks   {url, description?}  -&gt; {id, url, secret}
+  <pre tabindex="0"><code>POST   /v1/mailboxes/:id/webhooks   {url, description?}  -&gt; {id, url, secret}
 GET    /v1/mailboxes/:id/webhooks
 GET    /v1/webhooks/:id
 PATCH  /v1/webhooks/:id             {url?, description?, active?, secret?}
@@ -1150,7 +1151,7 @@ DELETE /v1/webhooks/:id</code></pre>
   <p>Headers: <code>x-mailmint-event: message.parsed</code>, <code>x-mailmint-delivery: dlv_…</code>,
     <code>x-mailmint-endpoint: whe_…</code>,
     <code>x-mailmint-signature: ${escapeHtml(example.header.slice(0, 24))}…</code></p>
-  <pre><code>const [t, v1] = header.split(',').map(p =&gt; p.split('=')[1]);
+  <pre tabindex="0"><code>const [t, v1] = header.split(',').map(p =&gt; p.split('=')[1]);
 const expected = crypto.createHmac('sha256', secret).update(t + '.' + rawBody).digest('hex');
 if (!crypto.timingSafeEqual(Buffer.from(expected,'hex'), Buffer.from(v1,'hex'))) reject();
 if (Math.abs(Date.now()/1000 - Number(t)) &gt; 300) reject();   // replay window</code></pre>
@@ -1180,10 +1181,10 @@ if (Math.abs(Date.now()/1000 - Number(t)) &gt; 300) reject();   // replay window
     received is taken away. Re-parsing something you have already paid for is free.</p>
 
   <h2 id="retention">Retention &amp; limits</h2>
-  <table class="rows"><tr><th>Plan</th><th>Emails / month</th><th>Original bytes kept</th><th>Attachment bytes kept</th></tr>
+  <div class="table-scroll" tabindex="0" aria-label="Plan quotas and retention"><table class="rows"><tr><th>Plan</th><th>Emails / month</th><th>Original bytes kept</th><th>Attachment bytes kept</th></tr>
     ${Object.values(PLANS).map((p) => `<tr><td>${escapeHtml(p.name)}${p.priceUsd ? ` — $${p.priceUsd}/mo` : ' — free'}</td>
       <td>${p.quota.toLocaleString('en-US')}</td><td>${p.rawDays} days</td><td>${p.blobDays} days</td></tr>`).join('')}
-  </table>
+  </table></div>
   <p>The <strong>original bytes</strong> column is how far back <code>reparse</code> can reach, because
     a re-parse replays them. Attachment bytes expire sooner: they are the bulk of the storage and are
     not needed to re-parse a message body. Events are kept ${config.eventRetentionDays} days.</p>

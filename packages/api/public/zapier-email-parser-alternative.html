@@ -122,7 +122,7 @@ can see what the new schema <em>would</em> have produced. <a href="/docs#reparse
 
 <section id="table">
 <h2>Side by side <a class="anchor" href="#table">#</a></h2>
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th></th><th>MailMint</th><th>Zapier Email Parser</th></tr></thead>
 <tbody>
@@ -146,7 +146,7 @@ can see what the new schema <em>would</em> have produced. <a href="/docs#reparse
 <p>Instead of highlighting text in a sample email, you describe the field once:</p>
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code>curl -X POST https://mailmint.app.mintapis.com/v1/parse \
+<pre tabindex="0"><code>curl -X POST https://mailmint.app.mintapis.com/v1/parse \
   -H "Authorization: Bearer $MAILMINT_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{

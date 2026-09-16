@@ -106,7 +106,7 @@ from the command line:</p>
 
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code>cd ~/.n8n/nodes
+<pre tabindex="0"><code>cd ~/.n8n/nodes
 npm install n8n-nodes-mailmint</code></pre>
 </div>
 <p>Then restart n8n. The package has zero runtime dependencies and is published from GitHub Actions with an
@@ -187,7 +187,7 @@ Text</em> and <em>Fields</em> — are there for when you want to be explicit.</p
 
 <p>This is the part that does not exist anywhere else. Each field you add has five inputs:</p>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Input</th><th>What to put in it</th></tr></thead>
 <tbody>
@@ -210,7 +210,7 @@ Text</em> and <em>Fields</em> — are there for when you want to be explicit.</p
     sample upload, no clicking on a rendered email.</figcaption>
 </figure>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Type in the dropdown</th><th>You get back</th><th>Extra input</th></tr></thead>
 <tbody>
@@ -244,7 +244,7 @@ MailMint mailboxes, and <em>JSON</em>, to compute the whole schema in an earlier
 </figure>
 
 <div class="code">
-<pre><code>{
+<pre tabindex="0"><code>{
   "invoice_number": "INV-2291",
   "total": 31.5,
   "due_date": "2026-09-08",
@@ -282,7 +282,7 @@ invoice line, with the header fields repeated on each.</p>
 </figure>
 
 <div class="code">
-<pre><code>{ "invoice_number": "INV-2292", "total": 132,
+<pre tabindex="0"><code>{ "invoice_number": "INV-2292", "total": 132,
   "Item": "Widget", "Qty": "3", "Amount": "$27.00",
   "_row_index": 0, "_row_count": 3, "_line_items_truncated": false }</code></pre>
 </div>
@@ -314,7 +314,7 @@ needs an Iterator plus an Array Aggregator and breaks past two columns.</p>
 was read out of. Turn on <strong>Options &rarr; Include Confidence</strong>:</p>
 
 <div class="code">
-<pre><code>"_confidence": {
+<pre tabindex="0"><code>"_confidence": {
   "total": { "confidence": 0.97, "source": "rule+llm", "evidence": "Total: $31.50" }
 }</code></pre>
 </div>
@@ -400,7 +400,7 @@ node.</p>
 <section id="operations">
 <h2>All eleven actions <a class="anchor" href="#operations">#</a></h2>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Resource</th><th>Operation</th><th>What it does</th></tr></thead>
 <tbody>
@@ -442,7 +442,7 @@ directly</strong> as a tool.</p>
 <strong>Settings &rarr; Continue On Fail</strong> on, the failing item becomes:</p>
 
 <div class="code">
-<pre><code>{ "error": { "code": "message_not_found", "message": "…", "hint": "…", "httpCode": "404" },
+<pre tabindex="0"><code>{ "error": { "code": "message_not_found", "message": "…", "hint": "…", "httpCode": "404" },
   "errorMessage": "…" }</code></pre>
 </div>
 
@@ -493,7 +493,7 @@ node does the same job:</p>
 
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code>Method:            POST
+<pre tabindex="0"><code>Method:            POST
 URL:               {{ $env.MAILMINT_URL }}/v1/parse
 Authentication:    Generic → Header Auth
   Name:            Authorization

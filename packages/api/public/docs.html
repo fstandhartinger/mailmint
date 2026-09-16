@@ -120,7 +120,7 @@ against a copy you run yourself:</p>
 
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code><span class="tok-c"># the hosted service</span>
+<pre tabindex="0"><code><span class="tok-c"># the hosted service</span>
 export MAILMINT_URL="https://mailmint.app.mintapis.com"
 export MAILMINT_API_KEY="mm_live_…"      <span class="tok-c"># /signup gives you one, free, no card</span>
 
@@ -133,7 +133,7 @@ can make before you have an account:</p>
 
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code>curl https://mailmint.app.mintapis.com/healthz</code></pre>
+<pre tabindex="0"><code>curl https://mailmint.app.mintapis.com/healthz</code></pre>
 </div>
 
 <p>Everything is JSON in, JSON out, except three endpoints that return bytes:
@@ -145,7 +145,7 @@ can make before you have an account:</p>
 service&rsquo;s logs.</p>
 
 <h3>The three shapes you will meet <a class="anchor" href="#overview">#</a></h3>
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Shape</th><th>Returned by</th><th>What it is</th></tr></thead>
 <tbody>
@@ -173,10 +173,10 @@ alternative for clients that cannot set <code>Authorization</code>.</p>
 
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code>curl "$MAILMINT_URL/v1/usage" -H "Authorization: Bearer $MAILMINT_API_KEY"</code></pre>
+<pre tabindex="0"><code>curl "$MAILMINT_URL/v1/usage" -H "Authorization: Bearer $MAILMINT_API_KEY"</code></pre>
 </div>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Prefix</th><th>Behaviour</th></tr></thead>
 <tbody>
@@ -233,7 +233,7 @@ address is <code>&lt;token&gt;@&lt;inbound domain&gt;</code>, where the token is
 lowercase Crockford base32 with <code>i</code>, <code>l</code>, <code>o</code> and <code>u</code> left out so
 it cannot be misread aloud.</p>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Form</th><th>Example</th><th>Routes to</th></tr></thead>
 <tbody>
@@ -270,7 +270,7 @@ because the mail arrives, the field is <code>null</code>, and nothing anywhere s
 <div class="code">
 <div class="cap">the array form — what is stored</div>
 <button class="copy" type="button">Copy</button>
-<pre><code>"schema": [
+<pre tabindex="0"><code>"schema": [
   { "name": "total", "type": "number", "description": "grand total incl. tax",
     "required": true, "hint": "labelled Total or Amount Due" }
 ]</code></pre>
@@ -279,10 +279,10 @@ because the mail arrives, the field is <code>null</code>, and nothing anywhere s
 <div class="code">
 <div class="cap">the object shorthand — accepted, normalised to the above</div>
 <button class="copy" type="button">Copy</button>
-<pre><code>"schema": { "invoice_number": "string", "total": { "type": "number", "hint": "labelled Total" } }</code></pre>
+<pre tabindex="0"><code>"schema": { "invoice_number": "string", "total": { "type": "number", "hint": "labelled Total" } }</code></pre>
 </div>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Key</th><th>Type</th><th>Meaning</th></tr></thead>
 <tbody>
@@ -316,7 +316,7 @@ splitting it across mailboxes is the better answer.</p>
 <code>null</code> with confidence <code>0</code> and the flag <code>type_error:&lt;field&gt;</code>. It is
 never silently rounded, guessed, or replaced with a plausible-looking substitute.</p>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Type</th><th>You get back</th><th>Notes</th></tr></thead>
 <tbody>
@@ -360,7 +360,7 @@ your webhook, and what appears as <code>message</code> in the event feed.</p>
 
 <div class="code">
 <div class="cap">the complete shape</div>
-<pre><code>{
+<pre tabindex="0"><code>{
   "id": "msg_01JQ8Z3K4M5N6P7Q8R9S",
   "mailbox": { "id": "mbx_01JQ8Y…", "address": "k7m2xq4h9bwz@parse.example.com", "name": "Invoices" },
   "received_at": "2026-08-25T09:14:03.221Z",
@@ -409,7 +409,7 @@ your webhook, and what appears as <code>message</code> in the event feed.</p>
 }</code></pre>
 </div>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Key</th><th>What it is</th></tr></thead>
 <tbody>
@@ -459,7 +459,7 @@ your webhook, and what appears as <code>message</code> in the event feed.</p>
 <p>Every entry in <code>fields</code> has exactly four keys.</p>
 
 <div class="code">
-<pre><code>"total": {
+<pre tabindex="0"><code>"total": {
   "value":      31.5,                  // null when not found. Never invented, never "N/A".
   "confidence": 0.97,                  // float 0..1, computed by us
   "source":     "rule",                // rule | llm | rule+llm | header | attachment | none
@@ -498,7 +498,7 @@ roughly this order of weight:</p>
     <em>lower</em> a score, never raise one above what the verifiable signals justify.</li>
 </ol>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th><code>source</code></th><th>Means</th></tr></thead>
 <tbody>
@@ -522,7 +522,7 @@ labelled field slots. Because a model call is part of every parse, the same set 
 <strong>three times</strong> on 31&nbsp;August 2026 and the runs pooled; one run puts two or three values in
 the bottom buckets, which is noise wearing the costume of a measurement:</p>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Reported confidence</th><th>Values (3 runs pooled)</th><th>Actually correct</th></tr></thead>
 <tbody>
@@ -614,7 +614,7 @@ suppresses a webhook. The flags are how you find out something went wrong — th
 channel.</p>
 </div>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Flag</th><th>Raised when</th><th>Sets <code>needs_review</code></th></tr></thead>
 <tbody>
@@ -660,7 +660,7 @@ and the webhook body can never disagree about it.</p>
 
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code><span class="tok-c"># everything that needs a human, newest first</span>
+<pre tabindex="0"><code><span class="tok-c"># everything that needs a human, newest first</span>
 curl "$MAILMINT_URL/v1/messages?needs_review=true&view=review" \
   -H "Authorization: Bearer $MAILMINT_API_KEY"
 
@@ -682,7 +682,7 @@ without opening it.</p>
 you defined a schema.</p>
 
 <div class="code">
-<pre><code>"tables": [
+<pre tabindex="0"><code>"tables": [
   {
     "source":  "html",              // which part it came from
     "index":   0,
@@ -713,7 +713,7 @@ one.</p>
 
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code>{ "name": "line_items", "type": "array",
+<pre tabindex="0"><code>{ "name": "line_items", "type": "array",
   "items": { "type": "object", "fields": [
     { "name": "description", "type": "string" },
     { "name": "qty",         "type": "integer" },
@@ -741,7 +741,7 @@ that is wrong.</p>
 <h2>Attachments <a class="anchor" href="#attachments">#</a></h2>
 
 <div class="code">
-<pre><code>"attachments": [
+<pre tabindex="0"><code>"attachments": [
   {
     "id": "att_01JQ8Z3K4M5N6P7Q8R9S",
     "filename": "invoice-2291.pdf",
@@ -761,7 +761,7 @@ into the same namespace as our own metadata. <code>inline</code> and <code>conte
 separate a customer&rsquo;s invoice from the sender&rsquo;s Outlook signature logo, which is a real,
 documented failure elsewhere in this category.</p>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Query parameter</th><th>Effect</th></tr></thead>
 <tbody>
@@ -790,10 +790,10 @@ file, its metadata and its SHA-256, not its contents. Written against the code a
 <h2>SPF, DKIM and DMARC <a class="anchor" href="#auth">#</a></h2>
 
 <div class="code">
-<pre><code>"auth": { "spf": "pass", "dkim": "pass", "dmarc": "pass", "spam_score": 0.4 }</code></pre>
+<pre tabindex="0"><code>"auth": { "spf": "pass", "dkim": "pass", "dmarc": "pass", "spam_score": 0.4 }</code></pre>
 </div>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Key</th><th>Values</th></tr></thead>
 <tbody>
@@ -861,7 +861,7 @@ sub-object. A finer breakdown — per-signature results, and a
 
 <p>Creates a mailbox and mints its address. Up to 100 per account.</p>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Body</th><th>Type</th><th>Notes</th></tr></thead>
 <tbody>
@@ -881,7 +881,7 @@ sub-object. A finer breakdown — per-signature results, and a
 
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code>curl -X POST "$MAILMINT_URL/v1/mailboxes" \
+<pre tabindex="0"><code>curl -X POST "$MAILMINT_URL/v1/mailboxes" \
   -H "Authorization: Bearer $MAILMINT_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{ "name": "Invoices",
@@ -891,7 +891,7 @@ sub-object. A finer breakdown — per-signature results, and a
 
 <div class="code">
 <div class="cap">201 Created</div>
-<pre><code>{
+<pre tabindex="0"><code>{
   "mailbox": {
     "id": "mbx_01JQ8Y7X6W5V4U3T2S1R",
     "name": "Invoices",
@@ -950,7 +950,7 @@ else in this category.</p>
 
 <p>Paged newest-first. Returns the <a href="#overview">summary</a> shape, not the full message object.</p>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Query</th><th>Effect</th></tr></thead>
 <tbody>
@@ -973,13 +973,13 @@ else in this category.</p>
 
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code>curl "$MAILMINT_URL/v1/messages?needs_review=true&view=review&limit=50" \
+<pre tabindex="0"><code>curl "$MAILMINT_URL/v1/messages?needs_review=true&view=review&limit=50" \
   -H "Authorization: Bearer $MAILMINT_API_KEY"</code></pre>
 </div>
 
 <div class="code">
 <div class="cap">200 OK</div>
-<pre><code>{
+<pre tabindex="0"><code>{
   "data": [
     {
       "id": "msg_01JQ8Z3K4M5N6P7Q8R9S",
@@ -1018,7 +1018,7 @@ comma-separated lists.</p>
 
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code>curl "$MAILMINT_URL/v1/messages/msg_01JQ8Z3K4M5N6P7Q8R9S?include=attachments" \
+<pre tabindex="0"><code>curl "$MAILMINT_URL/v1/messages/msg_01JQ8Z3K4M5N6P7Q8R9S?include=attachments" \
   -H "Authorization: Bearer $MAILMINT_API_KEY"</code></pre>
 </div>
 
@@ -1034,7 +1034,7 @@ is what makes a re-parse the real message rather than a re-reading of our own ea
 
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code>curl "$MAILMINT_URL/v1/messages/msg_01JQ8Z3K4M5N6P7Q8R9S/raw" \
+<pre tabindex="0"><code>curl "$MAILMINT_URL/v1/messages/msg_01JQ8Z3K4M5N6P7Q8R9S/raw" \
   -H "Authorization: Bearer $MAILMINT_API_KEY" -o message.eml</code></pre>
 </div>
 
@@ -1063,7 +1063,7 @@ incident.</p>
 
 <h3><span class="pill post">POST</span><span class="path">/v1/messages/{id}/reparse</span></h3>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Body</th><th>Effect</th></tr></thead>
 <tbody>
@@ -1078,7 +1078,7 @@ incident.</p>
 
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code>curl -X POST "$MAILMINT_URL/v1/messages/msg_01JQ8Z3K4M5N6P7Q8R9S/reparse" \
+<pre tabindex="0"><code>curl -X POST "$MAILMINT_URL/v1/messages/msg_01JQ8Z3K4M5N6P7Q8R9S/reparse" \
   -H "Authorization: Bearer $MAILMINT_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{ "schema": [ { "name": "total", "type": "number", "hint": "labelled Amount Due" } ] }'</code></pre>
@@ -1092,7 +1092,7 @@ incident.</p>
 <p>Re-runs a whole mailbox&rsquo;s stored history as a background job. Answers <code>202</code> immediately
 with a job id and a poll URL.</p>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Body</th><th>Default</th><th>Effect</th></tr></thead>
 <tbody>
@@ -1113,7 +1113,7 @@ with a job id and a poll URL.</p>
 
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code><span class="tok-c"># 1. See what would change, without changing anything.</span>
+<pre tabindex="0"><code><span class="tok-c"># 1. See what would change, without changing anything.</span>
 curl -X POST "$MAILMINT_URL/v1/mailboxes/mbx_01JQ8Y7X6W5V4U3T2S1R/reparse" \
   -H "Authorization: Bearer $MAILMINT_API_KEY" \
   -H "Content-Type: application/json" \
@@ -1122,7 +1122,7 @@ curl -X POST "$MAILMINT_URL/v1/mailboxes/mbx_01JQ8Y7X6W5V4U3T2S1R/reparse" \
 
 <div class="code">
 <div class="cap">202 Accepted</div>
-<pre><code>{
+<pre tabindex="0"><code>{
   "job_id": "rpj_01JQ8Z…",
   "mailbox_id": "mbx_01JQ8Y7X6W5V4U3T2S1R",
   "status": "queued",
@@ -1155,7 +1155,7 @@ mistaken for a small change.</p>
 before signing up for an address, and it is what the n8n <em>Parse&nbsp;&rarr;&nbsp;Parse Email</em>
 operation calls.</p>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Body</th><th>Notes</th></tr></thead>
 <tbody>
@@ -1171,16 +1171,16 @@ operation calls.</p>
 
 <p>Send neither form and you get <code>400 missing_input</code>, with an example in the hint.</p>
 
-<div class="tabs">
-  <button data-panel="p-parse-curl" aria-selected="true">curl</button>
-  <button data-panel="p-parse-node" aria-selected="false">Node.js</button>
-  <button data-panel="p-parse-py" aria-selected="false">Python</button>
+<div class="tabs" role="tablist" aria-label="POST /v1/parse examples">
+  <button role="tab" id="tab-parse-curl" data-panel="p-parse-curl" aria-controls="p-parse-curl" aria-selected="true" tabindex="0">curl</button>
+  <button role="tab" id="tab-parse-node" data-panel="p-parse-node" aria-controls="p-parse-node" aria-selected="false" tabindex="-1">Node.js</button>
+  <button role="tab" id="tab-parse-py" data-panel="p-parse-py" aria-controls="p-parse-py" aria-selected="false" tabindex="-1">Python</button>
 </div>
 
-<div class="panel" id="p-parse-curl">
+<div class="panel" id="p-parse-curl" role="tabpanel" aria-labelledby="tab-parse-curl">
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code>curl -X POST "$MAILMINT_URL/v1/parse" \
+<pre tabindex="0"><code>curl -X POST "$MAILMINT_URL/v1/parse" \
   -H "Authorization: Bearer $MAILMINT_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -1195,10 +1195,10 @@ operation calls.</p>
 </div>
 </div>
 
-<div class="panel" id="p-parse-node" hidden>
+<div class="panel" id="p-parse-node" role="tabpanel" aria-labelledby="tab-parse-node" hidden>
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code>import { readFile } from 'node:fs/promises';
+<pre tabindex="0"><code>import { readFile } from 'node:fs/promises';
 
 const raw = await readFile('message.eml');
 
@@ -1231,10 +1231,10 @@ console.log(result.fields.total.value, result.fields.total.confidence);</code></
 </div>
 </div>
 
-<div class="panel" id="p-parse-py" hidden>
+<div class="panel" id="p-parse-py" role="tabpanel" aria-labelledby="tab-parse-py" hidden>
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code>import base64, os, pathlib, requests
+<pre tabindex="0"><code>import base64, os, pathlib, requests
 
 raw = pathlib.Path("message.eml").read_bytes()
 
@@ -1281,13 +1281,13 @@ layer can resolve on its own never reach a model at all, so a tighter schema is 
 
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code>curl "$MAILMINT_URL/v1/events?cursor=1421&limit=50" \
+<pre tabindex="0"><code>curl "$MAILMINT_URL/v1/events?cursor=1421&limit=50" \
   -H "Authorization: Bearer $MAILMINT_API_KEY"</code></pre>
 </div>
 
 <div class="code">
 <div class="cap">200 OK</div>
-<pre><code>{
+<pre tabindex="0"><code>{
   "events": [
     {
       "id": 1422,
@@ -1302,7 +1302,7 @@ layer can resolve on its own never reach a model at all, so a tighter schema is 
 }</code></pre>
 </div>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Query</th><th>Notes</th></tr></thead>
 <tbody>
@@ -1336,7 +1336,7 @@ the retained window rather than failing.</p>
 inbound mail. It is stored, parsed, given an id, added to the event feed and delivered to your webhook. This
 is how you test the whole pipeline before any DNS exists.</p>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Body</th><th>Notes</th></tr></thead>
 <tbody>
@@ -1363,7 +1363,7 @@ duplicate, which is the same rule real inbound mail follows.</p>
 
 <div class="code">
 <div class="cap">200 OK</div>
-<pre><code>{
+<pre tabindex="0"><code>{
   "plan": { "id": "free", "name": "Free", "quota": 300, "price_usd": 0 },
   "period_start": "2026-08-01T00:00:00.000Z",
   "used": 41,
@@ -1387,7 +1387,7 @@ in n8n before you build anything.</p>
 you are pointed at has an inbound domain configured.</p>
 
 <div class="code">
-<pre><code>{ "ok": true, "parser": true, "inbound_domain": "parse.example.com",
+<pre tabindex="0"><code>{ "ok": true, "parser": true, "inbound_domain": "parse.example.com",
   "internal_api": true, "billing": false }</code></pre>
 </div>
 </section>
@@ -1403,7 +1403,7 @@ than aspirational.</p>
 
 <div class="code">
 <div class="cap">the request we send</div>
-<pre><code>POST /hooks/mailmint HTTP/1.1
+<pre tabindex="0"><code>POST /hooks/mailmint HTTP/1.1
 content-type: application/json
 user-agent: MailMint-Webhook/1
 x-mailmint-event: message.parsed
@@ -1414,7 +1414,7 @@ x-mailmint-signature: t=1787648043,v1=6a1f…c07b
 { "id": "msg_01JQ8Z3K4M5N6P7Q8R9S", … }</code></pre>
 </div>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Header</th><th>Meaning</th></tr></thead>
 <tbody>
@@ -1434,7 +1434,7 @@ x-mailmint-signature: t=1787648043,v1=6a1f…c07b
 <h3 id="signature">The signature, exactly <a class="anchor" href="#signature">#</a></h3>
 
 <div class="code">
-<pre><code>signed_payload = "&lt;t&gt;" + "." + &lt;the raw request body, byte for byte&gt;
+<pre tabindex="0"><code>signed_payload = "&lt;t&gt;" + "." + &lt;the raw request body, byte for byte&gt;
 v1             = hex( HMAC_SHA256( key = webhook_secret, message = signed_payload ) )
 header         = "t=" + &lt;t&gt; + ",v1=" + v1</code></pre>
 </div>
@@ -1454,16 +1454,16 @@ header         = "t=" + &lt;t&gt; + ",v1=" + v1</code></pre>
 
 <h3 id="verify">A worked verification <a class="anchor" href="#verify">#</a></h3>
 
-<div class="tabs">
-  <button data-panel="p-hook-node" aria-selected="true">Node.js</button>
-  <button data-panel="p-hook-py" aria-selected="false">Python</button>
+<div class="tabs" role="tablist" aria-label="Webhook signature verification examples">
+  <button role="tab" id="tab-hook-node" data-panel="p-hook-node" aria-controls="p-hook-node" aria-selected="true" tabindex="0">Node.js</button>
+  <button role="tab" id="tab-hook-py" data-panel="p-hook-py" aria-controls="p-hook-py" aria-selected="false" tabindex="-1">Python</button>
 </div>
 
-<div class="panel" id="p-hook-node">
+<div class="panel" id="p-hook-node" role="tabpanel" aria-labelledby="tab-hook-node">
 <div class="code">
 <div class="cap">Express — note express.raw, not express.json</div>
 <button class="copy" type="button">Copy</button>
-<pre><code>const crypto = require('node:crypto');
+<pre tabindex="0"><code>const crypto = require('node:crypto');
 const express = require('express');
 
 const app = express();
@@ -1514,11 +1514,11 @@ app.post('/hooks/mailmint', express.raw({ type: 'application/json' }), (req, res
 </div>
 </div>
 
-<div class="panel" id="p-hook-py" hidden>
+<div class="panel" id="p-hook-py" role="tabpanel" aria-labelledby="tab-hook-py" hidden>
 <div class="code">
 <div class="cap">Flask — request.get_data() is the raw body</div>
 <button class="copy" type="button">Copy</button>
-<pre><code>import hmac, hashlib, os, time
+<pre tabindex="0"><code>import hmac, hashlib, os, time
 from flask import Flask, request, abort
 
 app = Flask(__name__)
@@ -1574,7 +1574,7 @@ path.</p>
 
 <h3 id="retries">Retries <a class="anchor" href="#retries">#</a></h3>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Attempt</th><th>Delay after the previous failure</th></tr></thead>
 <tbody>
@@ -1614,7 +1614,7 @@ the same mailbox would overwrite each other&rsquo;s URL on registration, and dea
 silently delete the other&rsquo;s delivery. So a mailbox carries a <strong>list</strong> of endpoints, each
 with its own id, its own secret and its own health.</p>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Route</th><th>Does</th></tr></thead>
 <tbody>
@@ -1637,7 +1637,7 @@ with its own id, its own secret and its own health.</p>
 
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code>curl -X POST "$MAILMINT_URL/v1/mailboxes/mbx_01JQ8Y7X6W5V4U3T2S1R/webhooks" \
+<pre tabindex="0"><code>curl -X POST "$MAILMINT_URL/v1/mailboxes/mbx_01JQ8Y7X6W5V4U3T2S1R/webhooks" \
   -H "Authorization: Bearer $MAILMINT_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{ "url": "https://your-app.example/hooks/mailmint", "description": "billing pipeline" }'</code></pre>
@@ -1645,7 +1645,7 @@ with its own id, its own secret and its own health.</p>
 
 <div class="code">
 <div class="cap">201 Created</div>
-<pre><code>{
+<pre tabindex="0"><code>{
   "webhook": {
     "id": "whe_4f1c...",
     "mailbox_id": "mbx_01JQ8Y7X6W5V4U3T2S1R",
@@ -1685,9 +1685,9 @@ with its own id, its own secret and its own health.</p>
 
 <p>Two cursors, and they are not the same kind of thing.</p>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
-<thead><tr><th></th><th><code>GET /v1/messages</code></th><th><code>GET /v1/events</code></th></tr></thead>
+<thead><tr><th><span class="vh">Property</span></th><th><code>GET /v1/messages</code></th><th><code>GET /v1/events</code></th></tr></thead>
 <tbody>
 <tr><td>Order</td><td>newest first</td><td>oldest first</td></tr>
 <tr><td>Cursor is</td><td>the last message id on the page</td><td>a monotonic integer event id</td></tr>
@@ -1708,7 +1708,7 @@ it back, do not parse it.</p>
 <div class="code">
 <div class="cap">draining a page at a time</div>
 <button class="copy" type="button">Copy</button>
-<pre><code>cursor=""
+<pre tabindex="0"><code>cursor=""
 while :; do
   page=$(curl -s "$MAILMINT_URL/v1/messages?limit=100&cursor=$cursor" \
            -H "Authorization: Bearer $MAILMINT_API_KEY")
@@ -1728,7 +1728,7 @@ done</code></pre>
 docs anchor, and always the <code>request_id</code>.</p>
 
 <div class="code">
-<pre><code>{
+<pre tabindex="0"><code>{
   "error": {
     "code": "invalid_schema",
     "message": "schema[1].type \"nummber\" is not a field type.",
@@ -1742,7 +1742,7 @@ docs anchor, and always the <code>request_id</code>.</p>
 <p><strong>Branch on <code>code</code>, never on the message text.</strong> Codes are stable; the sentences
 are not.</p>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Status</th><th>Code</th><th>Means</th></tr></thead>
 <tbody>
@@ -1797,7 +1797,7 @@ conflate them.</p>
 <section id="limits">
 <h2>Limits &amp; rate limits <a class="anchor" href="#limits">#</a></h2>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Limit</th><th>Value</th><th>What happens at the edge</th></tr></thead>
 <tbody>
@@ -1824,7 +1824,7 @@ conflate them.</p>
 <p>Rate-limit state is reported on every response:</p>
 
 <div class="code">
-<pre><code>X-RateLimit-Limit: 240
+<pre tabindex="0"><code>X-RateLimit-Limit: 240
 X-RateLimit-Burst: 40
 X-RateLimit-Remaining: 37
 Retry-After: 3          # only on a 429</code></pre>
@@ -1843,7 +1843,7 @@ no relationship with us. The limit above guards the API only.</p>
 
 <p>Three different things are kept for three different lengths of time, deliberately.</p>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>What</th><th>Kept for</th><th>Why that long</th></tr></thead>
 <tbody>
@@ -1888,7 +1888,7 @@ on n8n Cloud too. If community nodes are disabled, an <strong>HTTP Request</stro
 <code>POST /v1/parse</code> does the same job.</p>
 </div>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Resource</th><th>Operation</th><th>Calls</th></tr></thead>
 <tbody>

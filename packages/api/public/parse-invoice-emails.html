@@ -90,7 +90,7 @@ that came back <em>wrong</em> than on the eight that came back right.</p>
 
 <section id="hard">
 <h2>The five parts that are hard <a class="anchor" href="#hard">#</a></h2>
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>The problem</th><th>Why it bites</th></tr></thead>
 <tbody>
@@ -120,7 +120,7 @@ give each a type and one line of description, and that is the whole configuratio
 
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code>[
+<pre tabindex="0"><code>[
   { "name": "invoice_number", "type": "string", "description": "the supplier's invoice number" },
   { "name": "invoice_date",   "type": "date",   "description": "date the invoice was issued" },
   { "name": "due_date",       "type": "date",   "description": "date payment is due" },
@@ -138,7 +138,7 @@ give each a type and one line of description, and that is the whole configuratio
 
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code>curl -X POST "$MAILMINT_URL/v1/parse" \
+<pre tabindex="0"><code>curl -X POST "$MAILMINT_URL/v1/parse" \
   -H "Authorization: Bearer $MAILMINT_API_KEY" \
   -H "Content-Type: application/json" \
   -d @invoice-request.json</code></pre>
@@ -152,7 +152,7 @@ was sent as <code>text</code>. It came back in <strong>4,471&nbsp;ms</strong>. N
 the response &mdash; <code>value</code>, <code>confidence</code>, and the <code>evidence</code> span the
 value was read from:</p>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Field</th><th>Value</th><th>Conf.</th><th>Source</th><th>Evidence in the mail</th></tr></thead>
 <tbody>
@@ -218,7 +218,7 @@ question &mdash; "what do I have to look at this morning" &mdash; is one request
 
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code><span class="tok-c"># everything a human still has to see, newest first</span>
+<pre tabindex="0"><code><span class="tok-c"># everything a human still has to see, newest first</span>
 curl "$MAILMINT_URL/v1/messages?needs_review=true&amp;view=review" \
   -H "Authorization: Bearer $MAILMINT_API_KEY"
 

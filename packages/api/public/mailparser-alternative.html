@@ -81,7 +81,7 @@ cards change; check both before you decide.</p>
 month; annual plans are about 20% cheaper but grant credits <em>per year</em>, which matters if your
 volume is lumpy &mdash; 3,000 a year is not 250 a month when 900 of them arrive in December.</p>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Mailparser plan</th><th>Monthly billing</th><th>Emails</th><th>Per email</th></tr></thead>
 <tbody>
@@ -93,7 +93,7 @@ volume is lumpy &mdash; 3,000 a year is not 250 a month when 900 of them arrive 
 </table>
 </div>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>MailMint plan</th><th>Monthly billing</th><th>Emails</th><th>Per email</th></tr></thead>
 <tbody>
@@ -117,7 +117,7 @@ plan is 300 a month for as long as you want it rather than 30 credits for 30 day
 add-ons at Mailparser, and they cost <em>more</em> on monthly billing than on annual. These labels are
 verbatim from their pricing page.</p>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th>Mailparser add-on</th><th>Annual plans</th><th>Monthly plans</th><th>Included from</th><th>At MailMint</th></tr></thead>
 <tbody>
@@ -145,7 +145,7 @@ Python.</p>
 <section id="table">
 <h2>Side by side <a class="anchor" href="#table">#</a></h2>
 
-<div class="tw">
+<div class="tw" tabindex="0">
 <table>
 <thead><tr><th></th><th>MailMint</th><th>Mailparser</th></tr></thead>
 <tbody>
@@ -243,7 +243,7 @@ commit to it. <a href="/docs#reparse">How re-parsing works.</a></p>
 
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code>curl -X POST https://mailmint.app.mintapis.com/v1/parse \
+<pre tabindex="0"><code>curl -X POST https://mailmint.app.mintapis.com/v1/parse \
   -H "Authorization: Bearer $MAILMINT_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -266,7 +266,7 @@ trust it:</p>
 
 <div class="code">
 <button class="copy" type="button">Copy</button>
-<pre><code>"invoice_number": {
+<pre tabindex="0"><code>"invoice_number": {
   "value": "INV-2291",
   "confidence": 0.98,
   "source": "rules+model",
