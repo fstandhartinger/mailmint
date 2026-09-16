@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Privacy policy — MailMint</title>
+<meta name="description" content="What data MailMint processes, where it is stored, which processors receive it, and how long it is kept.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://mailmint.app.mintapis.com/privacy">
+<meta property="og:title" content="Privacy policy — MailMint">
+<meta property="og:description" content="What data MailMint processes, where it is stored, which processors receive it, and how long it is kept.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://mailmint.app.mintapis.com/privacy">
+<meta property="og:site_name" content="MailMint">
+<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="/docs.css">
+</head>
+<body class="docs">
+
+<header class="docs-top">
+  <a class="logo" href="/">Mail<span>Mint</span></a>
+  <nav>
+    <a href="/docs">API reference</a>
+    <a href="/n8n">n8n</a>
+    <a href="/dashboard">Dashboard</a>
+    <a class="cta" href="/signup">Get an API key</a>
+  </nav>
+</header>
+
+<div class="layout">
+
+  <aside class="toc">
+    <button class="toc-toggle" id="tocToggle" aria-expanded="false" aria-controls="tocBody">On this page</button>
+    <div class="toc-body" id="tocBody">
+      <h2>Privacy policy</h2>
+      <ul>
+        <li><a href="#operator">Who operates MailMint</a></li>
+        <li><a href="#hosting">Where the service runs</a></li>
+        <li><a href="#data">What is processed</a></li>
+        <li><a href="#processors">Processors &amp; recipients</a></li>
+        <li><a href="#fonts">Google Fonts</a></li>
+        <li><a href="#logs">Server logs</a></li>
+        <li><a href="#retention">Retention</a></li>
+        <li><a href="#cookies">Cookies &amp; analytics</a></li>
+        <li><a href="#requests">Requests &amp; deletion</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <main class="content">
+
+<h1>Privacy policy</h1>
+<p class="lede">What MailMint processes, where the bytes sit, who else receives them, and when they are
+deleted. Short version: MailMint itself runs on one server in Finland (EU), the only AI service that sees
+email content is Chutes (processing location not fixed, see below), there are no tracking cookies, and raw email is deleted on a fixed per-plan
+schedule.</p>
+
+<section id="operator">
+<h2>Who operates MailMint <a class="anchor" href="#operator">#</a></h2>
+<p>MailMint (<a href="https://mailmint.app.mintapis.com">mailmint.app.mintapis.com</a>) is operated by:</p>
+<p>
+productivity-boost.com Betriebs UG (haftungsbeschr&auml;nkt) &amp; Co. KG<br>
+Reichenbergerstr. 2, 94036 Passau, Germany<br>
+Represented by Florian Standhartinger &middot;
+<a href="mailto:info@productivity-boost.com">info@productivity-boost.com</a> &middot; +49 178 1981631<br>
+Amtsgericht Passau, HRB 8453 &middot; VAT ID DE296812612
+</p>
+</section>
+
+<section id="hosting">
+<h2>Where the service runs <a class="anchor" href="#hosting">#</a></h2>
+<p>The application, its PostgreSQL database and the inbound mail server all run on <strong>one
+server located in Finland (EU)</strong>, rented from <strong>Hetzner Online GmbH</strong>, a German
+hosting company. Your account data, the emails sent to your MailMint addresses, the parsed results and
+the application logs all live on that host.</p>
+</section>
+
+<section id="data">
+<h2>What is processed <a class="anchor" href="#data">#</a></h2>
+<ul>
+  <li><strong>Account data:</strong> the email address you register with, used to sign you in, to send
+    password-reset links and to reach you about your account.</li>
+  <li><strong>Inbound email:</strong> messages sent to your MailMint addresses are received by our own
+    mail server, stored as raw email, parsed into structured fields, and delivered to the webhook
+    endpoints you configure. Attachments are stored as separate binary objects.</li>
+  <li><strong>Usage and configuration:</strong> the mailboxes, parsing schemas, webhook endpoints and
+    API keys you create, plus the records needed to count usage against your plan.</li>
+</ul>
+</section>
+
+<section id="processors">
+<h2>Processors &amp; recipients <a class="anchor" href="#processors">#</a></h2>
+
+<h3>Hetzner Online GmbH — hosting</h3>
+<p>Runs the single server in Finland (EU) described above. Everything the service stores is stored
+there.</p>
+
+<h3>Chutes — AI field extraction</h3>
+<p><strong>Email content may be sent to Chutes</strong> (<code>llm.chutes.ai</code>) for AI field
+extraction: when rules alone cannot fill every field of your schema, the message (or the relevant parts
+of it) is passed to a large language model hosted on Chutes. <strong>Chutes is the only LLM processor by
+default.</strong> Gemini and OpenAI would be used only if the operator explicitly enabled them
+(<code>MAILMINT_LLM_EXTRA_PROVIDERS</code>) — that is currently <strong>not</strong> enabled.</p>
+<p><strong>Where Chutes processes it:</strong> Chutes runs models on a distributed network of GPU
+servers and does not publish a fixed processing location, so a request <strong>may be processed outside
+the EU</strong>. MailMint only uses Chutes models whose names end in <code>-TEE</code>; Chutes describes
+these as running inside trusted execution environments (Intel TDX, NVIDIA Protected PCIe). Chutes' own
+<a href="https://chutes.ai/privacy">privacy policy</a> states that for its public LLM API it does not log,
+store or persist the content of requests or responses. When a Chutes model is overloaded, MailMint
+tries another Chutes model instead; email content is not sent to a different provider because of that.</p>
+
+<h3>Stripe — billing</h3>
+<p>Paid plans are billed through <strong>Stripe</strong>. Stripe processes the payment data you enter at
+checkout; <strong>MailMint never sees or stores your card number</strong> — only the plan you are on and
+the identifiers Stripe gives us about your subscription.</p>
+
+<h3>Google — mail delivery</h3>
+<p>Password-reset emails are relayed through Google's mail servers (<code>smtp.gmail.com</code>), so your
+account email address and the password-reset link pass through Google when a reset is requested.</p>
+</section>
+
+<section id="fonts">
+<h2>Google Fonts on this website <a class="anchor" href="#fonts">#</a></h2>
+<p>The landing page (<a href="/">mailmint.app.mintapis.com</a>) loads a stylesheet from
+<strong>Google Fonts</strong> (<code>fonts.googleapis.com</code>). When you open that page, your browser
+contacts Google's servers to fetch the fonts, which discloses your IP address and the usual browser
+headers to Google. This page you are reading loads no third-party resources.</p>
+</section>
+
+<section id="logs">
+<h2>Server logs <a class="anchor" href="#logs">#</a></h2>
+<p>Every API and web request is logged with your <strong>IP address</strong> to the application's
+container log. Logs are kept <strong>for operating and securing the service</strong> (debugging,
+abuse and intrusion detection). The log is rotated at 10&nbsp;MB with at most three files kept, and it
+is deleted entirely when the application is redeployed.</p>
+</section>
+
+<section id="retention">
+<h2>Retention <a class="anchor" href="#retention">#</a></h2>
+<p>Stored data is deleted on a fixed schedule that depends on your plan. These are the values the
+production configuration enforces:</p>
+
+<table>
+  <thead>
+    <tr><th>What</th><th>Free</th><th>Starter</th><th>Pro</th><th>Scale</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Raw email</td><td>30 days</td><td>90 days</td><td>180 days</td><td>365 days</td></tr>
+    <tr><td>Attachment blobs</td><td>7 days</td><td>30 days</td><td>60 days</td><td>90 days</td></tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr><th>What</th><th>Kept for</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Webhook events</td><td>7 days</td></tr>
+    <tr><td>Delivered job rows</td><td>30 days</td></tr>
+  </tbody>
+</table>
+</section>
+
+<section id="cookies">
+<h2>Cookies &amp; analytics <a class="anchor" href="#cookies">#</a></h2>
+<p>MailMint uses <strong>no tracking cookies</strong> and <strong>no third-party analytics</strong>.
+Signing in sets one first-party session cookie (<code>mailmint_session</code>) whose only job is to keep
+you logged in; it is not used to track you.</p>
+</section>
+
+<section id="requests">
+<h2>Requests &amp; deletion <a class="anchor" href="#requests">#</a></h2>
+<p>Questions about your data, and requests to access, correct or delete your account and the data stored
+for it, go to <a href="mailto:info@productivity-boost.com">info@productivity-boost.com</a>. Account
+deletion is honoured on request.</p>
+</section>
+
+  </main>
+</div>
+
+<footer style="border-top:1px solid var(--rule);padding:1.6rem 1.25rem;text-align:center;font-size:.86rem;color:var(--muted)">
+  <a href="/">MailMint</a> &middot;
+  <a href="/docs">API reference</a> &middot;
+  <a href="/quickstart">Quickstart</a> &middot;
+  <a href="/dashboard">Dashboard</a>
+
+  <div style="margin-top:.7rem">
+    <a href="/impressum">Impressum</a> &middot;
+    <a href="/privacy">Privacy</a> &middot;
+    <a href="/terms">Terms</a>
+  </div>
+</footer>
+
+<script src="/docs.js"></script>
+</body>
+</html>

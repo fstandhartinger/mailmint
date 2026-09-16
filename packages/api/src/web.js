@@ -29,6 +29,11 @@ const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 const SESSION_COOKIE = 'mailmint_session';
 
 const CSS = fs.readFileSync(path.join(PUBLIC_DIR, 'app.css'), 'utf8');
+const legalFooter = `<footer style="border-top:1px solid var(--rule);padding:1.6rem 1.25rem;text-align:center;font-size:.86rem;color:var(--muted)">
+  <a href="/impressum">Impressum</a> &middot;
+  <a href="/privacy">Privacy</a> &middot;
+  <a href="/terms">Terms</a>
+</footer>`;
 
 // Pages rendered here are account plumbing — sign-in, the dashboard, a mailbox,
 // the re-parse view — and a search engine indexing them helps nobody: they are
@@ -50,7 +55,7 @@ function shell(title, body, opts = {}) {
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(opts.description || 'MailMint turns inbound email into structured JSON.')}">${robots}${canonical}
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<style>${CSS}</style></head><body>${body}
+<style>${CSS}</style></head><body>${body}${legalFooter}
 <script>
 document.addEventListener('click',(e)=>{
   const b=e.target.closest('.copy'); if(!b) return;

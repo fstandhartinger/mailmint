@@ -31,6 +31,9 @@ const PAGES = {
   '/': 'index.html',
   '/docs': 'docs.html',
   '/quickstart': 'quickstart.html',
+  '/impressum': 'impressum.html',
+  '/privacy': 'privacy.html',
+  '/terms': 'terms.html',
   '/n8n': 'n8n.html',
   // Comparison and category pages. Same chrome, same CSS, no build step: the
   // file name is the slug with `.html` on the end, exactly like the four above.
