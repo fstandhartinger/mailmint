@@ -20,13 +20,22 @@ const assert = require('node:assert/strict');
 const H = require('./helpers');
 
 let key; let mailbox;
+const acceptedIds = new Set();
+const { log } = require('../src/log');
+const pipeline = require('../src/pipeline');
+const { trackPipelines } = require('./pipeline-tracker');
+let tracker;
 
 before(async () => {
   await H.start();
   ({ key } = await H.newAccount());
   mailbox = await H.newMailbox(key, { name: 'Bench', schema: [{ name: 'total', type: 'number' }] });
+  tracker = trackPipelines({ pipeline, log, owns: (message) => message.mailbox_id === mailbox.id });
 });
-after(H.stop);
+after(async () => {
+  if (tracker) await tracker.finish({ acceptedIds, stop: H.stop });
+  else await H.stop();
+});
 
 const N = Number(process.env.BENCH_N || 40);
 
@@ -53,9 +62,11 @@ describe('latency', () => {
     for (let i = 0; i < N; i += 1) {
       const started = process.hrtime.bigint();
       // eslint-disable-next-line no-await-in-loop
-      const { res } = await H.deliver(mailbox, { subject: `Bench ${i}` });
+      const { res, json } = await H.deliver(mailbox, { subject: `Bench ${i}` });
       samples.push(Number(process.hrtime.bigint() - started) / 1e6);
+      if (json && json.message_id) acceptedIds.add(json.message_id);
       assert.equal(res.status, 200);
+      assert.ok(json.message_id, 'accepted delivery must identify the message');
     }
     const r = report('POST /internal/deliver', samples);
     // The contract this endpoint has to keep is "fast enough not to hold an SMTP

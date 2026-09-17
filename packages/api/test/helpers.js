@@ -39,18 +39,24 @@ async function start() {
 }
 
 async function stop() {
-  if (server) {
-    // fetch() keeps its connections alive, and server.close() waits for every
-    // one of them. Without closeAllConnections() the suite finishes and then
-    // sits there until the far end times out, which reads as a hang.
-    server.closeAllConnections();
-    await new Promise((r) => server.close(r));
+  const errors = [];
+  try {
+    if (server) {
+      server.closeAllConnections();
+      await new Promise((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
+    }
+  } catch (error) {
+    errors.push(error);
   }
-  await pool.end().catch(() => {});
-  // The parser's LLM call opens an outbound HTTPS socket that Node also keeps
-  // alive by default. Same problem, other direction.
-  require('node:https').globalAgent.destroy();
-  require('node:http').globalAgent.destroy();
+  try {
+    await pool.end();
+  } catch (error) {
+    errors.push(error);
+  } finally {
+    require('node:https').globalAgent.destroy();
+    require('node:http').globalAgent.destroy();
+  }
+  if (errors.length) throw new AggregateError(errors, 'test resources failed to close');
 }
 
 async function req(path, { method = 'GET', key, body, headers = {}, raw = false, form = false, cookie } = {}) {
