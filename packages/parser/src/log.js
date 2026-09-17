@@ -60,7 +60,15 @@ function consoleAdapter(log) {
 function llmShim(log) {
   return {
     info: (msg) => log.debug('parse.llm.trace', { msg: String(msg) }),
-    warn: (msg) => log.warn('parse.llm.attempt_failed', { msg: String(msg) }),
+    warn: (msg) => {
+      const text = String(msg);
+      const event = /\[llm\] \S+ failed:/.test(text)
+        ? 'parse.llm.attempt_failed'
+        : text.startsWith('[llm] skipping ') || text.endsWith('; skipping')
+          ? 'parse.llm.skipped'
+          : 'parse.llm.warning';
+      log.warn(event, { msg: text });
+    },
     error: (msg) => log.error('parse.llm.error', { msg: String(msg) }),
   };
 }

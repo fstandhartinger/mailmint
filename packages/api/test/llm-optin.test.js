@@ -63,7 +63,7 @@ test('complete filters disabled providers before any network call', async (t) =>
       log: { warn: (message) => warnings.push(message) },
     }),
     (err) => {
-      assert.match(err.message, /^every model in the chain failed/);
+      assert.match(err.message, /no models available/);
       assert.strictEqual(err.attempts.length, 0);
       return true;
     },

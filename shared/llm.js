@@ -21,7 +21,6 @@ const warnedDisabledProviders = new Set();
 const UTILIZATION_TIMEOUT_MS = 5_000;      // hard bound on the utilization probe
 const UTILIZATION_MAX_AGE_MS = 15 * 60_000; // older than this, a reading skips nothing
 const UTILIZATION_TTL_MS = 120_000;        // default cache lifetime for a reading
-let utilizationStarvationWarned = false;
 
 function providerName(entry) {
   return String(entry && entry.provider || '').toLowerCase();
@@ -121,11 +120,7 @@ async function liveChutesModels() {
  *
  * A model that is already saturated (utilization_5m >= threshold) adds queue
  * latency to every extraction, so a busy chutes entry is skipped in favour of
- * the next one. The gate is fail-open by design: an outage of the utilization
- * API can never stop email processing, so no key, no reading, a stale reading
- * or a busy host all mean "skip nothing". And if the gate would drop EVERY
- * chutes entry, the original order is kept — better a busy model than no
- * extraction.
+ * the next one.
  *
  * The reading comes from GET https://api.chutes.ai/chutes/utilization (a JSON
  * array of {name, utilization_5m, rate_limit_ratio_5m, ...}). The `name` is
@@ -168,7 +163,6 @@ function __setUtilizationReaderForTest(fn) {
 function __resetUtilizationForTest() {
   utilizationReader = defaultUtilizationReader;
   utilizationCache = null;
-  utilizationStarvationWarned = false;
 }
 
 function utilizationTtlMs(env) {
@@ -178,7 +172,7 @@ function utilizationTtlMs(env) {
 
 function utilizationThreshold(env) {
   const max = Number(env.MAILMINT_LLM_UTILIZATION_MAX);
-  return Number.isFinite(max) && max > 0 && max <= 1 ? max : 0.75;
+  return Number.isFinite(max) && max > 0 ? Math.min(max, 0.75) : 0.75;
 }
 
 function validUtilizationReading(r) {
@@ -222,7 +216,7 @@ function utilizationDecision(rows, model, threshold) {
   const u = row.utilization_5m;
   // Only a real finite number decides; anything else (null, "", NaN) is
   // "unknown" and never skips — Number(null) === 0 would lie about health.
-  if (typeof u !== 'number' || !Number.isFinite(u)) return { status: 'unknown' };
+  if (typeof u !== 'number' || !Number.isFinite(u) || u < 0 || u > 1) return { status: 'unknown' };
   return { status: u >= threshold ? 'skip' : 'allow', utilization: u };
 }
 
@@ -235,19 +229,13 @@ async function applyUtilizationGate(chain, log, env) {
   const chutesEntries = chain.filter((e) => providerName(e) === 'chutes');
   if (!chutesEntries.length) return chain;
   const reading = await currentUtilizationReading(env);
-  if (!reading || Date.now() - reading.at > UTILIZATION_MAX_AGE_MS) return chain;
+  const age = reading ? Date.now() - reading.at : null;
+  if (!reading || age < 0 || age > UTILIZATION_MAX_AGE_MS) return chain;
   const threshold = utilizationThreshold(env);
   const skipped = [];
   for (const entry of chutesEntries) {
     const d = utilizationDecision(reading.rows, entry.model, threshold);
     if (d.status === 'skip') skipped.push({ entry, utilization: d.utilization });
-  }
-  if (skipped.length === chutesEntries.length) {
-    if (!utilizationStarvationWarned) {
-      utilizationStarvationWarned = true;
-      log.warn?.('[llm] utilization gate would drop every chutes model; keeping original order');
-    }
-    return chain;
   }
   const drop = new Set(skipped.map((s) => s.entry));
   for (const s of skipped) {
@@ -325,7 +313,9 @@ async function complete(messages, { maxTokens = 2048, log = console, chain = nul
       log.warn?.(`[llm] ${entry.provider}/${entry.model} failed: ${e.message}`);
     }
   }
-  const err = new Error(`every model in the chain failed (${attempts.length} tried)`);
+  const err = new Error(attempts.length
+    ? `every model in the chain failed (${attempts.length} tried)`
+    : 'no models available after provider, availability and utilization filters (0 tried)');
   err.attempts = attempts;
   throw err;
 }

@@ -69,6 +69,9 @@ function stubNetwork({ models }) {
         const body = data ? JSON.parse(data) : {};
         if (opts.path === '/v1/models') {
           respond(cb, 200, { data: models.map((m) => ({ id: m })) });
+        } else if (opts.host === 'generativelanguage.googleapis.com') {
+          calls.completions.push(String(opts.path).split('/')[3].split(':')[0]);
+          respond(cb, 200, { candidates: [{ content: { parts: [{ text: '{"fields":{}}' }] } }] });
         } else {
           calls.completions.push(body.model);
           respond(cb, 200, { choices: [{ message: { content: '{"fields":{}}' } }] });
@@ -180,7 +183,61 @@ test('fail-open: a stale reading (>15 min old) skips nothing', async (t) => {
   assert.deepStrictEqual(net.calls.completions, [GLM]);
 });
 
-test('every chutes model busy: original order kept, nothing dropped, no throw', async (t) => {
+test('a stricter configured threshold also skips a model below 0.75', async (t) => {
+  const env = saveEnv(ENV_KEYS);
+  process.env.CHUTES_API_KEY = 'test-only-fake-key';
+  const net = stubNetwork({ models: [GLM, QWEN] });
+  __setUtilizationReaderForTest(async () => busyReading([
+    { name: GLM, utilization_5m: 0.6, rate_limit_ratio_5m: 0.5 },
+    { name: QWEN, utilization_5m: 0.03, rate_limit_ratio_5m: 0.01 },
+  ]));
+  t.after(() => { net.restore(); __resetUtilizationForTest(); restoreEnv(env); });
+
+  const chain = [
+    { provider: 'chutes', model: GLM },
+    { provider: 'chutes', model: QWEN },
+  ];
+  const { log } = withWarnings();
+
+  process.env.MAILMINT_LLM_UTILIZATION_MAX = '0.5';
+  const res = await complete([{ role: 'user', content: 'hi' }], { chain, log });
+  assert.strictEqual(res.model, QWEN, '0.6 >= 0.5 must be skipped under the stricter threshold');
+  assert.deepStrictEqual(net.calls.completions, [QWEN]);
+});
+
+test('a busy first model with a disabled alternative runs nothing; opt-in reaches only the alternative', async (t) => {
+  const env = saveEnv(ENV_KEYS);
+  process.env.CHUTES_API_KEY = 'test-only-fake-key';
+  const net = stubNetwork({ models: [GLM, 'gemini-3-flash-preview'] });
+  __setUtilizationReaderForTest(async () => busyReading([
+    { name: GLM, utilization_5m: 0.9, rate_limit_ratio_5m: 0.8 },
+  ]));
+  t.after(() => { net.restore(); __resetUtilizationForTest(); restoreEnv(env); });
+
+  const chain = [
+    { provider: 'chutes', model: GLM },
+    { provider: 'gemini', model: 'gemini-3-flash-preview' },
+  ];
+  const { log } = withWarnings();
+
+  delete process.env.GOOGLE_API_KEY;
+  delete process.env.MAILMINT_LLM_EXTRA_PROVIDERS;
+  await assert.rejects(complete([{ role: 'user', content: 'hi' }], { chain, log }), (error) => {
+    assert.deepStrictEqual(error.attempts, []);
+    assert.match(error.message, /no models available/);
+    return true;
+  });
+  assert.deepStrictEqual(net.calls.completions, []);
+
+  process.env.GOOGLE_API_KEY = 'test-only-fake-key';
+  process.env.MAILMINT_LLM_EXTRA_PROVIDERS = 'gemini';
+  const res = await complete([{ role: 'user', content: 'hi' }], { chain, log });
+  assert.strictEqual(res.model, 'gemini-3-flash-preview',
+    'an explicit opt-in reaches only the approved alternative, never the busy chutes model');
+  assert.deepStrictEqual(net.calls.completions, ['gemini-3-flash-preview']);
+});
+
+test('every chutes model busy: no inference calls or attempts', async (t) => {
   const env = saveEnv(ENV_KEYS);
   process.env.CHUTES_API_KEY = 'test-only-fake-key';
   const net = stubNetwork({ models: [GLM, QWEN] });
@@ -191,16 +248,19 @@ test('every chutes model busy: original order kept, nothing dropped, no throw', 
   t.after(() => { net.restore(); __resetUtilizationForTest(); restoreEnv(env); });
 
   const { warnings, log } = withWarnings();
-  const res = await complete([{ role: 'user', content: 'hi' }], {
+  await assert.rejects(complete([{ role: 'user', content: 'hi' }], {
     chain: [
       { provider: 'chutes', model: GLM },
       { provider: 'chutes', model: QWEN },
     ],
     log,
+  }), (error) => {
+    assert.deepStrictEqual(error.attempts, []);
+    assert.match(error.message, /no models available/);
+    return true;
   });
-  assert.strictEqual(res.model, GLM, 'first entry of the original order must be tried');
-  assert.strictEqual(net.calls.completions[0], GLM);
-  assert.ok(warnings.some((w) => w.includes('keeping original order')), JSON.stringify(warnings));
+  assert.deepStrictEqual(net.calls.completions, []);
+  assert.strictEqual(warnings.filter((w) => w.startsWith('[llm] skipping ')).length, 2);
 });
 
 test('without CHUTES_API_KEY the gate performs no network call at all', async (t) => {
@@ -273,12 +333,18 @@ test('MAILMINT_LLM_UTILIZATION_MAX overrides the threshold; invalid values fall 
 
   process.env.MAILMINT_LLM_UTILIZATION_MAX = '0.9';
   let res = await complete([{ role: 'user', content: 'hi' }], { chain, log });
-  assert.strictEqual(res.model, GLM, '0.8 < 0.9 must not be skipped');
+  assert.strictEqual(res.model, QWEN, 'configured threshold cannot permit utilization above 0.75');
+  assert.deepStrictEqual(net.calls.completions, [QWEN]);
 
   process.env.MAILMINT_LLM_UTILIZATION_MAX = 'not-a-number';
   net.calls.completions.length = 0;
   res = await complete([{ role: 'user', content: 'hi' }], { chain, log });
   assert.strictEqual(res.model, QWEN, 'invalid threshold must fall back to 0.75 and skip 0.8');
+
+  process.env.MAILMINT_LLM_UTILIZATION_MAX = '0.5';
+  net.calls.completions.length = 0;
+  res = await complete([{ role: 'user', content: 'hi' }], { chain, log });
+  assert.strictEqual(res.model, QWEN, 'a stricter configured threshold skips 0.8 too');
 });
 
 test('utilizationDecision: case-insensitive id match, short-name fallback, unknown never skips', () => {
@@ -287,12 +353,20 @@ test('utilizationDecision: case-insensitive id match, short-name fallback, unkno
     { name: 'Qwen3.8-27B-TEE', utilization_5m: 0.99 },
     { name: 'other/model', utilization_5m: 0.1 },
     { name: 'null/model', utilization_5m: null },
+    { name: 'negative/model', utilization_5m: -0.2 },
+    { name: 'over/model', utilization_5m: 1.4 },
+    { name: 'boundary/model', utilization_5m: 0.75 },
+    { name: 'under/model', utilization_5m: 0.749 },
   ];
   assert.strictEqual(utilizationDecision(rows, 'zai-org/GLM-5.2-TEE', 0.75).status, 'skip');
   assert.strictEqual(utilizationDecision(rows, 'Qwen/Qwen3.8-27B-TEE', 0.75).status, 'skip', 'matches on the part after the last /');
-  assert.strictEqual(utilizationDecision(rows, 'Qwen/Qwen3.8-27B-TEE', 0.999).status, 'allow');
+  assert.strictEqual(utilizationDecision(rows, 'Qwen/Qwen3.8-27B-TEE', 0.999).status, 'allow', 'a stricter configured threshold is honored');
   assert.strictEqual(utilizationDecision(rows, 'other/model', 0.75).status, 'allow');
   assert.strictEqual(utilizationDecision(rows, 'nope/missing', 0.75).status, 'unknown');
   assert.strictEqual(utilizationDecision(rows, 'null/model', 0.75).status, 'unknown', 'null utilization is not a reading');
+  assert.strictEqual(utilizationDecision(rows, 'negative/model', 0.75).status, 'unknown', 'out-of-range fractions are unknown');
+  assert.strictEqual(utilizationDecision(rows, 'over/model', 0.75).status, 'unknown', 'out-of-range fractions are unknown');
+  assert.strictEqual(utilizationDecision(rows, 'boundary/model', 0.75).status, 'skip', 'exactly 0.75 is busy');
+  assert.strictEqual(utilizationDecision(rows, 'under/model', 0.75).status, 'allow', '0.749 is still allowed');
   assert.strictEqual(utilizationDecision('garbage', 'x', 0.75).status, 'unknown');
 });
