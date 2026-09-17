@@ -103,6 +103,7 @@ describe('analytics', () => {
     const accountId = Number(rows[0].id);
 
     await H.until(async () => (await countForAccount('signup', accountId)) === 1, { what: 'signup event' });
+    await H.until(async () => (await countForAccount('trial_start', accountId)) === 1, { what: 'trial_start event' });
     assert.equal(await countForAccount('trial_start', accountId), 1, 'a new account starts a trial');
     admin = { cookie, accountId };
   });
