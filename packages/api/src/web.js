@@ -218,43 +218,83 @@ const requireAdmin = asyncRoute(async (req, res, next) => {
   return next();
 });
 
-const KIND_LABELS = {
-  visit: 'Page views', signup: 'Sign-ups', trial_start: 'Trial starts', paid_conversion: 'Paid conversions',
+const statsDays = (req) => Math.min(365, Math.max(1, Math.floor(Number(req.query.days)) || 30));
+
+/** The operator report as JSON. Operator data answers no cache, anywhere. */
+const sendVisitReport = async (req, res) => {
+  const days = statsDays(req);
+  const report = await analytics.visitReport(days);
+  res.set('Cache-Control', 'no-store');
+  return res.json(report);
 };
 
+router.get('/api/operator/visits', requireAdmin, asyncRoute(sendVisitReport));
+
+router.get('/admin/stats.json', requireAdmin, asyncRoute(sendVisitReport));
+
 router.get('/admin/stats', requireAdmin, asyncRoute(async (req, res) => {
-  const days = Math.min(365, Math.max(1, Number(req.query.days) || 30));
-  const rows = await analytics.stats(days);
+  const days = statsDays(req);
+  const report = await analytics.visitReport(days);
+  const total = (key) => report.days.reduce((a, d) => a + d[key], 0);
+  const dailyRows = report.days.length
+    ? `<div class="table-scroll" tabindex="0" aria-label="Page views per day"><table class="rows">
+      <tr><th>Date (UTC)</th><th>Page views</th><th>Visits</th><th>Unique visitors</th></tr>
+      ${report.days.map((d) => `<tr><td>${escapeHtml(d.date)}</td>
+        <td>${d.views.toLocaleString('en-US')}</td>
+        <td>${d.visits.toLocaleString('en-US')}</td>
+        <td class="muted">not measured</td></tr>`).join('')}
+    </table></div>`
+    : '<p class="muted">Nothing counted yet.</p>';
+  const topPagesRows = report.topPages.length
+    ? report.topPages.map((p) => `<tr><td><code>${escapeHtml(p.path)}</code></td>
+        <td>${p.views.toLocaleString('en-US')}</td><td>${p.visits.toLocaleString('en-US')}</td></tr>`).join('')
+    : '<tr><td colspan="3" class="muted">No page has reached the reporting threshold yet.</td></tr>';
+  const topReferrerRows = report.topReferrers.length
+    ? report.topReferrers.map((r) => `<tr><td>${r.host === '(other)' ? '<span class="muted">(other)</span>' : escapeHtml(r.host)}</td>
+        <td>${r.visits.toLocaleString('en-US')}</td></tr>`).join('')
+    : '<tr><td colspan="2" class="muted">No referrer has reached the reporting threshold yet.</td></tr>';
+  const conversionRows = report.conversions.length
+    ? report.conversions.map((c) => `<tr><td>${escapeHtml(c.date)}</td>
+        <td>${c.signups.toLocaleString('en-US')}</td><td>${c.trialStarts.toLocaleString('en-US')}</td>
+        <td>${c.paidConversions.toLocaleString('en-US')}</td></tr>`).join('')
+    : '<tr><td colspan="4" class="muted">No sign-ups yet.</td></tr>';
   res.type('html').send(shell('MailMint — visitor statistics', `${topbar()}
 <main>
   <h1>Visitor statistics</h1>
-  <p class="muted">Own counts, kept per UTC day — no cookies and no third-party tracker.
-    Views and visitors identify nobody: the visitor code is re-keyed every day.
-    (<a href="/admin/stats.json?days=${days}">as JSON</a>)</p>
+  <p class="muted">Own counts, kept per UTC day — no cookies, no third-party tracker, and no
+    per-visitor identifier: the IP address and user agent are read only to filter automated
+    traffic and are neither stored nor hashed, so unique visitors are not measured.
+    Pages and referrers below ${analytics.MIN_REPORT_COUNT} page loads are folded into one
+    "(other)" row. Totals are deleted after ${analytics.RETENTION_MONTHS} months.
+    (<a href="/admin/stats.json?days=${days}">as JSON</a> ·
+    <a href="/api/operator/visits?days=${days}">operator API</a>)</p>
   <section class="card">
-    ${rows.length ? `<div class="table-scroll" tabindex="0" aria-label="Visitor statistics per day"><table class="rows">
-      <tr><th>Day (UTC)</th><th>What</th><th>Events</th><th>Visitors</th></tr>
-      ${rows.map((r) => `<tr><td>${new Date(r.day).toISOString().slice(0, 10)}</td>
-        <td>${escapeHtml(KIND_LABELS[r.kind] || r.kind)}</td>
-        <td>${r.events}</td>
-        <td>${r.kind === 'visit' ? r.visitors : '—'}</td></tr>`).join('')}
-    </table></div>` : '<p class="muted">Nothing counted yet.</p>'}
+    <h2>Per day — ${total('views').toLocaleString('en-US')} views,
+      ${total('visits').toLocaleString('en-US')} visits</h2>
+    ${dailyRows}
+  </section>
+  <section class="card">
+    <h2>Top pages</h2>
+    <div class="table-scroll" tabindex="0" aria-label="Top pages"><table class="rows">
+      <tr><th>Path</th><th>Page views</th><th>Visits</th></tr>
+      ${topPagesRows}
+    </table></div>
+  </section>
+  <section class="card">
+    <h2>Top referrers</h2>
+    <div class="table-scroll" tabindex="0" aria-label="Top referrers"><table class="rows">
+      <tr><th>Referring host</th><th>Visits</th></tr>
+      ${topReferrerRows}
+    </table></div>
+  </section>
+  <section class="card">
+    <h2>Conversions</h2>
+    <div class="table-scroll" tabindex="0" aria-label="Sign-ups and paid conversions per day"><table class="rows">
+      <tr><th>Date (UTC)</th><th>Sign-ups</th><th>Trial starts</th><th>Paid conversions</th></tr>
+      ${conversionRows}
+    </table></div>
   </section>
 </main>`));
-}));
-
-router.get('/admin/stats.json', requireAdmin, asyncRoute(async (req, res) => {
-  const days = Math.min(365, Math.max(1, Number(req.query.days) || 30));
-  const rows = await analytics.stats(days);
-  res.json({
-    days,
-    rows: rows.map((r) => ({
-      day: new Date(r.day).toISOString().slice(0, 10),
-      kind: r.kind,
-      events: r.events,
-      ...(r.kind === 'visit' ? { visitors: r.visitors } : {}),
-    })),
-  });
 }));
 
 /* ------------------------------------------------------------- dashboard */

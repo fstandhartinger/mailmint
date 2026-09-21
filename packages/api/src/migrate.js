@@ -378,6 +378,38 @@ const MIGRATIONS = [
       `CREATE INDEX IF NOT EXISTS analytics_events_day_kind_idx ON analytics_events(day, kind)`,
     ],
   },
+  {
+    id: 11,
+    name: 'aggregate visitor statistics',
+    statements: [
+      // Visitor statistics, aggregate and identifier-free (see analytics.js):
+      // daily totals per page and referring host, no per-visitor row, no IP and
+      // no hash anywhere. `day` is the UTC calendar day. referrer_host is the
+      // referring host name only — never a full URL, never a query string — and
+      // empty for direct and same-site arrivals, so a "visit" is a page load
+      // that entered the site from outside.
+      `CREATE TABLE IF NOT EXISTS analytics_visit_daily (
+         day           DATE NOT NULL,
+         path          TEXT NOT NULL,
+         referrer_host TEXT NOT NULL DEFAULT '',
+         views         INTEGER NOT NULL DEFAULT 0,
+         visits        INTEGER NOT NULL DEFAULT 0,
+         PRIMARY KEY (day, path, referrer_host)
+       )`,
+      // Fold the history the daily hash method had stored into the totals it
+      // produced, so no per-visitor value remains anywhere: one upsert per
+      // (day, path), views = visits = the old row count, then the rows go.
+      `INSERT INTO analytics_visit_daily (day, path, referrer_host, views, visits)
+         SELECT day, COALESCE(path, '(unknown route)'), '', count(*)::int, count(*)::int
+           FROM analytics_events
+          WHERE kind = 'visit'
+          GROUP BY day, path
+          ON CONFLICT (day, path, referrer_host)
+          DO UPDATE SET views = analytics_visit_daily.views + EXCLUDED.views,
+                        visits = analytics_visit_daily.visits + EXCLUDED.visits`,
+      `DELETE FROM analytics_events WHERE kind = 'visit'`,
+    ],
+  },
 ];
 
 async function migrate() {

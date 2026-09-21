@@ -171,16 +171,25 @@ you logged in; it is not used to track you. The first-party statistics we do kee
 
 <section id="visitor-statistics">
 <h2>Visitor statistics <a class="anchor" href="#visitor-statistics">#</a></h2>
-<p>We count page views, sign-ups and paid upgrades in our own database on our own server. There are
-<strong>no cookies</strong> and <strong>no third-party tracker</strong> involved.</p>
-<p>For a page view, the visitor's IP address and browser identifier (user agent) are combined into a
-one-way code with a key that changes daily and is never stored, so visitors cannot be recognised
-across days and the identifiers cannot be recovered from the stored row. Automated and internal
-traffic is excluded.</p>
-<p>Each counted event is stored as one row holding its type (page view, sign-up, trial start or paid
-upgrade), the page path, the time and, for page views, that daily one-way code. Sign-up and upgrade
-events also carry the internal number of the account concerned. The operator view shows only totals
-per day.</p>
+<p>We count page views, sign-ups and paid upgrades in our own database on our own server. For
+statistics, <strong>no cookie is set, nothing is stored on your device, and no script or pixel
+runs on your device</strong> — the counting happens on our server, for the page request your
+browser makes anyway. There is no third-party tracker involved.</p>
+<p>Your <strong>IP address and user agent are read only to filter automated and internal
+traffic</strong>; they are <strong>neither stored nor hashed</strong> for statistics. What is
+stored are <strong>daily totals per page and per referring host name</strong> — the host name
+only, never a full URL and never query parameters. A &ldquo;visit&rdquo; is a page load arriving
+from outside this site; a page reached from within the site counts only as a view. Because no
+identifier is derived, <strong>unique visitors are not measured</strong>. Requests carrying
+<code>Sec-GPC: 1</code> or <code>DNT: 1</code> are not counted. Sign-up, trial-start and
+paid-upgrade events are stored with the internal number of the account concerned. All statistics
+totals are deleted after <strong>13 months</strong>.</p>
+<p>In our assessment, this counting requires no consent under &sect;&nbsp;25 TDDDG, because
+nothing is stored on or read from your device for it; the legal basis for the short-lived
+processing of the request headers on our server is Art.&nbsp;6(1)(f) GDPR (our legitimate interest
+in understanding how our own site is used). You can object by switching on Global Privacy Control
+or Do&nbsp;Not&nbsp;Track in your browser — those requests are then not counted — or by emailing
+<a href="mailto:info@productivity-boost.com">info@productivity-boost.com</a>.</p>
 </section>
 
 <section id="requests">

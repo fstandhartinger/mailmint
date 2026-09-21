@@ -7,9 +7,10 @@
  * nothing it imports may open a connection at load time.
  *
  * Set the env BEFORE requiring the module: config.js reads the exclusion list
- * at load, and analytics.js reads the salt secret once.
+ * and PUBLIC_URL at load, and both feed analytics' internal-traffic and
+ * same-site decisions.
  */
-process.env.ANALYTICS_SALT_SECRET = 'unit-test-salt-secret';
+process.env.PUBLIC_URL = 'https://mailmint.example.test';
 process.env.ANALYTICS_EXCLUDE_IPS = '10.9.8.7, 2001:db8::5';
 
 const test = require('node:test');
@@ -25,6 +26,12 @@ const HEADLESS_CHROME = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 '
   + '(KHTML, like Gecko) HeadlessChrome/126.0.0.0 Safari/537.36';
 
 const fakeReq = ({ headers = {}, ip = '203.0.113.7' } = {}) => ({ headers, ip });
+
+/** A request shaped like a normal browser page load: a countable one. */
+const countable = ({ headers = {}, ip = '203.0.113.7', path = '/', method = 'GET' } = {}) => ({
+  method, path, ip,
+  headers: { 'user-agent': DESKTOP_CHROME, accept: 'text/html,application/xhtml+xml', ...headers },
+});
 
 test('machine traffic is excluded from the counts', () => {
   assert.equal(analytics.isInternalTraffic(fakeReq({ headers: { 'user-agent': HEADLESS_CHROME } })), true,
@@ -44,6 +51,37 @@ test('machine traffic is excluded from the counts', () => {
   })), true, 'the exclusion list also honours IPv6');
 });
 
+test('a mapped-IPv4 request matches its plain-IPv4 exclusion entry', () => {
+  assert.equal(analytics.isInternalTraffic(fakeReq({
+    headers: { 'user-agent': DESKTOP_CHROME }, ip: '::ffff:10.9.8.7',
+  })), true, '::ffff:10.9.8.7 is the same internal host as 10.9.8.7');
+});
+
+test('a plain-IPv4 request matches a mapped-IPv4 exclusion entry', () => {
+  process.env.ANALYTICS_EXCLUDE_IPS = '::ffff:10.9.8.7';
+  delete require.cache[require.resolve('../src/analytics')];
+  delete require.cache[require.resolve('../src/config')];
+  try {
+    const fresh = require('../src/analytics');
+    assert.equal(fresh.isInternalTraffic(fakeReq({
+      headers: { 'user-agent': DESKTOP_CHROME }, ip: '10.9.8.7',
+    })), true, '10.9.8.7 is the same internal host as ::ffff:10.9.8.7');
+    assert.equal(fresh.classifyRequest(countable({ ip: '10.9.8.7' })), null,
+      'classification uses the same normalization, both directions');
+  } finally {
+    process.env.ANALYTICS_EXCLUDE_IPS = '10.9.8.7, 2001:db8::5';
+    delete require.cache[require.resolve('../src/analytics')];
+    delete require.cache[require.resolve('../src/config')];
+  }
+});
+
+test('a missing client IP never throws and never matches', () => {
+  const req = { headers: { 'user-agent': DESKTOP_CHROME } };
+  assert.doesNotThrow(() => analytics.isInternalTraffic(req));
+  assert.equal(analytics.isInternalTraffic(req), false,
+    'no IP means the exclusion list cannot match');
+});
+
 test('real people are counted', () => {
   assert.equal(analytics.isInternalTraffic(fakeReq({ headers: { 'user-agent': DESKTOP_CHROME } })), false,
     'a normal desktop Chrome is a visitor');
@@ -51,30 +89,129 @@ test('real people are counted', () => {
     'a mobile Safari is a visitor');
 });
 
-test('visitorHash is stable within a day and rotates with the day', () => {
-  const morning = new Date('2026-09-16T08:00:00Z');
-  const evening = new Date('2026-09-16T23:30:00Z');
-  const nextDay = new Date('2026-09-17T00:05:00Z');
-  const ip = '203.0.113.7';
-
-  const h1 = analytics.visitorHash(ip, DESKTOP_CHROME, morning);
-  const h2 = analytics.visitorHash(ip, DESKTOP_CHROME, evening);
-  assert.equal(h1, h2, 'same visitor, same day gives the same code');
-
-  const hNext = analytics.visitorHash(ip, DESKTOP_CHROME, nextDay);
-  assert.notEqual(hNext, h1, 'the key rotates daily: the same visitor looks different tomorrow');
-
-  const hOtherIp = analytics.visitorHash('198.51.100.23', DESKTOP_CHROME, morning);
-  assert.notEqual(hOtherIp, h1, 'two visitors on one day must hash apart');
+test('a desktop Chrome page load on a public path is classified for counting', () => {
+  assert.deepEqual(analytics.classifyRequest(countable()),
+    { path: '/', referrerHost: '', visit: true }, 'no referer: a visit from outside');
+  assert.deepEqual(analytics.classifyRequest(countable({
+    headers: { 'sec-fetch-dest': 'document', accept: '*/*' },
+  })), { path: '/', referrerHost: '', visit: true },
+  'a document request counts even without an HTML Accept');
+  assert.deepEqual(analytics.classifyRequest(countable({
+    headers: { referer: 'https://mailmint.example.test/docs' },
+  })), { path: '/', referrerHost: '', visit: false },
+  'the PUBLIC_URL host is the own site: a view, not a visit');
+  assert.deepEqual(analytics.classifyRequest(countable({
+    headers: { referer: 'http://localhost:3000/' },
+  })), { path: '/', referrerHost: '', visit: false }, 'localhost is the own site');
 });
 
-test('visitorHash cannot be traced back to the IP', () => {
-  const ip = '203.0.113.7';
-  const h = analytics.visitorHash(ip, DESKTOP_CHROME, new Date('2026-09-16T12:00:00Z'));
-  assert.match(h, /^[0-9a-f]{64}$/, 'a hex HMAC-SHA256');
-  assert.ok(!h.includes(ip), 'the code contains no trace of the IP');
-  assert.ok(!h.includes('203') || h === analytics.visitorHash(ip, DESKTOP_CHROME),
-    'hex digits can coincide with address octets; only the full string may not');
+test('machine traffic is not counted as a page view', () => {
+  assert.equal(analytics.classifyRequest(countable({ headers: { 'user-agent': HEADLESS_CHROME } })), null,
+    'a headless browser records nothing');
+  assert.equal(analytics.classifyRequest(countable({ headers: { 'user-agent': 'curl/8.7.1' } })), null,
+    'curl records nothing');
+  assert.equal(analytics.classifyRequest(countable({ headers: { 'user-agent': 'Mozilla/5.0 (compatible; GPTBot/1.2)' } })), null,
+    'an AI crawler records nothing');
+  assert.equal(analytics.classifyRequest(countable({ headers: { 'x-mailmint-qa': '1' } })), null,
+    'our QA header opts out');
+});
+
+test('excluded IPs are not counted, mapped IPv4 in both directions', () => {
+  assert.equal(analytics.classifyRequest(countable({ ip: '10.9.8.7' })), null,
+    'a plain exclusion entry excludes a plain request');
+  assert.equal(analytics.classifyRequest(countable({ ip: '::ffff:10.9.8.7' })), null,
+    'a plain exclusion entry excludes a mapped request');
+});
+
+test('DNT and Global Privacy Control requests are not counted', () => {
+  assert.equal(analytics.classifyRequest(countable({ headers: { dnt: '1' } })), null, 'DNT is honoured');
+  assert.equal(analytics.classifyRequest(countable({ headers: { 'sec-gpc': '1' } })), null, 'GPC is honoured');
+});
+
+test('prefetch and prerender are not page views', () => {
+  assert.equal(analytics.classifyRequest(countable({ headers: { 'sec-purpose': 'prefetch' } })), null);
+  assert.equal(analytics.classifyRequest(countable({ headers: { 'sec-purpose': 'prerender' } })), null);
+  assert.equal(analytics.classifyRequest(countable({ headers: { purpose: 'prefetch' } })), null,
+    'the legacy header is honoured too');
+});
+
+test('only full page loads are counted', () => {
+  assert.equal(analytics.classifyRequest(countable({ headers: { 'sec-fetch-dest': 'image' } })), null,
+    'a subresource request is not a view');
+  assert.equal(analytics.classifyRequest(countable({ headers: { 'sec-fetch-dest': 'empty' } })), null,
+    'a fetch() call is not a view');
+  assert.equal(analytics.classifyRequest(countable({ headers: { accept: 'application/json' } })), null,
+    'without Sec-Fetch-Dest, a non-HTML Accept is not a view');
+  assert.equal(analytics.classifyRequest(countable({ method: 'POST' })), null,
+    'a POST is not a view');
+});
+
+test('non-public paths are not counted', () => {
+  assert.equal(analytics.classifyRequest(countable({ path: '/dashboard' })), null,
+    'the app behind the login is not counted');
+  assert.equal(analytics.classifyRequest(countable({ path: '/no-such-page' })), null,
+    'a 404 path is not counted');
+  assert.ok(analytics.classifyRequest(countable({ path: '/docs/reference' })),
+    'the public docs subtree is counted');
+});
+
+test('an external referrer is reduced to its host, path and query dropped', () => {
+  const hit = analytics.classifyRequest(countable({
+    headers: { referer: 'https://WWW.SearchEngine.example/search?q=secret&token=hush#frag' },
+  }));
+  assert.deepEqual(hit, { path: '/', referrerHost: 'searchengine.example', visit: true },
+    'host only: lowercased, www. stripped, no path, no query');
+  const long = `${'a'.repeat(120)}.example`;
+  assert.equal(analytics.classifyRequest(countable({
+    headers: { referer: `https://${long}/x` },
+  })).referrerHost.length, 100, 'the stored host name is capped at 100 characters');
+});
+
+test('a same-site referrer is a view but never a visit', () => {
+  for (const own of ['mailmint.app.mintapis.com', 'mailmint.example.test', '127.0.0.1']) {
+    const hit = analytics.classifyRequest(countable({
+      headers: { referer: `https://${own}/docs?x=1` },
+    }));
+    assert.deepEqual(hit, { path: '/', referrerHost: '', visit: false }, `${own} is the own site`);
+  }
+});
+
+test('a missing or invalid referer counts as a visit with no referrer', () => {
+  assert.deepEqual(analytics.classifyRequest(countable()),
+    { path: '/', referrerHost: '', visit: true });
+  assert.deepEqual(analytics.classifyRequest(countable({
+    headers: { referer: 'not-a-url' },
+  })), { path: '/', referrerHost: '', visit: true },
+  'an unparseable referer is treated as arriving from outside');
+});
+
+test('rows below the threshold and beyond the top fold into one (other) row', () => {
+  const rows = [];
+  for (let v = 30; v >= 1; v -= 1) rows.push({ path: `/p${v}`, views: v, visits: v });
+  const folded = analytics.fold(rows, 'views', 'path', ['views', 'visits']);
+  assert.equal(folded.length, 26, 'the top 25 plus one (other)');
+  assert.deepEqual(folded.slice(0, 2), [
+    { path: '/p30', views: 30, visits: 30 }, { path: '/p29', views: 29, visits: 29 },
+  ], 'the strongest pages stay, in order');
+  assert.deepEqual(folded[25], { path: '(other)', views: 15, visits: 15 },
+    'views 5+4+3 (beyond the top) and 2+1 (below the threshold) are folded together');
+  assert.ok(!folded.some((r) => r.path === '/p1'), 'no single-visit page is named');
+});
+
+test('the referrer fold keys on visits, not views', () => {
+  const folded = analytics.fold(
+    [{ host: 'big.example', visits: 10 }, { host: 'small.example', visits: 2 }],
+    'visits', 'host', ['visits'],
+  );
+  assert.deepEqual(folded, [
+    { host: 'big.example', visits: 10 }, { host: '(other)', visits: 2 },
+  ], 'a host with fewer visits than the threshold is folded');
+});
+
+test('the module exports no per-visitor code', () => {
+  assert.equal('visitorHash' in analytics, false, 'visitorHash is gone');
+  assert.equal(analytics.RETENTION_MONTHS, 13);
+  assert.equal(analytics.MIN_REPORT_COUNT, 3);
 });
 
 test('recordEvent never throws, whatever happens inside', () => {
@@ -82,4 +219,6 @@ test('recordEvent never throws, whatever happens inside', () => {
   // never throws even with no DATABASE_URL — this file must stay hermetic.
   // The real INSERT path is covered by test/analytics.test.js against a DB.
   assert.doesNotThrow(() => analytics.recordEvent('bogus-kind', {}));
+  assert.doesNotThrow(() => analytics.recordEvent('visit', {}),
+    'visits enter the aggregate table, not recordEvent');
 });

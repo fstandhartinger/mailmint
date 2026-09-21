@@ -3,6 +3,7 @@
 const { query } = require('./db');
 const { config, PLANS } = require('./config');
 const { log } = require('./log');
+const analytics = require('./analytics');
 
 /**
  * Retention, enforced in-process on a timer rather than by a cron somewhere
@@ -57,6 +58,14 @@ async function reap() {
   } catch (e) {
     log.warn('reaper.failed', { error: String(e.message || e) });
     return null;
+  }
+  // Statistics totals live in their own tables with their own window, so their
+  // delete is its own step: a failure there must not break the product data
+  // reaped above, and vice versa.
+  try {
+    out.analytics = await analytics.applyRetention();
+  } catch (e) {
+    log.warn('reaper.analytics_failed', { error: String(e.message || e) });
   }
   const total = Object.values(out).reduce((a, b) => a + (b || 0), 0);
   if (total) {
