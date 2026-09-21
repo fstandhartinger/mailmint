@@ -79,10 +79,14 @@ with accounts, longer retention.
    for the admin with `no-store` and the documented JSON shape, retention deletes a 14-month-old row
    and keeps a 12-month-old one, and migration 11 moves old-style visit rows into the totals.
 3. No third-party request and no `Set-Cookie` for an anonymous page load (asserted by construction —
-   the counter adds no client code; `public/*.html` reference only first-party assets).
+   the counter adds no client code; anonymous page loads reference only first-party assets. The
+   landing page's web fonts — Inter and JetBrains Mono, SIL OFL 1.1 — are self-hosted under
+   `/fonts` since 21 Sep 2026 (Google Fonts removed); enforced by `test/public-assets.test.js`).
 
 ## 5. Independent review
 
 Pending — to be reviewed by a separate worker session against PRD mailmint-r2-efca4e00 (acceptance
 A4), including the inherited IP normalization in `normalizeIp`/`isInternalTraffic` (open item
 C16-ip-normalization).
+
+Change 21 Sep 2026: Google Fonts removed from the landing page; fonts self-hosted under /fonts (VS-2).
