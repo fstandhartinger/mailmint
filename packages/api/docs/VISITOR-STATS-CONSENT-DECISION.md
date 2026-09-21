@@ -89,4 +89,4 @@ Pending — to be reviewed by a separate worker session against PRD mailmint-r2-
 A4), including the inherited IP normalization in `normalizeIp`/`isInternalTraffic` (open item
 C16-ip-normalization).
 
-Change 21 Sep 2026: Google Fonts removed from the landing page; fonts self-hosted under /fonts (VS-2).
+Change 21 Sep 2026: Google Fonts removed from the landing page; fonts self-hosted under /fonts (VS-2, commit 34b644c).
