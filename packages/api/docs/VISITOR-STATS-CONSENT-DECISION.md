@@ -92,7 +92,7 @@ C16-ip-normalization).
 
 Change 21 Sep 2026: Google Fonts removed from the landing page; fonts self-hosted under /fonts (VS-2, commit 34b644c).
 
-Change 22 Sep 2026 (VS-3): IPv6 exclusion entries and requester IPs are compared in canonical form;
+Change 22 Sep 2026 (VS-3, commits 8223294 and c74a1a6): IPv6 exclusion entries and requester IPs are compared in canonical form;
 a trailing slash on a public path counts under the stripped path; the `/admin/stats` HTML page sends
 `Cache-Control: no-store` like the JSON endpoints; §2 now scopes the "no log row" statement to the
 statistics store and states the `X-Forwarded-For` self-exclusion limit.
