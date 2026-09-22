@@ -160,11 +160,12 @@ const PUBLIC_PATHS = new Set([
  * `/quickstart/` is the same page as `/quickstart`: Express serves both (its
  * routing is not strict), so a trailing slash must not drop the page load on
  * the floor. Trailing slashes (one or more) are stripped from any path
- * longer than `/`; `/` itself stays `/`.
+ * longer than `/`; `/` itself stays `/`, and a path made only of slashes
+ * (`//`) stays as it is, so it is still not a public path.
  */
 const pagePath = (p) => {
   const s = String(p || '/');
-  return s.length > 1 ? s.replace(/\/+$/, '') || '/' : s;
+  return s.replace(/\/+$/, '') || s;
 };
 
 const isPublicPath = (p) => {

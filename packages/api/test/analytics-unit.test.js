@@ -207,6 +207,9 @@ test('pagePath strips trailing slashes, never the root itself', () => {
   assert.equal(pagePath('/docs/api/'), '/docs/api');
   assert.equal(pagePath('/'), '/', 'the root stays the root');
   assert.equal(pagePath('/quickstart'), '/quickstart', 'an already-clean path is untouched');
+  assert.equal(pagePath('//'), '//', 'a path of only slashes is not turned into the root');
+  assert.equal(analytics.classifyRequest(countable({ path: '//' })), null,
+    '// was not public before VS-3 and still is not');
 });
 
 test('a trailing-slash page load is counted under the canonical path', () => {
