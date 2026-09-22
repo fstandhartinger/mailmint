@@ -233,6 +233,10 @@ router.get('/api/operator/visits', requireAdmin, asyncRoute(sendVisitReport));
 router.get('/admin/stats.json', requireAdmin, asyncRoute(sendVisitReport));
 
 router.get('/admin/stats', requireAdmin, asyncRoute(async (req, res) => {
+  // Operator data answers no cache, anywhere — the HTML page is held to the
+  // same rule as the JSON endpoints above. The 404 for everyone else (in
+  // statsNotFound) deliberately carries no such header.
+  res.set('Cache-Control', 'no-store');
   const days = statsDays(req);
   const report = await analytics.visitReport(days);
   const total = (key) => report.days.reduce((a, d) => a + d[key], 0);

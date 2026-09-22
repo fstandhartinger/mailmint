@@ -46,9 +46,81 @@ const REPORT_TOP = 25;
  */
 const INTERNAL_UA = /headless|playwright|puppeteer|selenium|phantom|curl|wget|python|aiohttp|httpx|node-fetch|undici|axios|go-http-client|java\/|okhttp|bot|crawl|spider|slurp|preview|fetch|scan|monitor|uptime|lighthouse|pingdom|libwww|facebookexternalhit|embedly|quora|whatsapp|telegram|discord|skype|vkshare|w3c_validator|gptbot|chatgpt|claude|anthropic|perplexity|bytespider|ccbot|amazonbot|applebot|bingpreview/i;
 
+/**
+ * Expand a validated IPv6 string into its eight 16-bit groups.
+ * Precondition: `ip` is lowercase and `net.isIPv6(ip)` holds, so the split
+ * logic below only has to cover the grammar that validator accepts — a
+ * single `::`, hextets of 1–4 hex digits, and at most one trailing
+ * dotted-quad for the low 32 bits.
+ */
+const expandIpv6 = (ip) => {
+  let s = ip;
+  let tail = [];
+  const v4 = /([0-9]{1,3}(?:\.[0-9]{1,3}){3})$/.exec(s);
+  if (v4) {
+    const o = v4[1].split('.').map(Number);
+    tail = [(o[0] << 8) | o[1], (o[2] << 8) | o[3]];
+    s = s.slice(0, v4.index);
+  }
+  const [leftRaw, rightRaw] = s.split('::');
+  const left = leftRaw ? leftRaw.split(':').filter(Boolean).map((h) => parseInt(h, 16)) : [];
+  const right = rightRaw ? rightRaw.split(':').filter(Boolean).map((h) => parseInt(h, 16)) : [];
+  return [...left, ...Array(8 - left.length - right.length - tail.length).fill(0), ...right, ...tail];
+};
+
+/**
+ * Re-compress eight groups to the RFC 5952 canonical spelling: lowercase,
+ * leading zeros stripped, and the LONGEST run of two or more zero groups
+ * reduced to `::` (the first such run when several tie).
+ */
+const compressIpv6 = (groups) => {
+  let bestStart = -1;
+  let bestLen = 1; // strict: a lone zero group is never compressed
+  for (let i = 0; i < 8;) {
+    if (groups[i] !== 0) { i += 1; continue; }
+    let j = i;
+    while (j < 8 && groups[j] === 0) j += 1;
+    if (j - i > bestLen) { bestStart = i; bestLen = j - i; }
+    i = j;
+  }
+  const hex = groups.map((g) => g.toString(16));
+  if (bestStart === -1) return hex.join(':');
+  return `${hex.slice(0, bestStart).join(':')}::${hex.slice(bestStart + bestLen).join(':')}`;
+};
+
+/** RFC 4291 IPv4-mapped form: 80 zero bits, then 0xffff, then the IPv4. */
+const mappedV4 = (groups) => groups[5] === 0xffff && groups.slice(0, 5).every((g) => g === 0);
+
+/**
+ * One spelling per IP, so the internal-traffic exclusion list cannot be
+ * bypassed — or silently broken — by writing the same address two ways:
+ * IPv4 stays as written; an IPv4-mapped IPv6 (`::ffff:a.b.c.d`, any case)
+ * unwraps to the plain IPv4; every other IPv6 is rewritten to the RFC 5952
+ * canonical form, so `2001:0DB8:0:0::5`, `2001:db8::5` and
+ * `2001:db8:0:0:0:0:0:5` all compare equal. Anything that is not an IP at
+ * all — null, a number, garbage, a zone id like `fe80::1%eth0` — degrades
+ * to a trimmed lowercase string that simply matches nothing. This runs on
+ * every request, so it must never throw.
+ */
 const normalizeIp = (value) => {
-  const lower = String(value || '').trim().toLowerCase();
+  let lower;
+  try {
+    lower = String(value === null || value === undefined ? '' : value).trim().toLowerCase();
+  } catch { return ''; }
+  if (net.isIPv4(lower)) return lower;
   if (lower.startsWith('::ffff:') && net.isIPv4(lower.slice(7))) return lower.slice(7);
+  // A zone id names one interface of one machine, not an address the
+  // exclusion list can carry: keep it a plain string.
+  if (lower.includes('%')) return lower;
+  if (net.isIPv6(lower)) {
+    try {
+      const groups = expandIpv6(lower);
+      if (mappedV4(groups)) {
+        return [groups[6] >> 8, groups[6] & 0xff, groups[7] >> 8, groups[7] & 0xff].join('.');
+      }
+      return compressIpv6(groups);
+    } catch { return lower; }
+  }
   return lower;
 };
 
@@ -84,7 +156,21 @@ const PUBLIC_PATHS = new Set([
   '/parse-shipping-notification-emails', '/parse-lead-emails',
 ]);
 
-const isPublicPath = (p) => PUBLIC_PATHS.has(p) || p.startsWith('/docs/');
+/**
+ * `/quickstart/` is the same page as `/quickstart`: Express serves both (its
+ * routing is not strict), so a trailing slash must not drop the page load on
+ * the floor. Trailing slashes (one or more) are stripped from any path
+ * longer than `/`; `/` itself stays `/`.
+ */
+const pagePath = (p) => {
+  const s = String(p || '/');
+  return s.length > 1 ? s.replace(/\/+$/, '') || '/' : s;
+};
+
+const isPublicPath = (p) => {
+  const path = pagePath(p);
+  return PUBLIC_PATHS.has(path) || path.startsWith('/docs/');
+};
 
 /**
  * Decide whether one incoming request is a page view to count, and what to
@@ -94,7 +180,7 @@ const isPublicPath = (p) => PUBLIC_PATHS.has(p) || p.startsWith('/docs/');
  */
 function classifyRequest(req) {
   if (!req || req.method !== 'GET') return null;
-  const path = req.path;
+  const path = pagePath(req.path);
   if (!isPublicPath(path)) return null;
   const headers = (req && req.headers) || {};
   // Objection signals the browser already sends: Global Privacy Control and
@@ -244,4 +330,5 @@ module.exports = {
   RETENTION_MONTHS, MIN_REPORT_COUNT,
   isInternalTraffic, classifyRequest, recordEvent, visitMiddleware,
   PUBLIC_PATHS, applyRetention, visitReport, fold,
+  normalizeIp, pagePath,
 };

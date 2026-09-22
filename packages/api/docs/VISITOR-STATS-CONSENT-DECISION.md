@@ -18,7 +18,7 @@ opt-in `test/analytics-ip.test.js`.
 | Question | Answer from the code |
 |---|---|
 | Storage on / active reading from the device | **None.** No cookie, `localStorage`, `sessionStorage`, script, pixel, beacon, extra request, client hint, ETag or link decoration for statistics. The count happens only on the server, on the page request the browser already makes (`visitMiddleware` in `analytics.js`, mounted in `server.js`). The site's one functional cookie is the login session (`mailmint_session`, `web.js`), disclosed on `/privacy`; the counter does not read it. |
-| Data used per request (in memory, then discarded) | Method, path, `Sec-Fetch-Dest`/`Accept`/`Sec-Purpose`/`Purpose` (full page load, not a prefetch?), the `User-Agent` string (bot/preview/AI-crawler regex only, never stored), `Referer` (reduced to the host name), `Sec-GPC`/`DNT` (objection), and the IP address — read only to match the `ANALYTICS_EXCLUDE_IPS` internal-traffic list, never stored and never hashed (`isInternalTraffic`, `normalizeIp` in `analytics.js`). Several of these headers are optional and not sent with every request. |
+| Data used per request (in memory, then discarded) | Method, path, `Sec-Fetch-Dest`/`Accept`/`Sec-Purpose`/`Purpose` (full page load, not a prefetch?), the `User-Agent` string (bot/preview/AI-crawler regex only, never stored), `Referer` (reduced to the host name), `Sec-GPC`/`DNT` (objection), and the IP address — read only to match the `ANALYTICS_EXCLUDE_IPS` internal-traffic list, never stored and never hashed (`isInternalTraffic`, `normalizeIp` in `analytics.js`). The `req.ip` matched there is taken from the first proxy hop's `X-Forwarded-For`, which a client can forge; the only possible effect is that a client excludes itself (an under-count), never that a stranger is counted as internal — and IPv6 entries are compared in canonical form, so the spelling of an entry does not matter. Several of these headers are optional and not sent with every request. |
 | Identifiers | **None.** No IP, no hash, no salt, no fingerprint, no session or account link. The former daily IP+UA HMAC (`visitor_hash`) was removed; migration id 11 folded the historical per-view rows into daily totals and deleted them, so no per-visitor row remains. Consequence: unique visitors are **not** measured (every report row carries `uniques: null`). |
 | What is stored | Table `analytics_visit_daily(day, path, referrer_host, views, visits)` — daily totals only, primary key `(day, path, referrer_host)`. `path` is the page path with no query string; `referrer_host` is a host name without path or query, empty for direct/same-site arrivals. "views" = full page loads on public paths; "visits" = page loads without a same-site referrer. Account-level business events (`signup`, `trial_start`, `paid_conversion` in `analytics_events`, never joined with visits) carry the internal account number. |
 | Where | The service's own Postgres on the same Hetzner server in Finland (EU) that runs the application — the database named by `DATABASE_URL`, same host per `/privacy#hosting`. No analytics vendor; the counter has no other integration. Hetzner is the hosting processor. |
@@ -35,8 +35,9 @@ opt-in `test/analytics-ip.test.js`.
   of the page request the visitor makes. LfDI Baden-Württemberg (FAQ Cookies und Tracking, A.3.1)
   states that IP address and User-Agent sent automatically are not an "access" under § 25 and names
   local log analysis without third parties, data-minimal configuration and no merging of usage data as
-  the model for consent-free reach measurement — this implementation is stricter still (no IP stored
-  or hashed at all, no log rows, aggregate-only storage).
+  the model for consent-free reach measurement — this implementation is stricter still: the statistics
+  store holds no IP, no hash and no log row, only daily aggregates. The service's separate request log
+  (it contains the requester IP; see `/privacy#logs`) is not used for the statistics.
 - DSK *OH Digitale Dienste* v1.2 (Nov 2024) keeps active reading via JavaScript and server-side
   fingerprint hashes (Rn. 23–24) as access; neither happens here — there is no hash. Rn. 88 names
   "bei jedem Abruf einer Seite den Zähler für diese Seite um Eins zu erhöhen" as the plain counting
@@ -90,3 +91,8 @@ A4), including the inherited IP normalization in `normalizeIp`/`isInternalTraffi
 C16-ip-normalization).
 
 Change 21 Sep 2026: Google Fonts removed from the landing page; fonts self-hosted under /fonts (VS-2, commit 34b644c).
+
+Change 22 Sep 2026 (VS-3): IPv6 exclusion entries and requester IPs are compared in canonical form;
+a trailing slash on a public path counts under the stripped path; the `/admin/stats` HTML page sends
+`Cache-Control: no-store` like the JSON endpoints; §2 now scopes the "no log row" statement to the
+statistics store and states the `X-Forwarded-For` self-exclusion limit.

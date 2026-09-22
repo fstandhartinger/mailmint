@@ -11,7 +11,9 @@
  * same-site decisions.
  */
 process.env.PUBLIC_URL = 'https://mailmint.example.test';
-process.env.ANALYTICS_EXCLUDE_IPS = '10.9.8.7, 2001:db8::5';
+// Deliberately NOT canonical: 2001:0DB8:0:0::a is 2001:db8::a written with an
+// uppercase group and explicit zeros — matching must not depend on spelling.
+process.env.ANALYTICS_EXCLUDE_IPS = '10.9.8.7, 2001:db8::5, 2001:0DB8:0:0::a';
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -69,7 +71,7 @@ test('a plain-IPv4 request matches a mapped-IPv4 exclusion entry', () => {
     assert.equal(fresh.classifyRequest(countable({ ip: '10.9.8.7' })), null,
       'classification uses the same normalization, both directions');
   } finally {
-    process.env.ANALYTICS_EXCLUDE_IPS = '10.9.8.7, 2001:db8::5';
+    process.env.ANALYTICS_EXCLUDE_IPS = '10.9.8.7, 2001:db8::5, 2001:0DB8:0:0::a';
     delete require.cache[require.resolve('../src/analytics')];
     delete require.cache[require.resolve('../src/config')];
   }
@@ -80,6 +82,49 @@ test('a missing client IP never throws and never matches', () => {
   assert.doesNotThrow(() => analytics.isInternalTraffic(req));
   assert.equal(analytics.isInternalTraffic(req), false,
     'no IP means the exclusion list cannot match');
+});
+
+test('IPv6 exclusion entries match in any valid spelling', () => {
+  // The list at the top of this file: 10.9.8.7, 2001:db8::5, 2001:0DB8:0:0::a.
+  assert.equal(analytics.isInternalTraffic(fakeReq({
+    headers: { 'user-agent': DESKTOP_CHROME }, ip: '2001:0db8:0000::5',
+  })), true, '2001:0db8:0000::5 is 2001:db8::5 written out long');
+  assert.equal(analytics.isInternalTraffic(fakeReq({
+    headers: { 'user-agent': DESKTOP_CHROME }, ip: '2001:DB8:0:0:0:0:0:5',
+  })), true, 'uppercase fully-expanded groups are still 2001:db8::5');
+  assert.equal(analytics.isInternalTraffic(fakeReq({
+    headers: { 'user-agent': DESKTOP_CHROME }, ip: '2001:db8::a',
+  })), true, 'the list entry 2001:0DB8:0:0::a is 2001:db8::a written non-canonically');
+  assert.equal(analytics.isInternalTraffic(fakeReq({
+    headers: { 'user-agent': DESKTOP_CHROME }, ip: '::FFFF:10.9.8.7',
+  })), true, 'the uppercase mapped form is still 10.9.8.7');
+  assert.equal(analytics.isInternalTraffic(fakeReq({
+    headers: { 'user-agent': DESKTOP_CHROME }, ip: '2001:db8::6',
+  })), false, 'a neighbouring IPv6 is not in the list');
+});
+
+test('normalizeIp canonicalizes (RFC 5952) and never throws', () => {
+  const { normalizeIp } = analytics;
+  assert.equal(normalizeIp('10.9.8.7'), '10.9.8.7', 'IPv4 stays as written');
+  assert.equal(normalizeIp('::FFFF:10.9.8.7'), '10.9.8.7', 'the mapped form unwraps, any case');
+  assert.equal(normalizeIp('::ffff:10.9.8.7'), '10.9.8.7');
+  assert.equal(normalizeIp('2001:0DB8:0:0::5'), '2001:db8::5', 'uppercase and padded groups strip');
+  assert.equal(normalizeIp('2001:db8:0:0:0:0:0:5'), '2001:db8::5', 'expanded compresses again');
+  assert.equal(normalizeIp('::'), '::', 'the unspecified address survives');
+  assert.equal(normalizeIp('2001:db8:0:1:0:0:0:1'), '2001:db8:0:1::1',
+    'only the longest zero run compresses');
+  assert.equal(normalizeIp('2001:0:0:1:0:0:1:1'), '2001::1:0:0:1:1',
+    'on a tie the first run compresses');
+  assert.equal(normalizeIp('  2001:DB8::5  '), '2001:db8::5', 'surrounding space is trimmed first');
+  for (const bad of [null, undefined, 0, 12345, NaN, {}, [], 'not-an-ip', '::ffff:not-an-ip', '1:2:3:4:5:6:7:8:9']) {
+    assert.doesNotThrow(() => normalizeIp(bad), `input ${String(bad)} must not throw`);
+  }
+  assert.equal(normalizeIp(null), '');
+  assert.equal(normalizeIp(12345), '12345');
+  assert.equal(normalizeIp('fe80::1%eth0'), 'fe80::1%eth0',
+    'a zone id degrades to a plain string that matches nothing');
+  assert.equal(normalizeIp('NoT-An-Ip '), 'not-an-ip',
+    'garbage degrades to a trimmed lowercase string');
 });
 
 test('real people are counted', () => {
@@ -153,6 +198,28 @@ test('non-public paths are not counted', () => {
     'a 404 path is not counted');
   assert.ok(analytics.classifyRequest(countable({ path: '/docs/reference' })),
     'the public docs subtree is counted');
+});
+
+test('pagePath strips trailing slashes, never the root itself', () => {
+  const { pagePath } = analytics;
+  assert.equal(pagePath('/quickstart/'), '/quickstart');
+  assert.equal(pagePath('/docs/x//'), '/docs/x', 'multiple trailing slashes collapse');
+  assert.equal(pagePath('/docs/api/'), '/docs/api');
+  assert.equal(pagePath('/'), '/', 'the root stays the root');
+  assert.equal(pagePath('/quickstart'), '/quickstart', 'an already-clean path is untouched');
+});
+
+test('a trailing-slash page load is counted under the canonical path', () => {
+  assert.deepEqual(analytics.classifyRequest(countable({ path: '/quickstart/' })),
+    { path: '/quickstart', referrerHost: '', visit: true },
+    '/quickstart/ is served by Express and must count as /quickstart');
+  assert.deepEqual(analytics.classifyRequest(countable({ path: '/docs/api/' })),
+    { path: '/docs/api', referrerHost: '', visit: true },
+    '/docs/api/ counts as /docs/api');
+  assert.deepEqual(analytics.classifyRequest(countable({ path: '/' })),
+    { path: '/', referrerHost: '', visit: true }, 'the root is unchanged');
+  assert.equal(analytics.classifyRequest(countable({ path: '/unknown/' })), null,
+    'stripping does not make an unknown path public');
 });
 
 test('an external referrer is reduced to its host, path and query dropped', () => {
