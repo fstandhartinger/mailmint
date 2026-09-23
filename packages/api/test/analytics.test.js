@@ -174,7 +174,7 @@ describe('analytics', () => {
     admin = { cookie, accountId };
   });
 
-  test('a free → paid plan change counts one paid conversion', SKIP, async () => {
+  test('a free → paid plan change counts one paid conversion, the first only', SKIP, async () => {
     const { accountId } = await H.newAccount();
     const billing = require('../src/billing');
 
@@ -188,11 +188,32 @@ describe('analytics', () => {
     assert.equal(await countForAccount('paid_conversion', accountId), 1,
       'paid → paid must not count again');
 
-    // Back on free and up again is a fresh conversion.
+    // Back on free and up again is NOT a fresh conversion: the first free →
+    // paid transition an account ever makes is the only one that counts, so a
+    // resubscription must not record a second paid_conversion (C16).
     await billing.applyPlan(accountId, 'free', null);
     await billing.applyPlan(accountId, 'starter', 'sub_test_paid');
-    await H.until(async () => (await countForAccount('paid_conversion', accountId)) === 2,
-      { what: 'the second conversion after another free stay' });
+    // Give a (forbidden) second write a fair chance to land, then assert silence.
+    await sleep(800);
+    assert.equal(await countForAccount('paid_conversion', accountId), 1,
+      'free → paid → free → paid must not count a second conversion');
+
+    // The durable marker outlives the resubscription: it was set once, at the
+    // account's first conversion, and stays set.
+    const { rows } = await H.query(`SELECT first_paid_at FROM accounts WHERE id = $1`, [accountId]);
+    assert.ok(rows[0].first_paid_at, 'first_paid_at is set once and never cleared');
+
+    // Each account has its own first conversion: a second account's own
+    // free → paid counts exactly one for that account and leaves the first
+    // account untouched.
+    const second = await H.newAccount();
+    await billing.applyPlan(second.accountId, 'starter', 'sub_test_second');
+    await H.until(async () => (await countForAccount('paid_conversion', second.accountId)) === 1,
+      { what: "the second account's paid_conversion event" });
+    assert.equal(await countForAccount('paid_conversion', second.accountId), 1,
+      "a second account's own first free → paid counts its one conversion");
+    assert.equal(await countForAccount('paid_conversion', accountId), 1,
+      'the first account is untouched by the second account');
   });
 
   test('/api/operator/visits and /admin/stats.json answer only the operator', SKIP, async () => {

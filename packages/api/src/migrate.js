@@ -410,6 +410,18 @@ const MIGRATIONS = [
       `DELETE FROM analytics_events WHERE kind = 'visit'`,
     ],
   },
+  {
+    id: 12,
+    name: 'first paid conversion marker',
+    statements: [
+      // C16 counts a paid conversion only for an account's FIRST free → paid
+      // transition, so the marker must be durable on the account itself: retention
+      // prunes analytics_events rows after 13 months, so an event-existence check
+      // there would let a pruned conversion count again. Nullable and backfill-free
+      // — existing accounts keep NULL, so their next free → paid counts once.
+      `ALTER TABLE accounts ADD COLUMN IF NOT EXISTS first_paid_at TIMESTAMPTZ`,
+    ],
+  },
 ];
 
 async function migrate() {

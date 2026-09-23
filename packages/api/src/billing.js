@@ -340,26 +340,36 @@ async function createPortalSession(account) {
   return result;
 }
 
-/** Applies a plan change. The single place the quota column is allowed to move. */
+/** Applies a plan change. The single place the quota column is allowed to move.
+ * Also the single place the first-paid-conversion marker (`accounts.first_paid_at`)
+ * is set, and the only writer of the `paid_conversion` analytics event: counted
+ * once per account, the first time it ever goes free → paid (C16). */
 async function applyPlan(accountId, planId, subscriptionId, run = query, customerId = null) {
   const plan = PLANS[planId] || PLANS.free;
-  // Read the outgoing plan first, inside the same `run` so a caller's
-  // transaction sees its own locked row: "free became paid" is what the
-  // funnel's paid-conversion count hangs on. A downgrade or a sideways paid
-  // plan change is not a new conversion.
-  const { rows: before } = await run(`SELECT plan FROM accounts WHERE id = $1`, [accountId]);
+  // Read the outgoing plan and the first-conversion marker together, inside the
+  // same `run` so a caller's transaction sees its own locked row. A paid
+  // conversion counts only the FIRST time an account ever goes free → paid, so
+  // the durable marker is `accounts.first_paid_at` — not an analytics_events
+  // existence check, because retention prunes event rows after 13 months and a
+  // pruned row must not resurrect a conversion. A downgrade or a sideways paid
+  // plan change is not a new conversion, and a resubscription (free again, then
+  // paid) records nothing the second time.
+  const { rows: before } = await run(`SELECT plan, first_paid_at FROM accounts WHERE id = $1`, [accountId]);
   const previousPlan = before[0] ? String(before[0].plan) : null;
+  const firstConversion = Boolean(before[0]) && previousPlan === 'free'
+    && plan.priceUsd > 0 && before[0].first_paid_at == null;
   // The customer id is bound here as well as at checkout, the way PDFMint and
   // DocMint do it. An account that acquired a subscription some other way used to
   // keep a null customer id for ever, which put it permanently outside the
   // ownership guard in applySubscription.
   await run(
     `UPDATE accounts SET plan = $2, quota_month = $3, stripe_subscription_id = $4,
-            stripe_customer_id = COALESCE(stripe_customer_id, $5)
+            stripe_customer_id = COALESCE(stripe_customer_id, $5),
+            first_paid_at = CASE WHEN $6::boolean THEN now() ELSE first_paid_at END
       WHERE id = $1`,
-    [accountId, plan.id, plan.quota, subscriptionId || null, customerId || null],
+    [accountId, plan.id, plan.quota, subscriptionId || null, customerId || null, firstConversion],
   );
-  if (previousPlan === 'free' && plan.priceUsd > 0) {
+  if (firstConversion) {
     // Fire-and-forget (recordEvent never throws) and outside the caller's
     // transaction — a failed count must never roll back a paid plan change.
     // eslint-disable-next-line global-require
