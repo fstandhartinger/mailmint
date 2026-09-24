@@ -10,6 +10,7 @@ const { ApiError } = require('./errors');
 const { migrate } = require('./migrate');
 const { escapeHtml } = require('./html');
 const api = require('./api');
+const openapi = require('./openapi');
 const internal = require('./internal');
 const web = require('./web');
 const site = require('./site');   // static landing page + docs; serves '/' and '/docs'
@@ -76,6 +77,12 @@ app.use(analytics.visitMiddleware);
 app.use('/', site.router);   // static /, /docs, /quickstart, /n8n — must precede web.router
 app.use('/', web.router);
 app.use(express.static(path.join(__dirname, '..', 'public'), { maxAge: '1h' }));
+
+// The machine-readable API reference — public, never cached, no auth, no DB.
+app.get('/openapi.json', (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json(openapi);
+});
 
 app.use((req, res) => {
   if (req.path.startsWith('/v1/') || req.path.startsWith('/internal/')) {
