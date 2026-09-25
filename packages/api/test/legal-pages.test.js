@@ -41,7 +41,7 @@ test('legal pages carry their required facts', () => {
   }
 });
 
-test('every public page with a footer links all three legal pages', () => {
+test('every public page with a footer links the legal and status pages', () => {
   const files = fs.readdirSync(PUBLIC_DIR).filter((n) => n.endsWith('.html'));
   const withFooter = files.filter((n) =>
     fs.readFileSync(path.join(PUBLIC_DIR, n), 'utf8').includes('<footer'),
@@ -49,9 +49,11 @@ test('every public page with a footer links all three legal pages', () => {
   assert.ok(withFooter.length > 0, 'expected at least one public page with a footer');
   for (const file of withFooter) {
     const html = fs.readFileSync(path.join(PUBLIC_DIR, file), 'utf8');
-    for (const href of ['/impressum', '/privacy', '/terms']) {
+    const footer = html.slice(html.indexOf('<footer'), html.indexOf('</footer>'));
+    assert.ok(footer.length > 0, `${file} must have a non-empty footer block`);
+    for (const href of ['/impressum', '/privacy', '/terms', '/status']) {
       assert.ok(
-        html.includes(`href="${href}"`),
+        footer.includes(`href="${href}"`),
         `${file} footer must link ${href}`,
       );
     }

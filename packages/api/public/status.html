@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Service status and limitations — MailMint</title>
+<meta name="description" content="MailMint's honest status page: how to check the API right now, where the service runs, and what is not guaranteed.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://mailmint.app.mintapis.com/status">
+<meta property="og:title" content="Service status and limitations — MailMint">
+<meta property="og:description" content="MailMint's honest status page: how to check the API right now, where the service runs, and what is not guaranteed.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://mailmint.app.mintapis.com/status">
+<meta property="og:site_name" content="MailMint">
+<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="/docs.css">
+</head>
+<body class="docs">
+
+<header class="docs-top">
+  <a class="logo" href="/">Mail<span>Mint</span></a>
+  <nav>
+    <a href="/docs">API reference</a>
+    <a href="/n8n">n8n</a>
+    <a href="/dashboard">Dashboard</a>
+    <a class="cta" href="/signup">Get an API key</a>
+  </nav>
+</header>
+
+<div class="layout">
+
+  <main class="content">
+
+<h1>Service status and limitations</h1>
+<p class="lede">The honest version. <strong>Last updated: 25 September 2026.</strong></p>
+
+<section id="current">
+<h2>Current status <a class="anchor" href="#current">#</a></h2>
+<p>This page cannot show live status. To check whether the API is up right now, call
+<a href="/healthz">/healthz</a>: it returns HTTP 200 with a small JSON body when the
+application process is up. It does not check the database or the inbound mail server.</p>
+<p>This page is served by the application it describes: if MailMint is down, this page is
+down too.</p>
+</section>
+
+<section id="deployment">
+<h2>Deployment <a class="anchor" href="#deployment">#</a></h2>
+<p>The application, its PostgreSQL database and the inbound mail server run on one single
+server in Finland (EU), rented from Hetzner Online GmbH — the same hosting described in the
+<a href="/privacy">privacy policy</a>.</p>
+<p>The consequences: there is no redundancy and no automatic failover to another region.
+Maintenance or a server fault means downtime.</p>
+</section>
+
+<section id="tls">
+<h2>TLS <a class="anchor" href="#tls">#</a></h2>
+<p>The website and API are served over HTTPS. Inbound mail on <code>mx.smooth-operator.online</code>
+port 25 offers STARTTLS with a certificate for <code>mx.smooth-operator.online</code> issued by
+Let's Encrypt, so senders that verify certificates can deliver over encrypted connections.</p>
+</section>
+
+<section id="service-level">
+<h2>Service level <a class="anchor" href="#service-level">#</a></h2>
+<p>MailMint is provided as is. There is no service level agreement, no guaranteed uptime, and
+no uptime percentage is published. See the <a href="/terms">terms of service</a>.</p>
+</section>
+
+<section id="contact">
+<h2>Contact <a class="anchor" href="#contact">#</a></h2>
+<p>For contact details, see the <a href="/impressum">Impressum</a>.</p>
+</section>
+
+  </main>
+</div>
+
+<footer style="border-top:1px solid var(--rule);padding:1.6rem 1.25rem;text-align:center;font-size:.86rem;color:var(--muted)">
+  <a href="/">MailMint</a> &middot;
+  <a href="/docs">API reference</a> &middot;
+  <a href="/quickstart">Quickstart</a> &middot;
+  <a href="/dashboard">Dashboard</a>
+
+  <div style="margin-top:.7rem">
+    <a href="/impressum">Impressum</a> &middot;
+    <a href="/privacy">Privacy</a> &middot;
+    <a href="/terms">Terms</a> &middot;
+    <a href="/status">Status</a>
+  </div>
+</footer>
+
+</body>
+</html>
