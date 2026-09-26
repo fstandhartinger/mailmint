@@ -44,18 +44,46 @@ const legalFooter = `<footer style="border-top:1px solid var(--rule);padding:1.6
 // with `{ index: true }`. `/docs/reference` does, because it is public, true,
 // and read straight from the running configuration.
 function shell(title, body, opts = {}) {
+  const description = opts.description || 'MailMint turns inbound email into structured JSON.';
   const robots = opts.index
     ? ''
     : '\n<meta name="robots" content="noindex,follow">';
   // An indexable page must say which URL is the real one, or the same reference
   // gets listed once per host that answers for it.
-  const canonical = opts.canonical && config.publicUrl
-    ? `\n<link rel="canonical" href="${config.publicUrl}${opts.canonical}">`
+  const canonicalUrl = opts.canonical && config.publicUrl
+    ? `${config.publicUrl}${opts.canonical}`
+    : '';
+  const canonical = canonicalUrl
+    ? `\n<link rel="canonical" href="${escapeHtml(canonicalUrl)}">`
+    : '';
+  // Most shell pages are private account plumbing. Only a route that opts into
+  // indexing gets crawler and share metadata; current public-shell use is the
+  // configuration-derived API reference.
+  const social = opts.index && canonicalUrl
+    ? `\n<meta property="og:title" content="${escapeHtml(title)}">
+<meta property="og:description" content="${escapeHtml(description)}">
+<meta property="og:type" content="article">
+<meta property="og:url" content="${escapeHtml(canonicalUrl)}">
+<meta property="og:site_name" content="MailMint">
+<meta property="og:image" content="${config.publicUrl}/og-image.png">
+<meta property="og:image:alt" content="MailMint: an email address and the structured JSON parsed from its message, with per-field confidence and evidence.">
+<meta property="og:image:width" content="2400">
+<meta property="og:image:height" content="1260">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${escapeHtml(title)}">
+<meta name="twitter:description" content="${escapeHtml(description)}">
+<meta name="twitter:image" content="${config.publicUrl}/og-image.png">
+<meta name="twitter:image:alt" content="MailMint: an inbound email address beside the structured JSON parsed from its message, with confidence values for each field.">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1012" media="(prefers-color-scheme: dark)">`
+    : '';
+  const structuredData = opts.structuredData
+    ? `\n<script type="application/ld+json">${JSON.stringify(opts.structuredData).replace(/</g, '\\u003c')}</script>`
     : '';
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${escapeHtml(title)}</title>
-<meta name="description" content="${escapeHtml(opts.description || 'MailMint turns inbound email into structured JSON.')}">${robots}${canonical}
+<meta name="description" content="${escapeHtml(description)}">${robots}${canonical}${social}${structuredData}
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <style>${CSS}</style></head><body>${body}${legalFooter}
 <script>
@@ -1248,8 +1276,36 @@ router.post('/dashboard/portal', requireAccount, asyncRoute(async (req, res) => 
  */
 router.get('/docs/reference', asyncRoute(async (req, res) => {
   const example = webhooks.sign('your_webhook_secret', '{"id":"msg_…"}');
-  res.type('html').send(shell('MailMint docs', `${topbar()}
+  const pageTitle = 'MailMint API reference — plans, limits and endpoints';
+  const pageDescription = 'Generated API reference for MailMint mailboxes, message search, webhooks, plans, retention, quotas, and rate limits as enforced by the running service.';
+  const canonicalUrl = `${config.publicUrl}/docs/reference`;
+  const referenceSchema = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'MailMint', item: `${config.publicUrl}/` },
+        { '@type': 'ListItem', position: 2, name: 'Docs', item: `${config.publicUrl}/docs` },
+        { '@type': 'ListItem', position: 3, name: 'API reference', item: canonicalUrl },
+      ],
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'TechArticle',
+      headline: pageTitle,
+      description: pageDescription,
+      url: canonicalUrl,
+      inLanguage: 'en',
+      publisher: {
+        '@type': 'Organization',
+        name: 'productivity-boost.com Betriebs UG (haftungsbeschränkt) & Co. KG',
+        url: `${config.publicUrl}/impressum`,
+      },
+    },
+  ];
+  res.type('html').send(shell(pageTitle, `${topbar()}
 <main>
+  <nav aria-label="Breadcrumb"><a href="/">MailMint</a> / <a href="/docs">Docs</a> / <span aria-current="page">API reference</span></nav>
   <h1>API reference</h1>
   <p class="muted">Every number on this page is read from the running configuration, so it says what
     this deployment actually enforces. The written guides are at <a href="/docs">/docs</a>.</p>
@@ -1380,7 +1436,8 @@ if (Math.abs(Date.now()/1000 - Number(t)) &gt; 300) reject();   // replay window
 </main>`, {
     index: true,
     canonical: '/docs/reference',
-    description: 'MailMint API reference, generated from the running configuration: plans, quotas, retention, rate limits and the numbers this deployment actually enforces.',
+    description: pageDescription,
+    structuredData: referenceSchema,
   }));
 }));
 

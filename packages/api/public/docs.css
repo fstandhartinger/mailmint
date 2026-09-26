@@ -8,25 +8,21 @@
   --warn-bg:#fdf6e3; --warn-rule:#e8d9a8; --warn-ink:#6b5310;
 }
 @media (prefers-color-scheme:dark){
-  :root{
+  :root:not([data-theme="light"]){
     --get:#6aa9f0; --post:#43c79c; --put:#dfae5a; --del:#e8776a;
     --tint:#111a26;
     --warn-bg:#241f12; --warn-rule:#4a3f22; --warn-ink:#e2cd94;
   }
 }
+:root[data-theme="dark"]{
+    --get:#6aa9f0; --post:#43c79c; --put:#dfae5a; --del:#e8776a;
+    --tint:#111a26;
+    --warn-bg:#241f12; --warn-rule:#4a3f22; --warn-ink:#e2cd94;
+}
 
 /* ------------------------------------------------------------------ shell */
 
 body.docs{overflow-x:hidden}
-
-.docs-top{
-  display:flex;align-items:center;justify-content:space-between;gap:1rem;
-  padding:.85rem 1.25rem;border-bottom:1px solid var(--rule);
-  position:sticky;top:0;background:var(--bg);z-index:30;
-}
-.docs-top nav{display:flex;gap:1.1rem;align-items:center;font-size:.9rem;flex-wrap:wrap;justify-content:flex-end}
-.docs-top .cta{background:var(--accent);color:#fff;padding:.4rem .8rem;border-radius:8px;font-weight:600}
-.docs-top .cta:hover{background:var(--accent-ink);text-decoration:none}
 
 .layout{
   max-width:var(--docs-maxw);margin:0 auto;
@@ -139,12 +135,6 @@ h2:hover .anchor,h3:hover .anchor,h4:hover .anchor{opacity:.55}
   .content h2{font-size:1.3rem;margin-top:2.6rem}
 }
 @media (max-width:520px){
-  .docs-top{padding:.7rem .9rem}
-  .docs-top .logo{font-size:1.05rem}
-  /* One row, always: the section links live in the TOC right below anyway. */
-  .docs-top nav{gap:.75rem;font-size:.83rem;flex-wrap:nowrap}
-  .docs-top nav a:not(.cta){display:none}
-  .docs-top nav a[href="/dashboard"]{display:inline}
   .layout{padding:0 .9rem}
   .content h1{font-size:1.45rem}
   .lede{font-size:1rem}

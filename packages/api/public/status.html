@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Service status and limitations — MailMint</title>
 <meta name="description" content="MailMint's honest status page: how to check the API right now, where the service runs, and what is not guaranteed.">
+<meta name="robots" content="noindex,follow">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="canonical" href="https://mailmint.app.mintapis.com/status">
 <meta property="og:title" content="Service status and limitations — MailMint">
@@ -12,25 +13,52 @@
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://mailmint.app.mintapis.com/status">
 <meta property="og:site_name" content="MailMint">
+<meta property="og:image" content="https://mailmint.app.mintapis.com/og-image.png">
+<meta property="og:image:alt" content="MailMint: an email address and the structured JSON parsed from its message, with per-field confidence and evidence.">
+<meta property="og:image:width" content="2400">
+<meta property="og:image:height" content="1260">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Service status and limitations — MailMint">
+<meta name="twitter:description" content="MailMint&#x27;s honest status page: how to check the API right now, where the service runs, and what is not guaranteed.">
+<meta name="twitter:image" content="https://mailmint.app.mintapis.com/og-image.png">
+<meta name="twitter:image:alt" content="MailMint: an email address and the structured JSON parsed from its message, with per-field confidence and evidence.">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1012" media="(prefers-color-scheme: dark)">
+<link rel="preload" href="/fonts/inter-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/fonts/fonts.css">
 <link rel="stylesheet" href="/app.css">
 <link rel="stylesheet" href="/docs.css">
+<link rel="stylesheet" href="/landing.css">
+
 </head>
 <body class="docs">
 
-<header class="docs-top">
-  <a class="logo" href="/">Mail<span>Mint</span></a>
-  <nav>
-    <a href="/docs">API reference</a>
-    <a href="/n8n">n8n</a>
-    <a href="/dashboard">Dashboard</a>
-    <a class="cta" href="/signup">Get an API key</a>
-  </nav>
+<a class="l-skip" href="#main">Skip to content</a>
+
+<header class="l-top">
+  <div class="l-wrap l-top-in">
+    <a class="l-logo" href="/" aria-label="MailMint home">
+      <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><rect x="4" y="7" width="24" height="18" rx="4" stroke="currentColor" stroke-width="2.2"/><path class="m" d="M5.5 10.5 16 18l10.5-7.5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Mail<b>Mint</b></span>
+    </a>
+    <nav class="l-nav" aria-label="Primary">
+      <a href="/#how">How it works</a>
+      <a href="/n8n">n8n</a>
+      <a href="/docs" class="l-keep">Docs</a>
+      <a href="/#compare">Compare</a>
+      <a href="/#pricing">Pricing</a>
+    </nav>
+    <div class="l-actions">
+      <a class="l-signin" href="/login">Sign in</a>
+      <a class="l-btn l-btn-primary l-btn-sm" href="/signup">Get a key</a>
+    </div>
+  </div>
 </header>
 
 <div class="layout">
 
-  <main class="content">
-
+  <main class="content" id="main">
+<nav class="l-crumbs" aria-label="Breadcrumb"><ol><li><a href="/">MailMint</a></li><li aria-current="page">Status</li></ol></nav>
 <h1>Service status and limitations</h1>
 <p class="lede">The honest version. <strong>Last updated: 25 September 2026.</strong></p>
 
@@ -73,17 +101,67 @@ no uptime percentage is published. See the <a href="/terms">terms of service</a>
   </main>
 </div>
 
-<footer style="border-top:1px solid var(--rule);padding:1.6rem 1.25rem;text-align:center;font-size:.86rem;color:var(--muted)">
-  <a href="/">MailMint</a> &middot;
-  <a href="/docs">API reference</a> &middot;
-  <a href="/quickstart">Quickstart</a> &middot;
-  <a href="/dashboard">Dashboard</a>
-
-  <div style="margin-top:.7rem">
-    <a href="/impressum">Impressum</a> &middot;
-    <a href="/privacy">Privacy</a> &middot;
-    <a href="/terms">Terms</a> &middot;
-    <a href="/status">Status</a>
+<footer class="l-foot">
+  <div class="l-wrap">
+    <div class="l-foot-grid">
+      <div class="l-foot-brand">
+        <a class="l-logo" href="/" aria-label="MailMint home">
+          <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><rect x="4" y="7" width="24" height="18" rx="4" stroke="currentColor" stroke-width="2.2"/><path class="m" d="M5.5 10.5 16 18l10.5-7.5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Mail<b>Mint</b></span>
+        </a>
+        <p>Inbound email to structured JSON, with a confidence and the source text for every field.</p>
+      </div>
+      <nav aria-label="Product">
+        <h2>Product</h2>
+        <ul>
+          <li><a href="/quickstart">Quickstart</a></li>
+          <li><a href="/docs">API reference</a></li>
+          <li><a href="/openapi.json">OpenAPI spec</a></li>
+          <li><a href="/n8n">n8n node</a></li>
+          <li><a href="/#pricing">Pricing</a></li>
+          <li><a href="/login">Sign in</a></li>
+          <li><a href="/signup">Create account</a></li>
+        </ul>
+      </nav>
+      <nav aria-label="Use cases">
+        <h2>Use cases</h2>
+        <ul>
+          <li><a href="/parse-invoice-emails">Invoice emails</a></li>
+          <li><a href="/parse-order-confirmation-emails">Order confirmations</a></li>
+          <li><a href="/parse-shipping-notification-emails">Shipping notifications</a></li>
+          <li><a href="/parse-lead-emails">Lead emails</a></li>
+          <li><a href="/email-to-json">Email to JSON</a></li>
+          <li><a href="/email-to-webhook">Email to webhook</a></li>
+        </ul>
+      </nav>
+      <nav aria-label="Compare">
+        <h2>Compare</h2>
+        <ul>
+          <li><a href="/email-parsing-api">Email parsing API</a></li>
+          <li><a href="/mailparser-alternative">Mailparser alternative</a></li>
+          <li><a href="/parseur-alternative">Parseur alternative</a></li>
+          <li><a href="/docparser-alternative">Docparser alternative</a></li>
+          <li><a href="/zapier-email-parser-alternative">Zapier Email Parser alternative</a></li>
+        </ul>
+      </nav>
+      <nav aria-label="Mint APIs family">
+        <h2>Mint APIs</h2>
+        <ul>
+          <li><a href="https://pdf.mintapis.com/">PDFMint &mdash; HTML to PDF</a></li>
+          <li><a href="https://docmint.app.mintapis.com/">DocMint &mdash; Office templates</a></li>
+          <li><a href="/">MailMint &mdash; email to JSON</a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="l-foot-bottom">
+      <span>&copy; 2026 productivity-boost.com Betriebs UG (haftungsbeschr&auml;nkt) &amp; Co. KG</span>
+      <nav aria-label="Legal">
+        <a href="/impressum">Impressum</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="/status">Status</a>
+      </nav>
+    </div>
   </div>
 </footer>
 
