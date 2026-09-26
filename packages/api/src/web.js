@@ -33,7 +33,8 @@ const CSS = fs.readFileSync(path.join(PUBLIC_DIR, 'app.css'), 'utf8');
 const legalFooter = `<footer style="border-top:1px solid var(--rule);padding:1.6rem 1.25rem;text-align:center;font-size:.86rem;color:var(--muted)">
   <a href="/impressum">Impressum</a> &middot;
   <a href="/privacy">Privacy</a> &middot;
-  <a href="/terms">Terms</a>
+  <a href="/terms">Terms</a> &middot;
+  <a href="/status">Status</a>
 </footer>`;
 
 // Pages rendered here are account plumbing — sign-in, the dashboard, a mailbox,
