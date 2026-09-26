@@ -697,6 +697,9 @@ usually a \`hint\` saying what to change. This document is the reference; /docs 
           { name: 'mailbox_id', in: 'query', required: false, schema: { type: 'string' } },
           { name: 'status', in: 'query', required: false, schema: { type: 'string' }, description: 'E.g. parsed, received, failed.' },
           { name: 'since', in: 'query', required: false, schema: { type: 'string', format: 'date-time' } },
+          { name: 'until', in: 'query', required: false, schema: { type: 'string', format: 'date-time' }, description: 'Exclusive upper bound on received_at.' },
+          { name: 'from', in: 'query', required: false, schema: { type: 'string' }, description: 'Case-insensitive substring of the sender address.' },
+          { name: 'subject', in: 'query', required: false, schema: { type: 'string' }, description: 'Case-insensitive substring of the subject.' },
           { name: 'cursor', in: 'query', required: false, schema: { type: 'string' }, description: 'The previous next_cursor.' },
           { name: 'needs_review', in: 'query', required: false, schema: { type: 'string' }, description: 'Any value other than "false" turns the review filter on.' },
           { name: 'flag', in: 'query', required: false, schema: { type: 'string' }, description: 'Messages whose flags contain this value.' },
@@ -704,7 +707,7 @@ usually a \`hint\` saying what to change. This document is the reference; /docs 
         ],
         responses: {
           '200': { description: 'One page of summaries.', content: json({ $ref: '#/components/schemas/MessageList' }) },
-          '400': { description: 'since is not a date.', content: json({ $ref: '#/components/schemas/ErrorResponse' }) },
+          '400': { description: 'since or until is not a date (invalid_since, invalid_until), or from/subject is over 200 characters (query_too_long).', content: json({ $ref: '#/components/schemas/ErrorResponse' }) },
           default: { $ref: '#/components/responses/ApiError' },
         },
       },

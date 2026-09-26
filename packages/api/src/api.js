@@ -113,6 +113,9 @@ router.delete('/webhooks/:id', withAuth, asyncRoute(async (req, res) => {
 
 /* -------------------------------------------------------------- messages */
 
+/** Escapes LIKE wildcards so %, _ and \ match literally under ESCAPE '\'. */
+const likeContains = (v) => `%${String(v).replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+
 /**
  * Paged newest-first. The cursor is the message id, which is ULID-ish and so
  * sorts by time — that is what lets `id < cursor` be the whole pagination
@@ -128,6 +131,21 @@ router.get('/messages', withAuth, asyncRoute(async (req, res) => {
     const since = new Date(String(req.query.since));
     if (Number.isNaN(since.getTime())) throw bad('invalid_since', `"${req.query.since}" is not a date.`, { hint: 'Use an ISO-8601 timestamp, e.g. 2026-08-25T00:00:00Z.' });
     params.push(since.toISOString()); where.push(`m.received_at >= $${params.length}`);
+  }
+  if (req.query.until) {
+    const until = new Date(String(req.query.until));
+    if (Number.isNaN(until.getTime())) throw bad('invalid_until', `"${req.query.until}" is not a date.`, { hint: 'Use an ISO-8601 timestamp, e.g. 2026-08-25T00:00:00Z.' });
+    params.push(until.toISOString()); where.push(`m.received_at < $${params.length}`);
+  }
+  if (req.query.from) {
+    const from = String(req.query.from);
+    if (from.length > 200) throw bad('query_too_long', `The from filter is over 200 characters.`, { hint: 'Keep the search term within 200 characters.' });
+    params.push(likeContains(from)); where.push(`m.from_email ILIKE $${params.length} ESCAPE '\\'`);
+  }
+  if (req.query.subject) {
+    const subject = String(req.query.subject);
+    if (subject.length > 200) throw bad('query_too_long', `The subject filter is over 200 characters.`, { hint: 'Keep the search term within 200 characters.' });
+    params.push(likeContains(subject)); where.push(`m.subject ILIKE $${params.length} ESCAPE '\\'`);
   }
   if (req.query.cursor) { params.push(String(req.query.cursor)); where.push(`m.id < $${params.length}`); }
   // The review queue. "Almost nobody asks for better accuracy in the abstract —
