@@ -2,6 +2,8 @@
 
 const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const H = require('./helpers');
 
 /**
@@ -132,4 +134,22 @@ test('subject=INV_2 does not match INV22 (underscore is literal)', async () => {
   assert.ok(text.includes('Matching messages'));
   assert.ok(!text.includes('INV22'), 'a LIKE underscore must not act as a single-char wildcard');
   assert.ok(text.includes('No messages match this search.'));
+});
+
+test('the search form has a heading, a styled fieldrow and a separated button', async () => {
+  const { res, text } = await page('');
+  assert.equal(res.status, 200);
+  assert.ok(text.includes('<h2>Search messages</h2>'), 'the search section has a heading');
+  const m = /<form method="get"[^>]*class="search"[^>]*>[\s\S]*?<\/form>/.exec(text);
+  assert.ok(m, 'the search form is present');
+  const form = m[0];
+  const row = /<div class="fieldrow">[\s\S]*?<\/div>/.exec(form);
+  assert.ok(row, 'the inputs are wrapped in a fieldrow');
+  for (const name of ['from', 'subject', 'since', 'until']) {
+    assert.ok(new RegExp(`name="${name}"`).test(row[0]), `the ${name} input sits inside the fieldrow`);
+  }
+  assert.ok(form.includes('<p><button>Search</button></p>'), 'the button is separated from the fields');
+  const css = fs.readFileSync(path.join(__dirname, '../public/app.css'), 'utf8');
+  assert.ok(css.includes('.search .fieldrow{grid-template-columns:1.2fr 1.5fr 1fr 1fr}'), 'the desktop grid rule is present');
+  assert.ok(css.includes('@media (max-width:680px){.search .fieldrow{grid-template-columns:1fr 1fr}}'), 'the phone grid rule is present');
 });

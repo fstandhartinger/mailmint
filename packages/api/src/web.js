@@ -880,12 +880,15 @@ Acme Billing</textarea></label>
 
   <section class="card">
     ${searchErrors.map((e) => `<p class="error" role="alert">${escapeHtml(e)}</p>`).join('')}
+    <h2>Search messages</h2>
     <form method="get" action="/dashboard/mailboxes/${encodeURIComponent(mb.id)}" class="search" role="search">
-      <label>From <input type="text" name="from" maxlength="200" value="${escapeHtml(from)}"></label>
-      <label>Subject <input type="text" name="subject" maxlength="200" value="${escapeHtml(subject)}"></label>
-      <label>Received from <input type="date" name="since" value="${escapeHtml(since)}"></label>
-      <label>Received until <input type="date" name="until" value="${escapeHtml(until)}"></label>
-      <button>Search</button>
+      <div class="fieldrow">
+        <label>From <input type="text" name="from" maxlength="200" value="${escapeHtml(from)}"></label>
+        <label>Subject <input type="text" name="subject" maxlength="200" value="${escapeHtml(subject)}"></label>
+        <label>Received from <input type="date" name="since" value="${escapeHtml(since)}"></label>
+        <label>Received until <input type="date" name="until" value="${escapeHtml(until)}"></label>
+      </div>
+      <p><button>Search</button></p>
     </form>
     ${searching ? `<h2>Matching messages</h2>
     <p class="muted small">${msgs.length} message${msgs.length === 1 ? '' : 's'} match${msgs.length === 1 ? 'es' : ''}.</p>
