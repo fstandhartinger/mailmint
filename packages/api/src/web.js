@@ -678,11 +678,58 @@ function schemaFromForm(body) {
   return validateSchema(list);
 }
 
+/** Escapes LIKE wildcards so %, _ and \ match literally under ESCAPE '\'. */
+const likeContains = (v) => `%${String(v).replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+
+// A real calendar day: Date rolls 2026-02-31 over to 3 March, so round-trip it.
+const isCalendarDay = (v) => { const d = new Date(`${v}T00:00:00Z`); return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v; };
+
 router.get('/dashboard/mailboxes/:id', requireAccount, asyncRoute(async (req, res) => {
   const account = req.account;
   const mb = await mailboxes.get(account.id, String(req.params.id));
+  // Search filters. An invalid value never filters: it is reported inline and
+  // dropped, so a bad query string can neither 500 the page nor hide the
+  // mailbox's own mail.
+  const searchErrors = [];
+  const where = ['mailbox_id = $1'];
+  const params = [mb.id];
+  const textFilter = (column, label) => {
+    const raw = req.query[column === 'from_email' ? 'from' : 'subject'];
+    if (raw === undefined || raw === null) return '';
+    if (typeof raw !== 'string') { searchErrors.push(`${label} must be a single value.`); return ''; }
+    if (!raw) return '';
+    if (raw.length > 200) { searchErrors.push(`${label} is over 200 characters.`); return ''; }
+    params.push(likeContains(raw));
+    where.push(`${column} ILIKE $${params.length} ESCAPE '\\'`);
+    return raw;
+  };
+  const from = textFilter('from_email', 'The sender search');
+  const subject = textFilter('subject', 'The subject search');
+  const dayFilter = (name, label) => {
+    const raw = req.query[name];
+    if (raw === undefined || raw === null) return '';
+    if (typeof raw !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(raw) || !isCalendarDay(raw)) {
+      searchErrors.push(`${label} is not a valid date (YYYY-MM-DD).`);
+      return '';
+    }
+    if (name === 'since') {
+      params.push(`${raw}T00:00:00Z`);
+      where.push(`received_at >= $${params.length}`);
+    } else {
+      // Inclusive of the whole day: the next midnight, exclusive.
+      const next = new Date(new Date(`${raw}T00:00:00Z`).getTime() + 86400000).toISOString().slice(0, 10);
+      params.push(`${next}T00:00:00Z`);
+      where.push(`received_at < $${params.length}`);
+    }
+    return raw;
+  };
+  const since = dayFilter('since', 'The received-from date');
+  const until = dayFilter('until', 'The received-until date');
+  const searching = Boolean(from || subject || since || until);
+  params.push(searching ? 50 : 10);
   const { rows: msgs } = await query(
-    `SELECT * FROM messages WHERE mailbox_id = $1 ORDER BY received_at DESC LIMIT 10`, [mb.id],
+    `SELECT * FROM messages WHERE ${where.join(' AND ')} ORDER BY received_at DESC LIMIT $${params.length}`,
+    params,
   );
   const versions = await mailboxes.versions(mb.id);
   const jobs = await reparse.list(account.id, mb.id);
@@ -832,8 +879,21 @@ Acme Billing</textarea></label>
   </section>
 
   <section class="card">
-    <h2>Last messages</h2>
-    ${msgs.length ? msgs.map((m) => renderMessageBlock(m)).join('') : `<p class="muted">Nothing yet. Send mail to
+    ${searchErrors.map((e) => `<p class="error" role="alert">${escapeHtml(e)}</p>`).join('')}
+    <form method="get" action="/dashboard/mailboxes/${encodeURIComponent(mb.id)}" class="search" role="search">
+      <label>From <input type="text" name="from" maxlength="200" value="${escapeHtml(from)}"></label>
+      <label>Subject <input type="text" name="subject" maxlength="200" value="${escapeHtml(subject)}"></label>
+      <label>Received from <input type="date" name="since" value="${escapeHtml(since)}"></label>
+      <label>Received until <input type="date" name="until" value="${escapeHtml(until)}"></label>
+      <button>Search</button>
+    </form>
+    ${searching ? `<h2>Matching messages</h2>
+    <p class="muted small">${msgs.length} message${msgs.length === 1 ? '' : 's'} match${msgs.length === 1 ? 'es' : ''}.</p>
+    <p class="small"><a href="/dashboard/mailboxes/${encodeURIComponent(mb.id)}">Clear search</a></p>`
+    : '<h2>Last messages</h2>'}
+    ${msgs.length ? msgs.map((m) => renderMessageBlock(m)).join('')
+    : searching ? '<p class="muted">No messages match this search.</p>'
+    : `<p class="muted">Nothing yet. Send mail to
       <code>${escapeHtml(address)}</code>, or use the test panel above.</p>`}
   </section>
 
