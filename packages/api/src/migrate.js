@@ -422,6 +422,20 @@ const MIGRATIONS = [
       `ALTER TABLE accounts ADD COLUMN IF NOT EXISTS first_paid_at TIMESTAMPTZ`,
     ],
   },
+  {
+    id: 13,
+    name: 'pending key reveals',
+    statements: [
+      // The one-time reveal of a freshly minted API key, moved out of process
+      // memory so any API instance can show it. One row per session, holding
+      // AES-GCM ciphertext only (auth.js); logging out drops it via the cascade.
+      `CREATE TABLE IF NOT EXISTS pending_key_reveals (
+         session_id TEXT PRIMARY KEY REFERENCES sessions(id) ON DELETE CASCADE,
+         ciphertext TEXT NOT NULL,
+         created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+       )`,
+    ],
+  },
 ];
 
 async function migrate() {

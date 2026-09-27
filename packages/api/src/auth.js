@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const { query } = require('./db');
 const { ApiError } = require('./errors');
 const { PLANS } = require('./config');
+const { log } = require('./log');
 
 const LIVE_PREFIX = 'mm_live_';
 const TEST_PREFIX = 'mm_test_';
@@ -204,17 +205,71 @@ async function createSession(accountId) {
  * A freshly minted key is handed to the dashboard once, through the session
  * rather than the URL. A key in a query string ends up in browser history, in
  * Referer headers, and in every proxy log between here and the user.
+ *
+ * The hand-off is stored encrypted in the database, not in process memory: the
+ * POST that mints the key and the GET that shows it may be served by different
+ * API processes, and a Map in one of them is invisible to the other. The row is
+ * AES-256-GCM ciphertext under a key derived from a server secret that lives
+ * outside the database, so a dump of the table alone does not reveal the key.
+ * The row is single use (taken by one DELETE … RETURNING), expires after ten
+ * minutes, and goes with the session on logout through the FK cascade.
  */
-const pendingKeys = new Map();
-const stashKeyForSession = (sessionId, key) => {
-  pendingKeys.set(sessionId, { key, at: Date.now() });
-  setTimeout(() => pendingKeys.delete(sessionId), 10 * 60 * 1000).unref();
-};
-function takeKeyForSession(sessionId) {
-  const e = pendingKeys.get(sessionId);
-  if (!e) return null;
-  pendingKeys.delete(sessionId);
-  return Date.now() - e.at < 10 * 60 * 1000 ? e.key : null;
+// Read at call time rather than at load, so a test or a restart with a new
+// secret sees the value that is actually in the environment.
+const revealSecret = () => process.env.SESSION_SECRET || process.env.INTERNAL_SECRET || 'dev-only-insecure-secret';
+
+// The session id is the HKDF salt, so every session gets its own AES key and a
+// row copied onto another session id does not decrypt there.
+const revealKey = (sessionId) => Buffer.from(
+  crypto.hkdfSync('sha256', revealSecret(), String(sessionId), 'mailmint pending key reveal', 32),
+);
+
+function sealPendingKey(sessionId, key) {
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', revealKey(sessionId), iv);
+  const ct = Buffer.concat([cipher.update(String(key), 'utf8'), cipher.final()]);
+  return `v1.${iv.toString('base64url')}.${cipher.getAuthTag().toString('base64url')}.${ct.toString('base64url')}`;
+}
+
+function openPendingKey(sessionId, sealed) {
+  const [version, iv, tag, ct] = String(sealed).split('.');
+  if (version !== 'v1' || !iv || !tag || ct === undefined) throw new Error('unrecognised pending key format');
+  const decipher = crypto.createDecipheriv('aes-256-gcm', revealKey(sessionId), Buffer.from(iv, 'base64url'));
+  decipher.setAuthTag(Buffer.from(tag, 'base64url'));
+  return Buffer.concat([decipher.update(Buffer.from(ct, 'base64url')), decipher.final()]).toString('utf8');
+}
+
+async function stashKeyForSession(sessionId, key) {
+  if (!sessionId) return;
+  // Opportunistic cleanup: rows nobody came back for would otherwise sit there
+  // until their session is logged out or reaped.
+  await query(`DELETE FROM pending_key_reveals WHERE created_at < now() - interval '10 minutes'`);
+  // A newer key replaces an unrevealed older one on the same session.
+  await query(
+    `INSERT INTO pending_key_reveals (session_id, ciphertext) VALUES ($1, $2)
+     ON CONFLICT (session_id) DO UPDATE SET ciphertext = EXCLUDED.ciphertext, created_at = now()`,
+    [sessionId, sealPendingKey(sessionId, key)],
+  );
+}
+
+async function takeKeyForSession(sessionId) {
+  if (!sessionId) return null;
+  // One statement, so two processes racing for the same row cannot both get
+  // it: whichever DELETE wins sees the row, the other sees nothing. Freshness
+  // is judged by the database clock that wrote created_at, not by this host's.
+  const { rows } = await query(
+    `DELETE FROM pending_key_reveals WHERE session_id = $1
+     RETURNING ciphertext, created_at, created_at > now() - interval '10 minutes' AS fresh`, [sessionId],
+  );
+  if (!rows.length || !rows[0].fresh) return null;
+  try {
+    return openPendingKey(sessionId, rows[0].ciphertext);
+  } catch (e) {
+    // Most likely the secret changed between stash and take. Never log the
+    // ciphertext or anything derived from the key.
+    log.warn('auth.pending_key_undecryptable', { reason: e.code || 'decrypt_failed' });
+    return null;
+  }
 }
 
 async function accountForSession(sessionId) {

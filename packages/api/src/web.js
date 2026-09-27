@@ -165,7 +165,7 @@ router.post('/signup', asyncRoute(async (req, res) => {
   await mailboxes.create(account.id, { name: 'Inbox' });
   const sessionId = await createSession(account.id);
   setSessionCookie(res, sessionId);
-  stashKeyForSession(sessionId, apiKey);
+  await stashKeyForSession(sessionId, apiKey);
   log.info('account.created', { account_id: Number(account.id) });
   // First-party funnel statistics (fire-and-forget inside). A new account on
   // the free plan is a sign-up and a trial start in one, and it is the only
@@ -325,7 +325,7 @@ router.get('/dashboard', requireAccount, asyncRoute(async (req, res) => {
   const { rows: reviewCount } = await query(
     `SELECT count(*)::int AS n FROM messages WHERE account_id = $1 AND needs_review`, [account.id],
   );
-  const fullKey = takeKeyForSession(sessionIdFrom(req));
+  const fullKey = await takeKeyForSession(sessionIdFrom(req));
   const plan = PLANS[account.plan] || PLANS.free;
   const pct = Math.min(100, Math.round((account.used_month / Math.max(1, account.quota_month)) * 100));
   const purchasable = Object.values(PLANS).filter((p) => planPriceId(p.id));
@@ -1201,7 +1201,7 @@ router.post('/dashboard/forwarding/:id/dismiss', requireAccount, asyncRoute(asyn
 router.post('/dashboard/keys', requireAccount, asyncRoute(async (req, res) => {
   const mode = req.body?.mode === 'test' ? 'test' : 'live';
   const key = await issueApiKey(req.account.id, String(req.body?.name || 'default').slice(0, 40), mode);
-  stashKeyForSession(sessionIdFrom(req), key);
+  await stashKeyForSession(sessionIdFrom(req), key);
   back(res, '/dashboard');
 }));
 
