@@ -93,3 +93,9 @@ form.inline textarea{min-width:100%;font-family:var(--mono);font-size:.82rem}
 .mbhead{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;flex-wrap:wrap}
 .addr{font-family:var(--mono);font-size:1.02rem;font-weight:600;word-break:break-all}
 details summary{cursor:pointer;color:var(--muted);font-size:.85rem}
+/* The header's nav items are single-line at every width: "Sign out" must not
+   wrap onto two lines on a 390 px phone. */
+.topbar nav a,.topbar nav button{white-space:nowrap}
+/* Below 680 px the header may wrap: logo row and nav row, each with room
+   between its items, instead of squeezing and touching. */
+@media (max-width:680px){.topbar{flex-wrap:wrap;gap:.4rem 1rem;padding:.75rem 1rem}.topbar nav{flex-wrap:wrap;gap:.9rem}}
