@@ -176,6 +176,22 @@ router.post('/deliver', asyncRoute(async (req, res) => {
 
   const mailbox = resolved.row;
 
+  // The smtpd posts the bare token as mailbox_token and the real RCPT TO in
+  // envelope.to, so a +tag can live only on the rcpt side. When the target
+  // itself carried none, recover it from the first rcpt that routes to this
+  // very mailbox; a tag from another mailbox's address must never leak in.
+  let tag = resolved.tag;
+  if (!tag) {
+    for (const addr of rcpts) {
+      const parsed = tokenFromAddress(addr);
+      if (!parsed || !parsed.tag) continue;
+      if (parsed.token.toLowerCase() === String(mailbox.token).toLowerCase()) {
+        tag = parsed.tag;
+        break;
+      }
+    }
+  }
+
   /**
    * CONTRACT §3a puts `auth` and `auth_details` at the TOP level of the body,
    * next to raw_mime — that is where the smtpd computes them and that is where
@@ -187,7 +203,7 @@ router.post('/deliver', asyncRoute(async (req, res) => {
   const foldedEnvelope = {
     ...envelope,
     to: rcpts.length ? rcpts : [resolved.address],
-    tag: resolved.tag,
+    tag,
     ...(envelope.auth === undefined && body.auth !== undefined ? { auth: body.auth } : {}),
     ...(envelope.auth_details === undefined && body.auth_details !== undefined
       ? { auth_details: body.auth_details } : {}),

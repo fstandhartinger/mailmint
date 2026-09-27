@@ -530,27 +530,35 @@ function shapeAttachment(a, { root, include, exclude, bytes }) {
 }
 
 /** The compact form used by GET /v1/messages, which must stay cheap to page. */
-const renderSummary = (row) => ({
-  id: row.id,
-  mailbox_id: row.mailbox_id,
-  received_at: new Date(row.received_at).toISOString(),
-  from: row.from_email,
-  subject: row.subject,
-  size: row.size,
-  status: row.status,
-  needs_review: row.needs_review,
-  flags: row.flags || [],
-  spam_score: row.spam_score,
-  fields: row.result && row.result.fields ? row.result.fields : {},
-  attachments: (row.result && row.result.attachments ? row.result.attachments : []).map((a) => ({
-    id: a.id, filename: a.filename, content_type: a.content_type, size: a.size,
-    // Enough to tell whether the data someone wants is in the file, without
-    // carrying the file's text through a list call.
-    extracted: a.extracted ? { kind: a.extracted.kind, pages: a.extracted.pages || null,
-      tables: Array.isArray(a.extracted.tables) ? a.extracted.tables.length : 0,
-      text_length: typeof a.extracted.text === 'string' ? a.extracted.text.length : 0 } : null,
-  })),
-});
+const renderSummary = (row) => {
+  const envelope = row.envelope || {};
+  const toRaw = envelope.to;
+  return {
+    id: row.id,
+    mailbox_id: row.mailbox_id,
+    received_at: new Date(row.received_at).toISOString(),
+    from: row.from_email,
+    // envelope.to is the RCPT TO list; a legacy row may hold a plain string,
+    // which is wrapped so the shape is always an array.
+    to: Array.isArray(toRaw) ? toRaw : (typeof toRaw === 'string' ? [toRaw] : []),
+    tag: typeof envelope.tag === 'string' ? envelope.tag : null,
+    subject: row.subject,
+    size: row.size,
+    status: row.status,
+    needs_review: row.needs_review,
+    flags: row.flags || [],
+    spam_score: row.spam_score,
+    fields: row.result && row.result.fields ? row.result.fields : {},
+    attachments: (row.result && row.result.attachments ? row.result.attachments : []).map((a) => ({
+      id: a.id, filename: a.filename, content_type: a.content_type, size: a.size,
+      // Enough to tell whether the data someone wants is in the file, without
+      // carrying the file's text through a list call.
+      extracted: a.extracted ? { kind: a.extracted.kind, pages: a.extracted.pages || null,
+        tables: Array.isArray(a.extracted.tables) ? a.extracted.tables.length : 0,
+        text_length: typeof a.extracted.text === 'string' ? a.extracted.text.length : 0 } : null,
+    })),
+  };
+};
 
 /**
  * The review queue's row: what is wrong, in which field, and the evidence the

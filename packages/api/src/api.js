@@ -147,6 +147,18 @@ router.get('/messages', withAuth, asyncRoute(async (req, res) => {
     if (subject.length > 200) throw bad('query_too_long', `The subject filter is over 200 characters.`, { hint: 'Keep the search term within 200 characters.' });
     params.push(likeContains(subject)); where.push(`m.subject ILIKE $${params.length} ESCAPE '\\'`);
   }
+  if (req.query.to) {
+    const to = String(req.query.to);
+    if (to.length > 200) throw bad('query_too_long', `The to filter is over 200 characters.`, { hint: 'Keep the search term within 200 characters.' });
+    params.push(likeContains(to));
+    // envelope.to is the SMTP RCPT TO list; a legacy row may hold a plain string.
+    where.push(`EXISTS (SELECT 1 FROM jsonb_array_elements_text(CASE jsonb_typeof(m.envelope->'to') WHEN 'array' THEN m.envelope->'to' WHEN 'string' THEN jsonb_build_array(m.envelope->'to') ELSE '[]'::jsonb END) AS r(addr) WHERE r.addr ILIKE $${params.length} ESCAPE '\\')`);
+  }
+  if (req.query.tag) {
+    const tag = String(req.query.tag);
+    if (tag.length > 200) throw bad('query_too_long', `The tag filter is over 200 characters.`, { hint: 'Keep the search term within 200 characters.' });
+    params.push(tag); where.push(`lower(m.envelope->>'tag') = lower($${params.length})`);
+  }
   if (req.query.cursor) { params.push(String(req.query.cursor)); where.push(`m.id < $${params.length}`); }
   // The review queue. "Almost nobody asks for better accuracy in the abstract —
   // they ask how do I find out that it went wrong", so this filter is a first
