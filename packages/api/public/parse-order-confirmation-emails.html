@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Parse order confirmation emails &mdash; line items that reconcile</title>
-<meta name="description" content="Order number, totals and typed line items out of an order confirmation email, with the line items summed against the subtotal so a dropped row cannot pass silently. One real order mail parsed on 30 Aug 2026, response printed in full.">
+<title>Parse order confirmation emails — line items that reconcile</title>
+<meta name="description" content="Order number, totals and every line item from order confirmation emails, reconciled against the total, with a confidence and evidence on each field.">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="canonical" href="https://mailmint.app.mintapis.com/parse-order-confirmation-emails">
-<meta property="og:title" content="Parse order confirmation emails &mdash; line items that reconcile">
+<meta property="og:title" content="Parse order confirmation emails — line items that reconcile">
 <meta property="og:description" content="Order number, totals and typed line items out of an order confirmation email, with the line items summed against the subtotal so a dropped row cannot pass silently. One real order mail parsed on 30 Aug 2026, response printed in full.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://mailmint.app.mintapis.com/parse-order-confirmation-emails">
@@ -15,19 +15,85 @@
 <meta property="og:image" content="https://mailmint.app.mintapis.com/og-image.png">
 <meta property="og:image:alt" content="MailMint: an inbound email address on the left, the structured JSON it returns on the right, each field carrying its confidence.">
 <meta name="twitter:card" content="summary_large_image">
+<meta property="og:image:width" content="2400">
+<meta property="og:image:height" content="1260">
+<meta name="twitter:title" content="Parse order confirmation emails — line items that reconcile">
+<meta name="twitter:description" content="Order number, totals and every line item from order confirmation emails, reconciled against the total, with a confidence and evidence on each field.">
+<meta name="twitter:image" content="https://mailmint.app.mintapis.com/og-image.png">
+<meta name="twitter:image:alt" content="MailMint: an inbound email address on the left, the structured JSON it returns on the right, each field carrying its confidence.">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1012" media="(prefers-color-scheme: dark)">
+<script>try{var t=localStorage.getItem('mint-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="preload" href="/fonts/inter-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/fonts/fonts.css">
 <link rel="stylesheet" href="/app.css">
 <link rel="stylesheet" href="/docs.css">
+<link rel="stylesheet" href="/landing.css">
+<script type="application/ld+json">
+[
+ {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+   {
+    "@type": "ListItem",
+    "position": 1,
+    "name": "MailMint",
+    "item": "https://mailmint.app.mintapis.com/"
+   },
+   {
+    "@type": "ListItem",
+    "position": 2,
+    "name": "Order confirmations",
+    "item": "https://mailmint.app.mintapis.com/parse-order-confirmation-emails"
+   }
+  ]
+ },
+ {
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Parse order confirmation emails — line items that reconcile",
+  "description": "Order number, totals and every line item from order confirmation emails, reconciled against the total, with a confidence and evidence on each field.",
+  "url": "https://mailmint.app.mintapis.com/parse-order-confirmation-emails",
+  "inLanguage": "en",
+  "about": {
+   "@id": "https://mailmint.app.mintapis.com/#software"
+  },
+  "publisher": {
+   "@type": "Organization",
+   "name": "productivity-boost.com Betriebs UG (haftungsbeschränkt) & Co. KG",
+   "url": "https://mailmint.app.mintapis.com/impressum"
+  }
+ }
+]
+</script>
 </head>
 <body class="docs">
 
-<header class="docs-top">
-  <a class="logo" href="/">Mail<span>Mint</span></a>
-  <nav>
-    <a href="/docs">API reference</a>
-    <a href="/quickstart">Quickstart</a>
-    <a href="/n8n">n8n</a>
-    <a class="cta" href="/signup">Get an API key</a>
-  </nav>
+<a class="l-skip" href="#main">Skip to content</a>
+
+<header class="l-top">
+  <div class="l-wrap l-top-in">
+    <a class="l-logo" href="/" aria-label="MailMint home">
+      <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><rect x="4" y="7" width="24" height="18" rx="4" stroke="currentColor" stroke-width="2.2"/><path class="m" d="M5.5 10.5 16 18l10.5-7.5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Mail<b>Mint</b></span>
+    </a>
+    <nav class="l-nav" aria-label="Primary">
+      <a href="/#how">How it works</a>
+      <a href="/n8n">n8n</a>
+      <a href="/docs" class="l-keep">Docs</a>
+      <a href="/#compare">Compare</a>
+      <a href="/#pricing">Pricing</a>
+    </nav>
+    <div class="l-actions">
+      <button class="l-theme" type="button" data-theme-toggle aria-label="Switch colour theme">
+        <svg class="i-moon" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M16.5 12.2A7 7 0 0 1 7.8 3.5a7 7 0 1 0 8.7 8.7Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        <svg class="i-sun" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="3.4" stroke="currentColor" stroke-width="1.6"/><path d="M10 1.8v2M10 16.2v2M1.8 10h2M16.2 10h2M4.2 4.2l1.4 1.4M14.4 14.4l1.4 1.4M4.2 15.8l1.4-1.4M14.4 5.6l1.4-1.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+      <a class="l-signin" href="/login">Sign in</a>
+      <a class="l-btn l-btn-primary l-btn-sm" href="/signup">Get a key</a>
+    </div>
+  </div>
 </header>
 
 <div class="layout">
@@ -56,7 +122,8 @@
     </div>
   </aside>
 
-  <main class="content">
+  <main class="content" id="main">
+<nav class="l-crumbs" aria-label="Breadcrumb"><ol><li><a href="/">MailMint</a></li><li aria-current="page">Order confirmations</li></ol></nav>
 <h1>Parsing order confirmation emails</h1>
 <p class="lede">Marketplaces, shop platforms and resellers all send an order confirmation, and almost none
 of them will send you the same order as JSON. This page turns that mail into an order row plus its line
@@ -257,34 +324,87 @@ workflow rather than only to look at one.</p>
 <p><a class="cta" href="/signup">Get an API key</a> &nbsp; <a href="/quickstart">Read the quickstart</a>
 &nbsp; <a href="/docs">API reference</a></p>
 </section>
-<section id="more">
-<h2>The other three <a class="anchor" href="#more">#</a></h2>
-<div class="cards">
-  <div class="c"><strong><a href="/parse-invoice-emails">Invoice emails</a></strong><span>Supplier invoices into ledger rows, with the arithmetic checked.</span></div>
-  <div class="c"><strong><a href="/parse-shipping-notification-emails">Shipping notifications</a></strong><span>Tracking number, carrier and the promised date, out of any carrier's template.</span></div>
-  <div class="c"><strong><a href="/parse-lead-emails">Lead &amp; contact-form emails</a></strong><span>Name, company, phone and budget into the CRM, with the doubtful ones held back.</span></div>
+<section id="more" class="l-related">
+<h2>Related pages <a class="anchor" href="#more">#</a></h2>
+<div class="l-grid l-grid-3">
+  <a class="l-card" href="/parse-shipping-notification-emails"><h3 class="l-h3">Parsing shipping notifications</h3><p>Tracking number, carrier and promised date.</p></a>
+  <a class="l-card" href="/parse-lead-emails"><h3 class="l-h3">Parsing lead emails</h3><p>CRM records, with doubtful values held back.</p></a>
+  <a class="l-card" href="/email-to-json"><h3 class="l-h3">Email to JSON</h3><p>Raw MIME to a clean object, printed in full.</p></a>
+  <a class="l-card" href="/email-to-webhook"><h3 class="l-h3">Email to webhook</h3><p>Signed POSTs, retries and a polling fallback.</p></a>
+  <a class="l-card" href="/mailparser-alternative"><h3 class="l-h3">MailMint vs Mailparser</h3><p>Pricing, add-ons, and when to stay where you are.</p></a>
+  <a class="l-card" href="/parseur-alternative"><h3 class="l-h3">MailMint vs Parseur</h3><p>Programmable schemas and per-field confidence.</p></a>
 </div>
-<p style="margin-top:1rem">Comparisons instead: <a href="/email-parsing-api">what an email parsing API has to get right</a> &middot; <a href="/mailparser-alternative">vs Mailparser</a> &middot; <a href="/parseur-alternative">vs Parseur</a> &middot; <a href="/docparser-alternative">vs Docparser</a> &middot; <a href="/zapier-email-parser-alternative">vs Zapier Parser</a></p>
+<p class="l-small" style="margin-top:1.25rem">Also from the Mint APIs family: <a href="https://pdf.mintapis.com/">PDFMint</a> turns HTML, Markdown or a URL into a PDF, and <a href="https://docmint.app.mintapis.com/">DocMint</a> fills Word, Excel and PowerPoint templates from JSON.</p>
 </section>
 
   </main>
 </div>
 
-<footer style="border-top:1px solid var(--rule);padding:1.6rem 1.25rem;text-align:center;font-size:.86rem;color:var(--muted)">
-  <a href="/">MailMint</a> &middot;
-  <a href="/docs">API reference</a> &middot;
-  <a href="/quickstart">Quickstart</a> &middot;
-  <a href="/n8n">n8n</a> &middot;
-  <a href="/email-parsing-api">Email parsing API</a> &middot;
-  <a href="/dashboard">Dashboard</a>
-  <div style="margin-top:.7rem">
-    <a href="/impressum">Impressum</a> &middot;
-    <a href="/privacy">Privacy</a> &middot;
-    <a href="/terms">Terms</a> &middot;
-    <a href="/status">Status</a>
+<footer class="l-foot">
+  <div class="l-wrap">
+    <div class="l-foot-grid">
+      <div class="l-foot-brand">
+        <a class="l-logo" href="/" aria-label="MailMint home">
+          <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><rect x="4" y="7" width="24" height="18" rx="4" stroke="currentColor" stroke-width="2.2"/><path class="m" d="M5.5 10.5 16 18l10.5-7.5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Mail<b>Mint</b></span>
+        </a>
+        <p>Inbound email to structured JSON, with a confidence and the source text for every field.</p>
+      </div>
+      <nav aria-label="Product">
+        <h2>Product</h2>
+        <ul>
+          <li><a href="/quickstart">Quickstart</a></li>
+          <li><a href="/docs">API reference</a></li>
+          <li><a href="/openapi.json">OpenAPI spec</a></li>
+          <li><a href="/n8n">n8n node</a></li>
+          <li><a href="/#pricing">Pricing</a></li>
+          <li><a href="/login">Sign in</a></li>
+          <li><a href="/signup">Create account</a></li>
+        </ul>
+      </nav>
+      <nav aria-label="Use cases">
+        <h2>Use cases</h2>
+        <ul>
+          <li><a href="/parse-invoice-emails">Invoice emails</a></li>
+          <li><a href="/parse-order-confirmation-emails">Order confirmations</a></li>
+          <li><a href="/parse-shipping-notification-emails">Shipping notifications</a></li>
+          <li><a href="/parse-lead-emails">Lead emails</a></li>
+          <li><a href="/email-to-json">Email to JSON</a></li>
+          <li><a href="/email-to-webhook">Email to webhook</a></li>
+        </ul>
+      </nav>
+      <nav aria-label="Compare">
+        <h2>Compare</h2>
+        <ul>
+          <li><a href="/email-parsing-api">Email parsing API</a></li>
+          <li><a href="/mailparser-alternative">Mailparser alternative</a></li>
+          <li><a href="/parseur-alternative">Parseur alternative</a></li>
+          <li><a href="/docparser-alternative">Docparser alternative</a></li>
+          <li><a href="/zapier-email-parser-alternative">Zapier Email Parser alternative</a></li>
+        </ul>
+      </nav>
+      <nav aria-label="Mint APIs family">
+        <h2>Mint APIs</h2>
+        <ul>
+          <li><a href="https://pdf.mintapis.com/">PDFMint &mdash; HTML to PDF</a></li>
+          <li><a href="https://docmint.app.mintapis.com/">DocMint &mdash; Office templates</a></li>
+          <li><a href="/">MailMint &mdash; email to JSON</a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="l-foot-bottom">
+      <span>&copy; 2026 productivity-boost.com Betriebs UG (haftungsbeschr&auml;nkt) &amp; Co. KG</span>
+      <nav aria-label="Legal">
+        <a href="/impressum">Impressum</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="/status">Status</a>
+      </nav>
+    </div>
   </div>
 </footer>
 
 <script src="/docs.js"></script>
+<script src="/theme.js" defer></script>
 </body>
 </html>

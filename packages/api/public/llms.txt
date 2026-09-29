@@ -1,0 +1,43 @@
+# MailMint
+
+> MailMint is an inbound email parsing API: send email to a hosted address or POST raw MIME to `/v1/parse`, and get back the fields you described as JSON. Every field carries a computed confidence, the layer it came from (rules, model or both) and the verbatim text of the message it was read from; anything doubtful sets `needs_review: true`. Results arrive by signed webhook, by polling, or in n8n through the `n8n-nodes-mailmint` community node. Free plan: 300 parsed emails a month, no card.
+
+MailMint is operated by productivity-boost.com Betriebs UG (haftungsbeschränkt) & Co. KG, Passau, Germany, and runs on a single server in Finland (EU). Part of the Mint APIs family with PDFMint and DocMint.
+
+## Docs
+
+- [Quickstart](https://mailmint.app.mintapis.com/quickstart): API key, first parse, first mailbox
+- [API documentation](https://mailmint.app.mintapis.com/docs): endpoints, schema field types, confidence rules, webhooks and signatures, events
+- [API reference](https://mailmint.app.mintapis.com/docs/reference): every endpoint with request and response
+- [OpenAPI 3.1 spec](https://mailmint.app.mintapis.com/openapi.json): machine-readable API description
+- [n8n node](https://mailmint.app.mintapis.com/n8n): install `n8n-nodes-mailmint`, schema editor on the canvas, trigger by webhook or polling
+
+## Pricing
+
+- [Plans](https://mailmint.app.mintapis.com/#pricing): Free $0 (300 emails/month), Starter $9/month (5,000), Pro $29/month (25,000), Scale $99/month (150,000)
+
+## Guides and use cases
+
+- [Email to JSON](https://mailmint.app.mintapis.com/email-to-json): what a raw .eml becomes after MIME decoding, reply stripping, table and entity detection
+- [Email to webhook](https://mailmint.app.mintapis.com/email-to-webhook): a mailbox address that POSTs each message as signed JSON to your endpoint
+- [Email parsing API](https://mailmint.app.mintapis.com/email-parsing-api): how MailMint compares as a developer API
+- [Parse invoice emails](https://mailmint.app.mintapis.com/parse-invoice-emails)
+- [Parse order confirmation emails](https://mailmint.app.mintapis.com/parse-order-confirmation-emails)
+- [Parse shipping notification emails](https://mailmint.app.mintapis.com/parse-shipping-notification-emails)
+- [Parse lead emails](https://mailmint.app.mintapis.com/parse-lead-emails)
+
+## Comparisons
+
+- [Mailparser alternative](https://mailmint.app.mintapis.com/mailparser-alternative)
+- [Parseur alternative](https://mailmint.app.mintapis.com/parseur-alternative)
+- [Docparser alternative](https://mailmint.app.mintapis.com/docparser-alternative)
+- [Zapier Email Parser alternative](https://mailmint.app.mintapis.com/zapier-email-parser-alternative)
+
+## Optional
+
+- [Status and limitations](https://mailmint.app.mintapis.com/status): no SLA, no published uptime; `/healthz` for a live check
+- [Privacy policy](https://mailmint.app.mintapis.com/privacy)
+- [Terms of service](https://mailmint.app.mintapis.com/terms)
+- [Impressum](https://mailmint.app.mintapis.com/impressum)
+- [PDFMint](https://pdf.mintapis.com/): HTML, Markdown or URL to PDF API, sibling product
+- [DocMint](https://docmint.app.mintapis.com/): fill Word, Excel and PowerPoint templates from JSON, sibling product

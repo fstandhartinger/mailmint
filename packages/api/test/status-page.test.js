@@ -56,7 +56,10 @@ test('status page makes no invented claims', () => {
 test('status page makes no third-party requests', () => {
   const html = read('status.html');
   const ownHost = 'https://mailmint.app.mintapis.com/status';
-  const urls = [...html.matchAll(/(?:src|href)="([^"]*)"/g)].map((m) => m[1]);
+  // A plain <a href> is navigation, not a request the page makes, so the footer's
+  // links to the sibling Mint APIs products are allowed; everything that loads
+  // (src=, <link href>) must stay on the own host.
+  const urls = [...html.replace(/<a\b[^>]*>/gi, '').matchAll(/(?:src|href)="([^"]*)"/g)].map((m) => m[1]);
   for (const url of urls) {
     if (/^https?:\/\//.test(url)) {
       assert.equal(url, ownHost, `status.html must not reference ${url}; only the own-host URL is allowed`);

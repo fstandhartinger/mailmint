@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Email to webhook — inbound mail as signed JSON POSTs</title>
+<meta name="description" content="Give each workflow an email address; every message arrives at your endpoint as a signed JSON POST with parsed fields, retries and a polling fallback.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://mailmint.app.mintapis.com/email-to-webhook">
+<meta property="og:title" content="Email to webhook — inbound mail as signed JSON POSTs">
+<meta property="og:description" content="An address per workflow, a signed POST per message, six retries, several endpoints per mailbox, and a polling feed for receivers the internet cannot reach.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://mailmint.app.mintapis.com/email-to-webhook">
+<meta property="og:site_name" content="MailMint">
+<meta property="og:image" content="https://mailmint.app.mintapis.com/og-image.png">
+<meta property="og:image:alt" content="MailMint: an inbound email address on the left, the structured JSON it returns on the right, each field carrying its confidence.">
+<meta name="twitter:card" content="summary_large_image">
+<meta property="og:image:width" content="2400">
+<meta property="og:image:height" content="1260">
+<meta name="twitter:title" content="Email to webhook — inbound mail as signed JSON POSTs">
+<meta name="twitter:description" content="Give each workflow an email address; every message arrives at your endpoint as a signed JSON POST with parsed fields, retries and a polling fallback.">
+<meta name="twitter:image" content="https://mailmint.app.mintapis.com/og-image.png">
+<meta name="twitter:image:alt" content="MailMint: an inbound email address on the left, the structured JSON it returns on the right, each field carrying its confidence.">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1012" media="(prefers-color-scheme: dark)">
+<script>try{var t=localStorage.getItem('mint-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="preload" href="/fonts/inter-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/fonts/fonts.css">
+<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="/docs.css">
+<link rel="stylesheet" href="/landing.css">
+<script type="application/ld+json">
+[
+ {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+   {
+    "@type": "ListItem",
+    "position": 1,
+    "name": "MailMint",
+    "item": "https://mailmint.app.mintapis.com/"
+   },
+   {
+    "@type": "ListItem",
+    "position": 2,
+    "name": "Email to webhook",
+    "item": "https://mailmint.app.mintapis.com/email-to-webhook"
+   }
+  ]
+ },
+ {
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Email to webhook — inbound mail as signed JSON POSTs",
+  "description": "Give each workflow an email address; every message arrives at your endpoint as a signed JSON POST with parsed fields, retries and a polling fallback.",
+  "url": "https://mailmint.app.mintapis.com/email-to-webhook",
+  "inLanguage": "en",
+  "about": {
+   "@id": "https://mailmint.app.mintapis.com/#software"
+  },
+  "publisher": {
+   "@type": "Organization",
+   "name": "productivity-boost.com Betriebs UG (haftungsbeschränkt) & Co. KG",
+   "url": "https://mailmint.app.mintapis.com/impressum"
+  }
+ }
+]
+</script>
+</head>
+<body class="docs">
+
+<a class="l-skip" href="#main">Skip to content</a>
+
+<header class="l-top">
+  <div class="l-wrap l-top-in">
+    <a class="l-logo" href="/" aria-label="MailMint home">
+      <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><rect x="4" y="7" width="24" height="18" rx="4" stroke="currentColor" stroke-width="2.2"/><path class="m" d="M5.5 10.5 16 18l10.5-7.5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Mail<b>Mint</b></span>
+    </a>
+    <nav class="l-nav" aria-label="Primary">
+      <a href="/#how">How it works</a>
+      <a href="/n8n">n8n</a>
+      <a href="/docs" class="l-keep">Docs</a>
+      <a href="/#compare">Compare</a>
+      <a href="/#pricing">Pricing</a>
+    </nav>
+    <div class="l-actions">
+      <button class="l-theme" type="button" data-theme-toggle aria-label="Switch colour theme">
+        <svg class="i-moon" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M16.5 12.2A7 7 0 0 1 7.8 3.5a7 7 0 1 0 8.7 8.7Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        <svg class="i-sun" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="3.4" stroke="currentColor" stroke-width="1.6"/><path d="M10 1.8v2M10 16.2v2M1.8 10h2M16.2 10h2M4.2 4.2l1.4 1.4M14.4 14.4l1.4 1.4M4.2 15.8l1.4-1.4M14.4 5.6l1.4-1.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+      <a class="l-signin" href="/login">Sign in</a>
+      <a class="l-btn l-btn-primary l-btn-sm" href="/signup">Get a key</a>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+
+  <aside class="toc">
+    <button class="toc-toggle" id="tocToggle" aria-expanded="false" aria-controls="tocBody">On this page</button>
+    <div class="toc-body" id="tocBody">
+      <h2>Setting it up</h2>
+      <ul>
+        <li><a href="#flow">From mail to POST</a></li>
+        <li><a href="#create">One call to get an address</a></li>
+        <li><a href="#request">The request you receive</a></li>
+      </ul>
+      <h2>Receiving it safely</h2>
+      <ul>
+        <li><a href="#verify">Verifying the signature</a></li>
+        <li><a href="#retries">Retries and idempotency</a></li>
+        <li><a href="#endpoints">Several endpoints</a></li>
+        <li><a href="#test">Testing without mail</a></li>
+        <li><a href="#polling">When you cannot take a webhook</a></li>
+      </ul>
+      <h2>Then</h2>
+      <ul>
+        <li><a href="#not">What this is not</a></li>
+        <li><a href="#more">Related pages</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <main class="content" id="main">
+<nav class="l-crumbs" aria-label="Breadcrumb"><ol><li><a href="/">MailMint</a></li><li aria-current="page">Email to webhook</li></ol></nav>
+<h1>Email to webhook</h1>
+<p class="lede">A supplier, a shop or a web form sends mail. You want it to arrive at your own endpoint as an
+HTTP request with JSON you can trust &mdash; not in an inbox somebody has to poll with IMAP. This page walks
+through exactly what MailMint sends, how to verify it, and what happens when your endpoint is down.</p>
+
+<section id="flow">
+<h2>From mail to POST <a class="anchor" href="#flow">#</a></h2>
+<ol>
+<li>You create a <strong>mailbox</strong>. It gets its own address,
+<code>&lt;token&gt;@smooth-operator.online</code>, whose MX record points at <code>mx.smooth-operator.online</code>.
+Forward mail to it, or give it out directly.</li>
+<li>Mail arrives over SMTP. MailMint verifies SPF, DKIM and DMARC itself against live DNS, keeps the original
+bytes, and parses the message &mdash; against your schema, if the mailbox has one.</li>
+<li>The result is <strong>POSTed to every active webhook endpoint</strong> on the mailbox, signed with that
+endpoint&rsquo;s secret, and also written to the <a href="#polling">event feed</a>.</li>
+</ol>
+<p>The body of the POST is byte-for-byte the same message object <code>GET /v1/messages/{id}</code> returns
+&mdash; one function builds both.</p>
+</section>
+
+<section id="create">
+<h2>One call to get an address <a class="anchor" href="#create">#</a></h2>
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre tabindex="0"><code>curl -X POST "$MAILMINT_URL/v1/mailboxes" \
+  -H "Authorization: Bearer $MAILMINT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "name": "Invoices",
+        "webhook_url": "https://your-app.example/hooks/mailmint",
+        "schema": { "invoice_number": "string", "total": "number", "due_date": "date" } }'</code></pre>
+</div>
+<p>The <code>201</code> response contains the mailbox&rsquo;s <code>address</code>, a slug
+<code>alias</code> (<code>invoices.k7m2xq4h9bwz@…</code>) and the <code>webhook_secret</code>. Plus-addressing
+works too: <code>k7m2xq4h9bwz+acme@…</code> lands in the same mailbox and the tag survives on
+<code>envelope.to</code>, so one mailbox can tell several senders apart. Up to 100 mailboxes per account.</p>
+<p>No code at all? The <a href="/n8n">n8n trigger node</a> creates the webhook registration itself when you
+activate a workflow.</p>
+</section>
+
+<section id="request">
+<h2>The request you receive <a class="anchor" href="#request">#</a></h2>
+<div class="code">
+<pre tabindex="0"><code>POST /hooks/mailmint HTTP/1.1
+content-type: application/json
+user-agent: MailMint-Webhook/1
+x-mailmint-event: message.parsed
+x-mailmint-delivery: dlv_01JQ8Z3K4M5N6P7Q8R9S
+x-mailmint-timestamp: 1787648043
+x-mailmint-signature: t=1787648043,v1=6a1f…c07b
+
+{
+  "id": "msg_01JQ8Z3K4M5N6P7Q8R9S",
+  "mailbox": { "id": "mbx_01JQ8Y…", "address": "k7m2xq4h9bwz@smooth-operator.online", "name": "Invoices" },
+  "envelope": { "from": "billing@acme.example", "to": ["k7m2xq4h9bwz@smooth-operator.online"], "tls": true },
+  "auth": { "spf": "pass", "dkim": "pass", "dmarc": "pass", "spam_score": 0.4 },
+  "headers": { … }, "body": { … }, "attachments": [ … ], "tables": [ … ],
+  "fields": {
+    "total": { "value": 31.5, "confidence": 0.97, "source": "rule", "evidence": "Total: $31.50" },
+    …
+  },
+  "flags": [],
+  "needs_review": false,
+  "status": "parsed",
+  "raw_url": "https://…/v1/messages/msg_01JQ8Z…/raw"
+}</code></pre>
+</div>
+<div class="tw" tabindex="0">
+<table>
+<thead><tr><th>Header</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td><code>x-mailmint-event</code></td><td class="wrap"><code>message.parsed</code></td></tr>
+<tr><td><code>x-mailmint-delivery</code></td><td class="wrap">The delivery id. Stable across retries of the same
+delivery, so it is the right idempotency key.</td></tr>
+<tr><td><code>x-mailmint-timestamp</code></td><td class="wrap">A convenience copy. Verify against the
+<code>t=</code> inside the signature, which is the value actually signed.</td></tr>
+<tr><td><code>x-mailmint-endpoint</code></td><td class="wrap">Which endpoint the delivery belongs to, when the
+mailbox has <a href="#endpoints">several</a>.</td></tr>
+<tr><td><code>x-mailmint-signature</code></td><td class="wrap"><code>t=&lt;unix&gt;,v1=&lt;hex&gt;</code></td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<section id="verify">
+<h2>Verifying the signature <a class="anchor" href="#verify">#</a></h2>
+<div class="code">
+<pre tabindex="0"><code>signed_payload = "&lt;t&gt;" + "." + &lt;the raw request body, byte for byte&gt;
+v1             = hex( HMAC_SHA256( key = webhook_secret, message = signed_payload ) )</code></pre>
+</div>
+<p>Three things decide whether a verification is correct: use the <strong>raw body</strong> (re-serialised JSON
+will not match), <strong>reject stale timestamps</strong> (about five minutes &mdash; the timestamp is signed, so a
+captured request cannot be replayed later), and <strong>compare in constant time</strong>.</p>
+<div class="tabs" role="tablist" aria-label="Verification examples">
+  <button role="tab" id="t-node" aria-controls="p-node" data-panel="p-node" aria-selected="true" tabindex="0">Node.js (Express)</button>
+  <button role="tab" id="t-py" aria-controls="p-py" data-panel="p-py" aria-selected="false" tabindex="-1">Python (Flask)</button>
+</div>
+<div class="panel" id="p-node" role="tabpanel" aria-labelledby="t-node">
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre tabindex="0"><code>const crypto = require('node:crypto');
+const express = require('express');
+
+const app = express();
+const SECRET = process.env.MAILMINT_WEBHOOK_SECRET;   // from the mailbox object
+const TOLERANCE_SECONDS = 300;
+
+// express.raw gives req.body as a Buffer — the exact bytes we sent.
+app.post('/hooks/mailmint', express.raw({ type: 'application/json' }), (req, res) =&gt; {
+  const header = req.get('x-mailmint-signature') || '';
+  const parts = Object.fromEntries(
+    header.split(',').map((p) =&gt; p.split('=').map((s) =&gt; s.trim())),
+  );
+  if (!parts.t || !parts.v1) return res.status(400).send('malformed signature');
+
+  const age = Math.abs(Math.floor(Date.now() / 1000) - Number(parts.t));
+  if (!Number.isFinite(age) || age &gt; TOLERANCE_SECONDS) {
+    return res.status(400).send('stale signature');
+  }
+
+  const expected = crypto
+    .createHmac('sha256', SECRET)
+    .update(`${parts.t}.${req.body.toString('utf8')}`)
+    .digest('hex');
+  const a = Buffer.from(expected, 'hex');
+  const b = Buffer.from(parts.v1, 'hex');
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    return res.status(401).send('bad signature');
+  }
+
+  const message = JSON.parse(req.body.toString('utf8'));
+  res.sendStatus(200);   // answer fast — deliveries time out at 10 s
+  if (message.needs_review) console.warn(message.id, 'needs review:', message.flags);
+  else save(message.fields);
+});</code></pre>
+</div>
+</div>
+<div class="panel" id="p-py" role="tabpanel" aria-labelledby="t-py" hidden>
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre tabindex="0"><code>import hmac, hashlib, os, time
+from flask import Flask, request, abort
+
+app = Flask(__name__)
+SECRET = os.environ["MAILMINT_WEBHOOK_SECRET"].encode()   # from the mailbox object
+TOLERANCE_SECONDS = 300
+
+@app.post("/hooks/mailmint")
+def mailmint_webhook():
+    header = request.headers.get("X-MailMint-Signature", "")
+    parts = dict(p.split("=", 1) for p in header.split(",") if "=" in p)
+    t, v1 = parts.get("t"), parts.get("v1")
+    if not t or not v1:
+        abort(400, "malformed signature")
+    try:
+        if abs(time.time() - int(t)) &gt; TOLERANCE_SECONDS:
+            abort(400, "stale signature")
+    except ValueError:
+        abort(400, "malformed timestamp")
+
+    body = request.get_data()          # the exact bytes — not request.json
+    expected = hmac.new(SECRET, t.encode() + b"." + body, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected, v1):
+        abort(401, "bad signature")
+
+    message = request.get_json()
+    if message["needs_review"]:
+        app.logger.warning("%s needs review: %s", message["id"], message["flags"])
+    else:
+        save(message["fields"])
+    return "", 200                     # answer fast — deliveries time out at 10 s</code></pre>
+</div>
+</div>
+</section>
+
+<section id="retries">
+<h2>Retries and idempotency <a class="anchor" href="#retries">#</a></h2>
+<div class="tw" tabindex="0">
+<table>
+<thead><tr><th>Attempt</th><th>Delay after the previous failure</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>immediately</td></tr>
+<tr><td>2</td><td>30 seconds</td></tr>
+<tr><td>3</td><td>2 minutes</td></tr>
+<tr><td>4</td><td>10 minutes</td></tr>
+<tr><td>5</td><td>1 hour</td></tr>
+<tr><td>6</td><td>6 hours</td></tr>
+</tbody>
+</table>
+</div>
+<ul>
+<li>Any <code>2xx</code> is success. Anything else, or a 10-second timeout, retries &mdash; except a
+<code>4xx</code>, which means your endpoint understood and said no. <code>408</code> and <code>429</code> do
+retry.</li>
+<li>The queue lives in the database, so a redeploy mid-flight does not lose a delivery.</li>
+<li>The body is rebuilt from the stored result at each attempt: if you re-parsed and fixed a field between
+attempts, the retry carries the corrected version.</li>
+<li>Use <code>x-mailmint-delivery</code> as the idempotency key; it does not change between attempts.</li>
+</ul>
+</section>
+
+<section id="endpoints">
+<h2>Several endpoints on one mailbox <a class="anchor" href="#endpoints">#</a></h2>
+<p>A single <code>webhook_url</code> is a shared global: two workflows registering on the same mailbox would
+overwrite each other. So a mailbox holds a list of endpoints, each with its own id, secret, retry schedule and
+health. <code>POST /v1/mailboxes/{id}/webhooks</code> adds one; the secret is returned once, like an API key.
+An endpoint whose last 10 deliveries all exhausted six attempts is switched off, with
+<code>disabled_at</code> and <code>disabled_reason</code> set, and comes back with
+<code>PATCH {"active": true}</code>. <a href="/docs#webhook-endpoints">Reference</a>.</p>
+</section>
+
+<section id="test">
+<h2>Testing without mail <a class="anchor" href="#test">#</a></h2>
+<p><code>POST /v1/test/deliver</code> injects a message into a mailbox exactly as if it had arrived from the
+internet: stored, parsed, given an id, added to the event feed and delivered to your webhook through the real
+signing path. Point <code>webhook_url</code> at a local tunnel and iterate on your handler without waiting for
+anybody to send you anything.</p>
+</section>
+
+<section id="polling">
+<h2>When you cannot take a webhook <a class="anchor" href="#polling">#</a></h2>
+<p>An n8n on a laptop or a service behind a firewall cannot be reached from the internet. The same events are
+in a feed you can poll:</p>
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre tabindex="0"><code>curl "$MAILMINT_URL/v1/events?cursor=1421&amp;limit=50" \
+  -H "Authorization: Bearer $MAILMINT_API_KEY"</code></pre>
+</div>
+<p>The cursor is a strictly increasing integer; <code>next_cursor</code> comes back unchanged when there is
+nothing new, and <code>has_more</code> tells you to poll again at once. Events are kept for 7 days.</p>
+</section>
+
+<section id="not">
+<h2>What this is not <a class="anchor" href="#not">#</a></h2>
+<ul>
+<li><strong>Not an email-sending service.</strong> MailMint only receives. It sends nothing on your behalf.</li>
+<li><strong>Not only a MIME forwarder.</strong> Inbound webhooks from general mail providers typically hand
+you the message split into headers, text and attachments and leave extraction to you. MailMint adds the
+cleaned body, tables and the fields of your schema with a confidence each &mdash; if you only need the split,
+a provider you already use may be enough.</li>
+<li><strong>Not an SLA.</strong> There is no service level agreement and no published uptime history yet; see
+<a href="/status">the status page</a>.</li>
+</ul>
+<p>Free is 300 parsed emails a month, no card. <a href="/signup">Get an API key</a>, or read
+<a href="/docs#webhooks">the webhook reference</a>.</p>
+</section>
+
+<section id="more" class="l-related">
+<h2>Related pages <a class="anchor" href="#more">#</a></h2>
+<div class="l-grid l-grid-3">
+  <a class="l-card" href="/parse-invoice-emails"><h3 class="l-h3">Parsing invoice emails</h3><p>Net, VAT and gross, with the arithmetic checked.</p></a>
+  <a class="l-card" href="/parse-order-confirmation-emails"><h3 class="l-h3">Parsing order confirmations</h3><p>Every line item, reconciled against the total.</p></a>
+  <a class="l-card" href="/parse-shipping-notification-emails"><h3 class="l-h3">Parsing shipping notifications</h3><p>Tracking number, carrier and promised date.</p></a>
+  <a class="l-card" href="/parse-lead-emails"><h3 class="l-h3">Parsing lead emails</h3><p>CRM records, with doubtful values held back.</p></a>
+  <a class="l-card" href="/email-parsing-api"><h3 class="l-h3">What an email parsing API must get right</h3><p>The category, from MIME to the review queue.</p></a>
+  <a class="l-card" href="/mailparser-alternative"><h3 class="l-h3">MailMint vs Mailparser</h3><p>Pricing, add-ons, and when to stay where you are.</p></a>
+</div>
+<p class="l-small" style="margin-top:1.25rem">Also from the Mint APIs family: <a href="https://pdf.mintapis.com/">PDFMint</a> turns HTML, Markdown or a URL into a PDF, and <a href="https://docmint.app.mintapis.com/">DocMint</a> fills Word, Excel and PowerPoint templates from JSON.</p>
+</section>
+
+  </main>
+</div>
+
+<footer class="l-foot">
+  <div class="l-wrap">
+    <div class="l-foot-grid">
+      <div class="l-foot-brand">
+        <a class="l-logo" href="/" aria-label="MailMint home">
+          <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><rect x="4" y="7" width="24" height="18" rx="4" stroke="currentColor" stroke-width="2.2"/><path class="m" d="M5.5 10.5 16 18l10.5-7.5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Mail<b>Mint</b></span>
+        </a>
+        <p>Inbound email to structured JSON, with a confidence and the source text for every field.</p>
+      </div>
+      <nav aria-label="Product">
+        <h2>Product</h2>
+        <ul>
+          <li><a href="/quickstart">Quickstart</a></li>
+          <li><a href="/docs">API reference</a></li>
+          <li><a href="/openapi.json">OpenAPI spec</a></li>
+          <li><a href="/n8n">n8n node</a></li>
+          <li><a href="/#pricing">Pricing</a></li>
+          <li><a href="/login">Sign in</a></li>
+          <li><a href="/signup">Create account</a></li>
+        </ul>
+      </nav>
+      <nav aria-label="Use cases">
+        <h2>Use cases</h2>
+        <ul>
+          <li><a href="/parse-invoice-emails">Invoice emails</a></li>
+          <li><a href="/parse-order-confirmation-emails">Order confirmations</a></li>
+          <li><a href="/parse-shipping-notification-emails">Shipping notifications</a></li>
+          <li><a href="/parse-lead-emails">Lead emails</a></li>
+          <li><a href="/email-to-json">Email to JSON</a></li>
+          <li><a href="/email-to-webhook">Email to webhook</a></li>
+        </ul>
+      </nav>
+      <nav aria-label="Compare">
+        <h2>Compare</h2>
+        <ul>
+          <li><a href="/email-parsing-api">Email parsing API</a></li>
+          <li><a href="/mailparser-alternative">Mailparser alternative</a></li>
+          <li><a href="/parseur-alternative">Parseur alternative</a></li>
+          <li><a href="/docparser-alternative">Docparser alternative</a></li>
+          <li><a href="/zapier-email-parser-alternative">Zapier Email Parser alternative</a></li>
+        </ul>
+      </nav>
+      <nav aria-label="Mint APIs family">
+        <h2>Mint APIs</h2>
+        <ul>
+          <li><a href="https://pdf.mintapis.com/">PDFMint &mdash; HTML to PDF</a></li>
+          <li><a href="https://docmint.app.mintapis.com/">DocMint &mdash; Office templates</a></li>
+          <li><a href="/">MailMint &mdash; email to JSON</a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="l-foot-bottom">
+      <span>&copy; 2026 productivity-boost.com Betriebs UG (haftungsbeschr&auml;nkt) &amp; Co. KG</span>
+      <nav aria-label="Legal">
+        <a href="/impressum">Impressum</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="/status">Status</a>
+      </nav>
+    </div>
+  </div>
+</footer>
+
+<script src="/docs.js"></script>
+<script src="/theme.js" defer></script>
+</body>
+</html>

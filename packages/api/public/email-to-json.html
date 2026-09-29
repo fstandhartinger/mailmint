@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Convert email to JSON — raw MIME to a clean object</title>
+<meta name="description" content="POST a raw .eml and get JSON back: decoded headers, text, HTML, the body without the reply chain, attachments, tables and detected amounts, dates and ids.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://mailmint.app.mintapis.com/email-to-json">
+<meta property="og:title" content="Convert email to JSON — raw MIME to a clean object">
+<meta property="og:description" content="What an email looks like as JSON when the MIME, the charsets, the quoted reply chain and the tables have been dealt with. Real parser output, printed in full.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://mailmint.app.mintapis.com/email-to-json">
+<meta property="og:site_name" content="MailMint">
+<meta property="og:image" content="https://mailmint.app.mintapis.com/og-image.png">
+<meta property="og:image:alt" content="MailMint: an inbound email address on the left, the structured JSON it returns on the right, each field carrying its confidence.">
+<meta name="twitter:card" content="summary_large_image">
+<meta property="og:image:width" content="2400">
+<meta property="og:image:height" content="1260">
+<meta name="twitter:title" content="Convert email to JSON — raw MIME to a clean object">
+<meta name="twitter:description" content="POST a raw .eml and get JSON back: decoded headers, text, HTML, the body without the reply chain, attachments, tables and detected amounts, dates and ids.">
+<meta name="twitter:image" content="https://mailmint.app.mintapis.com/og-image.png">
+<meta name="twitter:image:alt" content="MailMint: an inbound email address on the left, the structured JSON it returns on the right, each field carrying its confidence.">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1012" media="(prefers-color-scheme: dark)">
+<script>try{var t=localStorage.getItem('mint-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="preload" href="/fonts/inter-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/fonts/fonts.css">
+<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="/docs.css">
+<link rel="stylesheet" href="/landing.css">
+<script type="application/ld+json">
+[
+ {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+   {
+    "@type": "ListItem",
+    "position": 1,
+    "name": "MailMint",
+    "item": "https://mailmint.app.mintapis.com/"
+   },
+   {
+    "@type": "ListItem",
+    "position": 2,
+    "name": "Email to JSON",
+    "item": "https://mailmint.app.mintapis.com/email-to-json"
+   }
+  ]
+ },
+ {
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Convert email to JSON — raw MIME to a clean object",
+  "description": "POST a raw .eml and get JSON back: decoded headers, text, HTML, the body without the reply chain, attachments, tables and detected amounts, dates and ids.",
+  "url": "https://mailmint.app.mintapis.com/email-to-json",
+  "inLanguage": "en",
+  "about": {
+   "@id": "https://mailmint.app.mintapis.com/#software"
+  },
+  "publisher": {
+   "@type": "Organization",
+   "name": "productivity-boost.com Betriebs UG (haftungsbeschränkt) & Co. KG",
+   "url": "https://mailmint.app.mintapis.com/impressum"
+  }
+ }
+]
+</script>
+</head>
+<body class="docs">
+
+<a class="l-skip" href="#main">Skip to content</a>
+
+<header class="l-top">
+  <div class="l-wrap l-top-in">
+    <a class="l-logo" href="/" aria-label="MailMint home">
+      <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><rect x="4" y="7" width="24" height="18" rx="4" stroke="currentColor" stroke-width="2.2"/><path class="m" d="M5.5 10.5 16 18l10.5-7.5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Mail<b>Mint</b></span>
+    </a>
+    <nav class="l-nav" aria-label="Primary">
+      <a href="/#how">How it works</a>
+      <a href="/n8n">n8n</a>
+      <a href="/docs" class="l-keep">Docs</a>
+      <a href="/#compare">Compare</a>
+      <a href="/#pricing">Pricing</a>
+    </nav>
+    <div class="l-actions">
+      <button class="l-theme" type="button" data-theme-toggle aria-label="Switch colour theme">
+        <svg class="i-moon" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M16.5 12.2A7 7 0 0 1 7.8 3.5a7 7 0 1 0 8.7 8.7Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        <svg class="i-sun" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="3.4" stroke="currentColor" stroke-width="1.6"/><path d="M10 1.8v2M10 16.2v2M1.8 10h2M16.2 10h2M4.2 4.2l1.4 1.4M14.4 14.4l1.4 1.4M4.2 15.8l1.4-1.4M14.4 5.6l1.4-1.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+      <a class="l-signin" href="/login">Sign in</a>
+      <a class="l-btn l-btn-primary l-btn-sm" href="/signup">Get a key</a>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+
+  <aside class="toc">
+    <button class="toc-toggle" id="tocToggle" aria-expanded="false" aria-controls="tocBody">On this page</button>
+    <div class="toc-body" id="tocBody">
+      <h2>The job</h2>
+      <ul>
+        <li><a href="#meaning">What &ldquo;email to JSON&rdquo; has to mean</a></li>
+        <li><a href="#request">The request</a></li>
+        <li><a href="#response">The response, in full</a></li>
+      </ul>
+      <h2>Reading it</h2>
+      <ul>
+        <li><a href="#keys">Key by key</a></li>
+        <li><a href="#auth">Sender authentication</a></li>
+        <li><a href="#schema">Adding a schema</a></li>
+      </ul>
+      <h2>Then</h2>
+      <ul>
+        <li><a href="#limits">Limits</a></li>
+        <li><a href="#stay">When a library is enough</a></li>
+        <li><a href="#more">Related pages</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <main class="content" id="main">
+<nav class="l-crumbs" aria-label="Breadcrumb"><ol><li><a href="/">MailMint</a></li><li aria-current="page">Email to JSON</li></ol></nav>
+<h1>Convert an email to JSON</h1>
+<p class="lede">An <code>.eml</code> file is text, but it is not data. It is MIME: nested parts, transfer
+encodings, a charset per part, encoded words in the subject, and &mdash; in anything that is a reply &mdash;
+a quoted copy of the whole previous conversation underneath the two lines that matter. This page shows what
+the same message looks like after all of that has been dealt with.</p>
+
+<div class="note">
+<p><strong>The output below is real.</strong> It is what MailMint&rsquo;s parser (<code>packages/parser</code>,
+the code behind <code>POST /v1/parse</code>) returned on 25&nbsp;September 2026 for
+<code>fx-08-reply-chain-invoice.eml</code>, a message from its test corpus, sent without a schema. It is
+printed in full except for one key, noted where it was cut.</p>
+</div>
+
+<section id="meaning">
+<h2>What &ldquo;email to JSON&rdquo; has to mean <a class="anchor" href="#meaning">#</a></h2>
+<p>Splitting a message into <code>headers</code> and <code>body</code> is the easy tenth of the job. What makes
+the result usable is everything a MIME library leaves to you:</p>
+<ul>
+<li><strong>Decoded text.</strong> Quoted-printable and base64 undone, legacy charsets such as ISO-8859-1 and
+Windows-1252 normalised to UTF-8, RFC&nbsp;2047 encoded words in headers and RFC&nbsp;2231 file names
+reassembled.</li>
+<li><strong>The part you actually want.</strong> A reply carries the whole thread. <code>stripped_text</code> is
+the new message with the quoted chain and the signature removed.</li>
+<li><strong>Text from HTML-only mail.</strong> When there is no plain-text part, <code>text_from_html</code> is
+rendered from the HTML so there is always something to read.</li>
+<li><strong>Tables as rows.</strong> HTML grids, repeating blocks and whitespace-aligned text all become
+<code>tables[]</code> with <code>headers</code>, <code>rows</code>, <code>records</code> and a
+<code>row_count</code>.</li>
+<li><strong>What is in it.</strong> Amounts with currency, dates normalised to ISO&nbsp;8601, ids, email addresses,
+URLs, phone numbers, postal addresses and a guessed document type, under <code>detected</code>.</li>
+</ul>
+</section>
+
+<section id="request">
+<h2>The request <a class="anchor" href="#request">#</a></h2>
+<p>Send the raw message as <code>raw_mime</code> (plain text or base64, up to 25&nbsp;MB). Leave
+<code>schema</code> out and you get the cleaned object without any extracted fields. Nothing is stored.</p>
+<div class="tabs" role="tablist" aria-label="Request examples">
+  <button role="tab" id="t-curl" aria-controls="p-curl" data-panel="p-curl" aria-selected="true" tabindex="0">curl</button>
+  <button role="tab" id="t-node" aria-controls="p-node" data-panel="p-node" aria-selected="false" tabindex="-1">Node.js</button>
+  <button role="tab" id="t-py" aria-controls="p-py" data-panel="p-py" aria-selected="false" tabindex="-1">Python</button>
+</div>
+<div class="panel" id="p-curl" role="tabpanel" aria-labelledby="t-curl">
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre tabindex="0"><code># jq builds the JSON body so the message does not need escaping by hand
+jq -Rs '{raw_mime: .}' message.eml |
+curl -X POST "$MAILMINT_URL/v1/parse" \
+  -H "Authorization: Bearer $MAILMINT_API_KEY" \
+  -H "Content-Type: application/json" \
+  --data-binary @-</code></pre>
+</div>
+</div>
+<div class="panel" id="p-node" role="tabpanel" aria-labelledby="t-node" hidden>
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre tabindex="0"><code>import { readFile } from 'node:fs/promises';
+
+const raw = await readFile('message.eml');
+const res = await fetch(`${process.env.MAILMINT_URL}/v1/parse`, {
+  method: 'POST',
+  headers: {
+    Authorization: `Bearer ${process.env.MAILMINT_API_KEY}`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({ raw_mime: raw.toString('base64') }),
+});
+const message = await res.json();
+console.log(message.body.stripped_text);</code></pre>
+</div>
+</div>
+<div class="panel" id="p-py" role="tabpanel" aria-labelledby="t-py" hidden>
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre tabindex="0"><code>import base64, os, pathlib, requests
+
+raw = pathlib.Path("message.eml").read_bytes()
+res = requests.post(
+    f"{os.environ['MAILMINT_URL']}/v1/parse",
+    headers={"Authorization": f"Bearer {os.environ['MAILMINT_API_KEY']}"},
+    json={"raw_mime": base64.b64encode(raw).decode()},
+    timeout=60,
+)
+res.raise_for_status()
+print(res.json()["body"]["stripped_text"])</code></pre>
+</div>
+</div>
+
+<p>The message itself, abbreviated to the parts that matter (the transport headers and a DKIM signature are
+above it in the file):</p>
+<div class="code">
+<pre tabindex="0"><code>From: Tomas Berglund &lt;tomas@halvard.se&gt;
+Subject: Re: Wrong total on INV-77211
+Date: Mon, 24 Aug 2026 17:22:38 +0200
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+Sorted - the corrected invoice is INV-77213 and the total is $2,415.60 inc=
+luding tax.
+Due date is September 12, 2026.
+
+Best,
+Tomas
+
+--
+Tomas Berglund | Finance
+Halvard AB | +46 8 121 489 00
+
+On Mon, Aug 24, 2026 at 4:51 PM Florian Standhartinger &lt;k7m2xq4h9bwz@parse=
+.example.com&gt; wrote:
+&gt; Hi Tomas,
+&gt;
+&gt; The invoice you sent (INV-77211) has last month's total on it - $1,980.0=
+0.
+&gt; Could you reissue?
+&gt; ...</code></pre>
+</div>
+</section>
+
+<section id="response">
+<h2>The response, in full <a class="anchor" href="#response">#</a></h2>
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre tabindex="0"><code>{
+  "received_at": "2026-09-25T23:35:02.006Z",
+  "headers": {
+    "message_id": "&lt;CAF9y@mail.halvard.se&gt;",
+    "date": "2026-08-24T15:22:38.000Z",
+    "subject": "Re: Wrong total on INV-77211",
+    "from": { "name": "Tomas Berglund", "email": "tomas@halvard.se" },
+    "to": [ { "name": null, "email": "k7m2xq4h9bwz@parse.example.com" } ],
+    "cc": [],
+    "reply_to": [],
+    "in_reply_to": "&lt;CAF3x@mail.example.com&gt;",
+    "references": [ "&lt;CAF1x@mail.halvard.se&gt;", "&lt;CAF3x@mail.example.com&gt;" ],
+    "raw": { … every header exactly as received, cut here for length … }
+  },
+  "body": {
+    "text": "Sorted - the corrected invoice is INV-77213 and the total is $2,415.60 including tax.\nDue date is September 12, 2026.\n\nBest,\nTomas\n\n--\nTomas Berglund | Finance\nHalvard AB | +46 8 121 489 00\n\nOn Mon, Aug 24, 2026 at 4:51 PM Florian Standhartinger &lt;k7m2xq4h9bwz@parse.example.com&gt; wrote:\n&gt; Hi Tomas,\n&gt;\n&gt; The invoice you sent (INV-77211) has last month's total on it - $1,980.00.\n&gt; Could you reissue?\n&gt;\n&gt; Thanks\n&gt;\n&gt; On Mon, Aug 24, 2026 at 2:10 PM Tomas Berglund &lt;tomas@halvard.se&gt; wrote:\n&gt;&gt; Invoice INV-77211 attached, total $1,980.00, due September 5, 2026.\n&gt;&gt;\n&gt;&gt; --\n&gt;&gt; Tomas",
+    "html": null,
+    "text_from_html": null,
+    "stripped_text": "Sorted - the corrected invoice is INV-77213 and the total is $2,415.60 including tax.\nDue date is September 12, 2026.\n\nBest,\nTomas",
+    "language": "en"
+  },
+  "attachments": [],
+  "tables": [],
+  "detected": {
+    "type": "invoice",
+    "emails": [],
+    "urls": [],
+    "phones": [],
+    "amounts": [ { "value": 2415.6, "currency": "USD", "raw": "$2,415.60" } ],
+    "dates": [ { "value": "2026-09-12", "raw": "September 12, 2026" } ],
+    "ids": [
+      { "kind": "invoice_number", "value": "INV-77213" },
+      { "kind": "invoice_number", "value": "INV-77211" }
+    ],
+    "addresses": []
+  },
+  "fields": {},
+  "flags": [ "no_schema" ],
+  "needs_review": false,
+  "parse": {
+    "request_id": "req_local",
+    "schema_version": null,
+    "model": null,
+    "llm_used": false,
+    "timings_ms": { "total": 102, "mime": 49, "deterministic": 43, "llm": 0, "persist": 0 },
+    "warnings": []
+  }
+}</code></pre>
+</div>
+<p>Through the HTTP endpoint the same object also carries <code>id</code>, <code>mailbox</code> and
+<code>raw_url</code> &mdash; all <code>null</code>, because <code>/v1/parse</code> stores nothing &mdash; and an
+<code>auth</code> block, described <a href="#auth">below</a>. The timings are from a local run on a busy
+machine; they are not a latency claim.</p>
+</section>
+
+<section id="keys">
+<h2>Key by key <a class="anchor" href="#keys">#</a></h2>
+<div class="tw" tabindex="0">
+<table>
+<thead><tr><th>Key</th><th>What to use it for</th></tr></thead>
+<tbody>
+<tr><td><code>headers</code></td><td class="wrap">Decoded, with addresses split into <code>name</code> and
+<code>email</code> and the date in UTC. <code>in_reply_to</code> and <code>references</code> let you thread
+conversations. <code>raw</code> keeps every header verbatim for anything not lifted out.</td></tr>
+<tr><td><code>body.text</code></td><td class="wrap">The plain-text part, transfer encoding undone &mdash; note the
+soft line breaks (<code>inc=</code>) are gone.</td></tr>
+<tr><td><code>body.stripped_text</code></td><td class="wrap">The new content only. Here the signature block and
+two levels of quoted reply are removed, which is what you want to show a person or hand to a model.</td></tr>
+<tr><td><code>body.language</code></td><td class="wrap">A detected language code for routing.</td></tr>
+<tr><td><code>attachments[]</code></td><td class="wrap">One object per file with <code>filename</code>,
+<code>content_type</code>, <code>size</code>, <code>sha256</code>, <code>inline</code> and
+<code>content_id</code>. Empty here.</td></tr>
+<tr><td><code>tables[]</code></td><td class="wrap">Every table found, with <code>row_count</code> and
+<code>truncated</code>. Empty here: a sentence is not a table.</td></tr>
+<tr><td><code>detected</code></td><td class="wrap">Everything recognisable, from the <em>whole</em> text. That is
+why both invoice numbers appear: <code>INV-77211</code> only exists in the quoted part. <code>detected</code>
+is a list of candidates, not an answer &mdash; deciding which one you mean is what a
+<a href="#schema">schema</a> is for.</td></tr>
+<tr><td><code>flags</code></td><td class="wrap"><code>no_schema</code> says, in the payload, that no fields were
+asked for &mdash; so an empty <code>fields</code> cannot be mistaken for a failed extraction.</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<section id="auth">
+<h2>Sender authentication <a class="anchor" href="#auth">#</a></h2>
+<p>For mail that arrives at a MailMint address, <code>auth</code> carries SPF, DKIM and DMARC verdicts computed
+by MailMint&rsquo;s own SMTP server against live DNS. Through <code>/v1/parse</code> the situation is
+different, and the response says so rather than guessing: DKIM can be verified from the message and DNS alone,
+but SPF and DMARC need the connecting IP and the SMTP envelope, which do not exist when someone posts bytes to
+an HTTP endpoint. Those two come back as <code>"unavailable"</code> with a reason, not as a pass.
+<a href="/docs#auth">The details</a>.</p>
+</section>
+
+<section id="schema">
+<h2>Adding a schema <a class="anchor" href="#schema">#</a></h2>
+<p>Add a <code>schema</code> and the same request also returns <code>fields</code>: one entry per field with a
+<code>value</code>, a computed <code>confidence</code>, the <code>source</code> layer and the
+<code>evidence</code> it was read from. For this message you would ask for the invoice number and total, and
+the parser would have to choose between the corrected invoice and the one quoted below it &mdash; which is the
+kind of decision the confidence and evidence exist to make checkable.</p>
+<div class="code">
+<button class="copy" type="button">Copy</button>
+<pre tabindex="0"><code>"schema": [
+  { "name": "invoice_number", "type": "string", "description": "the corrected invoice number" },
+  { "name": "total",          "type": "currency", "description": "total including tax" },
+  { "name": "due_date",       "type": "date" }
+]</code></pre>
+</div>
+<p>See <a href="/parse-invoice-emails">parsing invoice emails</a> for a full worked example with a field that
+came back doubtful, and <a href="/docs#schema">the schema reference</a> for the 13 field types.</p>
+</section>
+
+<section id="limits">
+<h2>Limits <a class="anchor" href="#limits">#</a></h2>
+<ul>
+<li>Up to 25&nbsp;MB per message.</li>
+<li>Every call counts as one parsed email against your plan &mdash; 300 a month on Free, no card.</li>
+<li>Nothing is stored: no message row, no raw bytes, no attachment blobs. Attachment <code>url</code>s are
+<code>null</code> for that reason; use a mailbox if you need the bytes later.</li>
+<li>Text inside PDF attachments is not extracted yet. The file&rsquo;s metadata and checksum are returned, its
+contents are not.</li>
+</ul>
+</section>
+
+<section id="stay">
+<h2>When a library is enough <a class="anchor" href="#stay">#</a></h2>
+<p>If you only need headers and a body out of well-formed mail, in-process, a MIME library is free and has no
+network hop: Python&rsquo;s standard <code>email</code> package, or <code>mailparser</code> on npm. The case for
+an API is everything after the split &mdash; the reply chain, the charsets real senders get wrong, tables,
+detection, and a schema with a confidence per field &mdash; and not having to maintain it.</p>
+<p><a href="/signup">Get a free API key</a> or start with <a href="/quickstart">the quickstart</a>.</p>
+</section>
+
+<section id="more" class="l-related">
+<h2>Related pages <a class="anchor" href="#more">#</a></h2>
+<div class="l-grid l-grid-3">
+  <a class="l-card" href="/email-to-webhook"><h3 class="l-h3">Email to webhook</h3><p>Signed POSTs, retries and a polling fallback.</p></a>
+  <a class="l-card" href="/parse-invoice-emails"><h3 class="l-h3">Parsing invoice emails</h3><p>Net, VAT and gross, with the arithmetic checked.</p></a>
+  <a class="l-card" href="/parse-order-confirmation-emails"><h3 class="l-h3">Parsing order confirmations</h3><p>Every line item, reconciled against the total.</p></a>
+  <a class="l-card" href="/parse-shipping-notification-emails"><h3 class="l-h3">Parsing shipping notifications</h3><p>Tracking number, carrier and promised date.</p></a>
+  <a class="l-card" href="/zapier-email-parser-alternative"><h3 class="l-h3">MailMint vs Zapier Email Parser</h3><p>When 15 blended templates stop being enough.</p></a>
+  <a class="l-card" href="/email-parsing-api"><h3 class="l-h3">What an email parsing API must get right</h3><p>The category, from MIME to the review queue.</p></a>
+</div>
+<p class="l-small" style="margin-top:1.25rem">Also from the Mint APIs family: <a href="https://pdf.mintapis.com/">PDFMint</a> turns HTML, Markdown or a URL into a PDF, and <a href="https://docmint.app.mintapis.com/">DocMint</a> fills Word, Excel and PowerPoint templates from JSON.</p>
+</section>
+
+  </main>
+</div>
+
+<footer class="l-foot">
+  <div class="l-wrap">
+    <div class="l-foot-grid">
+      <div class="l-foot-brand">
+        <a class="l-logo" href="/" aria-label="MailMint home">
+          <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><rect x="4" y="7" width="24" height="18" rx="4" stroke="currentColor" stroke-width="2.2"/><path class="m" d="M5.5 10.5 16 18l10.5-7.5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Mail<b>Mint</b></span>
+        </a>
+        <p>Inbound email to structured JSON, with a confidence and the source text for every field.</p>
+      </div>
+      <nav aria-label="Product">
+        <h2>Product</h2>
+        <ul>
+          <li><a href="/quickstart">Quickstart</a></li>
+          <li><a href="/docs">API reference</a></li>
+          <li><a href="/openapi.json">OpenAPI spec</a></li>
+          <li><a href="/n8n">n8n node</a></li>
+          <li><a href="/#pricing">Pricing</a></li>
+          <li><a href="/login">Sign in</a></li>
+          <li><a href="/signup">Create account</a></li>
+        </ul>
+      </nav>
+      <nav aria-label="Use cases">
+        <h2>Use cases</h2>
+        <ul>
+          <li><a href="/parse-invoice-emails">Invoice emails</a></li>
+          <li><a href="/parse-order-confirmation-emails">Order confirmations</a></li>
+          <li><a href="/parse-shipping-notification-emails">Shipping notifications</a></li>
+          <li><a href="/parse-lead-emails">Lead emails</a></li>
+          <li><a href="/email-to-json">Email to JSON</a></li>
+          <li><a href="/email-to-webhook">Email to webhook</a></li>
+        </ul>
+      </nav>
+      <nav aria-label="Compare">
+        <h2>Compare</h2>
+        <ul>
+          <li><a href="/email-parsing-api">Email parsing API</a></li>
+          <li><a href="/mailparser-alternative">Mailparser alternative</a></li>
+          <li><a href="/parseur-alternative">Parseur alternative</a></li>
+          <li><a href="/docparser-alternative">Docparser alternative</a></li>
+          <li><a href="/zapier-email-parser-alternative">Zapier Email Parser alternative</a></li>
+        </ul>
+      </nav>
+      <nav aria-label="Mint APIs family">
+        <h2>Mint APIs</h2>
+        <ul>
+          <li><a href="https://pdf.mintapis.com/">PDFMint &mdash; HTML to PDF</a></li>
+          <li><a href="https://docmint.app.mintapis.com/">DocMint &mdash; Office templates</a></li>
+          <li><a href="/">MailMint &mdash; email to JSON</a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="l-foot-bottom">
+      <span>&copy; 2026 productivity-boost.com Betriebs UG (haftungsbeschr&auml;nkt) &amp; Co. KG</span>
+      <nav aria-label="Legal">
+        <a href="/impressum">Impressum</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="/status">Status</a>
+      </nav>
+    </div>
+  </div>
+</footer>
+
+<script src="/docs.js"></script>
+<script src="/theme.js" defer></script>
+</body>
+</html>

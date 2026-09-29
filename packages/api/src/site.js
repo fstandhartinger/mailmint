@@ -50,6 +50,10 @@ const PAGES = {
   '/parse-order-confirmation-emails': 'parse-order-confirmation-emails.html',
   '/parse-shipping-notification-emails': 'parse-shipping-notification-emails.html',
   '/parse-lead-emails': 'parse-lead-emails.html',
+  // Developer-intent pages: the stateless endpoint as an email-to-JSON
+  // converter, and a mailbox as an email-to-webhook bridge.
+  '/email-to-json': 'email-to-json.html',
+  '/email-to-webhook': 'email-to-webhook.html',
 };
 
 const hasSession = (req) => new RegExp(`(?:^|;\\s*)${SESSION_COOKIE}=`).test(req.headers.cookie || '');
