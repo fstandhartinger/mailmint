@@ -48,7 +48,7 @@ again on 2026-09-08 using our own temporary QA account.
 | `packages/n8n-node` — `n8n-nodes-mailmint` | **Published: `npm i n8n-nodes-mailmint`**, zero runtime dependencies, npm provenance attestation |
 | Billing | Live. Free is 300 parsed emails a month; Starter $9, Pro $29, Scale $99 through Stripe Checkout |
 | SMTP TLS certificate | Inbound SMTP on mx.smooth-operator.online port 25 offers STARTTLS with a certificate for mx.smooth-operator.online issued by Let's Encrypt; chain verified (openssl verify code 0) on 2026-09-25 |
-| n8n verification | **Published 1 September 2026.** n8n Cloud and self-hosted n8n can install version 0.1.2 from n8n's verified registry |
+| n8n verification | **Published 1 September 2026.** n8n Cloud and self-hosted n8n can install version 0.1.3, the current npm release, from n8n's verified registry (read back from api.n8n.io on 2026-10-06; 0.1.2 is still listed there as an earlier version) |
 | Paying customers | No independently verified paying MailMint customer is claimed here. Our QA accounts and Stripe test-mode payments are not customer adoption |
 
 Technical acceptance and customer adoption are different facts. Controlled tests
