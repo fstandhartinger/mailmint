@@ -4,6 +4,9 @@
 # workspace dependency and a build context rooted here could not see it.
 #   docker build -f packages/api/Dockerfile -t mailmint-api .
 FROM node:20-bookworm-slim
+# eMudhra CA distrust (Oct 2026): current CA bundle, and make Node trust it instead of its bundled root list
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
+ENV NODE_OPTIONS="--use-openssl-ca"
 
 ENV NODE_ENV=production
 
