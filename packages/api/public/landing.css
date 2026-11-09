@@ -383,3 +383,15 @@ body.docs .content figure{border-color:var(--l-line)}
 .l-related .l-h3{font-size:.95rem}
 .l-related .l-card p{font-size:.85rem}
 @media (max-width:960px){body.docs .content{padding-top:1.5rem}body.docs .layout{padding:0 1.1rem}}
+
+/* One primary action per block; the alternative is a plain text line under it. */
+.l-cta-alt{font-size:.92rem;color:var(--l-muted);margin:.9rem 0 0;line-height:1.5}
+.l-cta-alt a{color:inherit;text-decoration:underline;text-underline-offset:3px}
+.l-cta-alt a:hover{color:var(--l-ink)}
+.l-final .l-cta-alt{margin-left:auto;margin-right:auto}
+/* Five tabs no longer fit a phone: only the tab strip scrolls (its right edge fades to show there is more),
+   the Copy button sits outside the scrolling area. */
+.l-code-bar .l-code-tabs{flex:1 1 auto;min-width:0;overflow-x:auto;scrollbar-width:none}
+.l-code-bar .l-code-tabs::-webkit-scrollbar{display:none}
+.l-code-bar .l-copy{flex:0 0 auto}
+@media (max-width:560px){.l-code-bar .l-code-tabs{padding-right:1.6rem;-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 2.2rem),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 2.2rem),transparent)}}

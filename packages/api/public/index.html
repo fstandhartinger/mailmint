@@ -104,7 +104,7 @@
         <svg class="i-sun" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="3.4" stroke="currentColor" stroke-width="1.6"/><path d="M10 1.8v2M10 16.2v2M1.8 10h2M16.2 10h2M4.2 4.2l1.4 1.4M14.4 14.4l1.4 1.4M4.2 15.8l1.4-1.4M14.4 5.6l1.4-1.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
       </button>
       <a class="l-signin" href="/login">Sign in</a>
-      <a class="l-btn l-btn-primary l-btn-sm" href="/signup">Get a key</a>
+      <a class="l-btn l-btn-primary l-btn-sm" href="/signup">Get a free key</a>
     </div>
   </div>
 </header>
@@ -115,19 +115,19 @@
 <section class="l-hero" aria-labelledby="hero-title">
   <div class="l-wrap">
     <div class="l-hero-copy center">
-      <p class="l-kicker">Inbound email API &middot; n8n node</p>
+      <p class="l-kicker">Email parsing API for developers and n8n</p>
       <h1 class="l-h1" id="hero-title">An email address in. <span>Structured JSON out.</span></h1>
-      <p class="l-lede">MailMint turns an incoming email into <strong>the fields you asked for</strong> — each one
-        with a confidence we compute, the layer it came from, and <strong>the exact text of the message it was
-        read out of</strong>. Delivered by webhook, by polling, or into n8n.</p>
+      <p class="l-lede">Forward order confirmations, invoices or lead emails to a MailMint address, or POST them
+        to the API. You get back <strong>the fields you named</strong> as JSON, each with a confidence score and
+        <strong>the exact text it was read from</strong>.</p>
       <div class="l-cta-row">
         <a class="l-btn l-btn-accent l-btn-lg" href="/signup">Get a free API key</a>
-        <a class="l-btn l-btn-ghost l-btn-lg" href="/quickstart">Parse an email in 60 seconds</a>
       </div>
+      <p class="l-cta-alt">No email to confirm &mdash; your key is shown once on the next screen. Or <a href="#api">see the one request you need</a>.</p>
       <ul class="l-trust">
         <li><svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m3.5 8.5 3 3 6-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>300 parsed emails a month free</li>
         <li><svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m3.5 8.5 3 3 6-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>No card to sign up</li>
-        <li><svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m3.5 8.5 3 3 6-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><code>POST /v1/parse</code> stores nothing</li>
+        <li><svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m3.5 8.5 3 3 6-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Paid plans from $9 a month</li>
       </ul>
     </div>
 
@@ -193,12 +193,143 @@ Order <mark class="l-ev">Total: $119.34</mark></pre>
         </div>
       </div>
       <figcaption class="l-demo-cap" id="demo-cap">Real output, not a mock-up: MailMint&rsquo;s own parser
-        (<code>packages/parser</code>, the code behind <code>POST /v1/parse</code>) run on 25&nbsp;September 2026
-        against <code>fx-02-order-confirmation.eml</code> from its test corpus, with a five-field schema. The model
-        that answered was <code>deepseek-ai/DeepSeek-V4-Flash-0731-TEE</code>. The full response also carries the
-        decoded headers, the body, attachments, tables, sender authentication and timings; it is trimmed here to
-        the schema&rsquo;s answers. Highlighted: the evidence each value was read from.</figcaption>
+        run on 25&nbsp;September 2026 against <code>fx-02-order-confirmation.eml</code> from its test corpus, with a
+        five-field schema. Trimmed to the schema&rsquo;s answers; the full response also carries headers, body,
+        attachments, tables and sender authentication. Highlighted: the evidence each value was read from.</figcaption>
     </figure>
+  </div>
+</section>
+
+<!-- ------------------------------------------------------------------- code -->
+<section class="l-sec" id="api" aria-labelledby="api-title">
+  <div class="l-wrap l-split">
+    <div>
+      <p class="l-kicker">Try it</p>
+      <h2 class="l-h2" id="api-title">One request to try it. No address, no DNS.</h2>
+      <p class="l-lede"><code>POST /v1/parse</code> takes raw MIME &mdash; or just a subject and a body &mdash; plus
+        your schema, and returns the same object a mailbox would deliver. Nothing is stored. Put your key into
+        the command and run it; the <b>response</b> tab shows what came back when we ran it.</p>
+      <ul class="l-checks">
+        <li><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span><b>Bearer key, JSON in, JSON out.</b> Machine-readable reference at
+            <a href="/openapi.json">/openapi.json</a> (OpenAPI 3.1).</span></li>
+        <li><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span><b>Mailboxes when you are ready.</b> Create one, get an address, set a <code>webhook_url</code> or read
+            the <code>/v1/events</code> feed.</span></li>
+        <li><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span><b>Filter on doubt.</b> <code>GET /v1/messages?needs_review=true</code> is a review queue with no
+            extra code.</span></li>
+      </ul>
+      <div class="l-cta-row">
+        <a class="l-btn l-btn-primary" href="/signup">Get a free API key</a>
+      </div>
+      <p class="l-cta-alt">Then follow the <a href="/quickstart">quickstart</a> or read the <a href="/docs">API reference</a>.</p>
+    </div>
+    <div class="l-code">
+      <div class="l-code-bar">
+        <div class="l-code-tabs" role="tablist" aria-label="Example request and webhook">
+          <button role="tab" id="tab-curl" aria-controls="panel-curl" aria-selected="true" tabindex="0">curl</button>
+          <button role="tab" id="tab-resp" aria-controls="panel-resp" aria-selected="false" tabindex="-1">response</button>
+          <button role="tab" id="tab-node" aria-controls="panel-node" aria-selected="false" tabindex="-1">Node.js</button>
+          <button role="tab" id="tab-py" aria-controls="panel-py" aria-selected="false" tabindex="-1">Python</button>
+          <button role="tab" id="tab-hook" aria-controls="panel-hook" aria-selected="false" tabindex="-1">webhook</button>
+        </div>
+        <button class="l-copy" type="button" id="copyBtn">Copy</button>
+      </div>
+      <div class="l-code-panel" role="tabpanel" id="panel-curl" aria-labelledby="tab-curl"><pre tabindex="0"><code><span class="tok-c"># Stateless. No address, no DNS, nothing stored.</span>
+<span class="tok-c"># First: export MAILMINT_API_KEY=mm_live_...</span>
+curl -X POST https://mailmint.app.mintapis.com/v1/parse \
+  -H <span class="tok-s">"Authorization: Bearer $MAILMINT_API_KEY"</span> \
+  -H <span class="tok-s">"Content-Type: application/json"</span> \
+  -d <span class="tok-s">'{
+  "subject": "Invoice INV-2291 from Acme Ltd",
+  "text": "Invoice INV-2291\n\nTotal: $31.50\nDue: Sep 8, 2026\n",
+  "schema": [
+    { "name": "invoice_number", "type": "string",
+      "description": "the invoice or reference number" },
+    { "name": "total", "type": "number",
+      "description": "grand total including tax" },
+    { "name": "due_date", "type": "date",
+      "description": "when payment is due" }
+  ]
+}'</span></code></pre></div>
+      <div class="l-code-panel" role="tabpanel" id="panel-resp" aria-labelledby="tab-resp" hidden><pre tabindex="0"><code><span class="tok-c"># What the curl request returned on 9 November 2026,</span>
+<span class="tok-c"># trimmed to the schema's answers.</span>
+{
+  <span class="tok-n">"fields"</span>: {
+    <span class="tok-n">"invoice_number"</span>: { <span class="tok-n">"value"</span>: <span class="tok-s">"INV-2291"</span>,
+      <span class="tok-n">"confidence"</span>: <span class="tok-hi">0.97</span>, <span class="tok-n">"source"</span>: <span class="tok-s">"rule+llm"</span>,
+      <span class="tok-n">"evidence"</span>: <span class="tok-s">"Invoice INV-2291 from Acme Ltd"</span> },
+    <span class="tok-n">"total"</span>: { <span class="tok-n">"value"</span>: <span class="tok-f">31.5</span>,
+      <span class="tok-n">"confidence"</span>: <span class="tok-hi">0.97</span>, <span class="tok-n">"source"</span>: <span class="tok-s">"rule+llm"</span>,
+      <span class="tok-n">"evidence"</span>: <span class="tok-s">"Total: $31.50"</span> },
+    <span class="tok-n">"due_date"</span>: { <span class="tok-n">"value"</span>: <span class="tok-s">"2026-09-08"</span>,
+      <span class="tok-n">"confidence"</span>: <span class="tok-hi">0.97</span>, <span class="tok-n">"source"</span>: <span class="tok-s">"rule+llm"</span>,
+      <span class="tok-n">"evidence"</span>: <span class="tok-s">"Due: Sep 8, 2026"</span> }
+  },
+  <span class="tok-n">"flags"</span>: [],
+  <span class="tok-n">"needs_review"</span>: <span class="tok-k">false</span>
+}</code></pre></div>
+      <div class="l-code-panel" role="tabpanel" id="panel-node" aria-labelledby="tab-node" hidden><pre tabindex="0"><code><span class="tok-k">import</span> { readFile } <span class="tok-k">from</span> <span class="tok-s">'node:fs/promises'</span>;
+
+<span class="tok-k">const</span> raw = <span class="tok-k">await</span> readFile(<span class="tok-s">'message.eml'</span>);
+<span class="tok-k">const</span> res = <span class="tok-k">await</span> fetch(<span class="tok-s">'https://mailmint.app.mintapis.com/v1/parse'</span>, {
+  method: <span class="tok-s">'POST'</span>,
+  headers: {
+    Authorization: <span class="tok-s">`Bearer ${process.env.MAILMINT_API_KEY}`</span>,
+    <span class="tok-s">'Content-Type'</span>: <span class="tok-s">'application/json'</span>,
+  },
+  body: JSON.stringify({
+    raw_mime: raw.toString(<span class="tok-s">'base64'</span>),
+    schema: [
+      { name: <span class="tok-s">'invoice_number'</span>, type: <span class="tok-s">'string'</span> },
+      { name: <span class="tok-s">'total'</span>,          type: <span class="tok-s">'number'</span> },
+    ],
+  }),
+});
+<span class="tok-k">const</span> result = <span class="tok-k">await</span> res.json();
+<span class="tok-k">if</span> (result.needs_review) console.warn(<span class="tok-s">'check this one:'</span>, result.flags);
+console.log(result.fields.total.value, result.fields.total.confidence);</code></pre></div>
+      <div class="l-code-panel" role="tabpanel" id="panel-py" aria-labelledby="tab-py" hidden><pre tabindex="0"><code><span class="tok-k">import</span> base64, os, pathlib, requests
+
+raw = pathlib.Path(<span class="tok-s">"message.eml"</span>).read_bytes()
+res = requests.post(
+    <span class="tok-s">"https://mailmint.app.mintapis.com/v1/parse"</span>,
+    headers={<span class="tok-s">"Authorization"</span>: <span class="tok-s">f"Bearer {os.environ['MAILMINT_API_KEY']}"</span>},
+    json={
+        <span class="tok-s">"raw_mime"</span>: base64.b64encode(raw).decode(),
+        <span class="tok-s">"schema"</span>: [
+            {<span class="tok-s">"name"</span>: <span class="tok-s">"invoice_number"</span>, <span class="tok-s">"type"</span>: <span class="tok-s">"string"</span>},
+            {<span class="tok-s">"name"</span>: <span class="tok-s">"total"</span>, <span class="tok-s">"type"</span>: <span class="tok-s">"number"</span>},
+        ],
+    },
+    timeout=<span class="tok-f">60</span>,
+)
+res.raise_for_status()
+result = res.json()
+<span class="tok-k">if</span> result[<span class="tok-s">"needs_review"</span>]:
+    print(<span class="tok-s">"check this one:"</span>, result[<span class="tok-s">"flags"</span>])
+total = result[<span class="tok-s">"fields"</span>][<span class="tok-s">"total"</span>]
+print(total[<span class="tok-s">"value"</span>], total[<span class="tok-s">"confidence"</span>], total[<span class="tok-s">"evidence"</span>])</code></pre></div>
+      <div class="l-code-panel" role="tabpanel" id="panel-hook" aria-labelledby="tab-hook" hidden><pre tabindex="0"><code><span class="tok-c"># Mail sent to your address is POSTed to your webhook_url.</span>
+POST /your/endpoint HTTP/1.1
+content-type: application/json
+x-mailmint-event: message.parsed
+x-mailmint-delivery: dlv_01JQ8Z3K4M5N6P7Q8R9S
+x-mailmint-signature: t=1787648043,v1=6a1f…c07b
+
+{
+  <span class="tok-n">"id"</span>: <span class="tok-s">"msg_01JQ8Z3K4M5N6P7Q8R9S"</span>,
+  <span class="tok-n">"mailbox"</span>: { <span class="tok-n">"address"</span>: <span class="tok-s">"k7m2xq4h9bwz@smooth-operator.online"</span>, … },
+  <span class="tok-n">"envelope"</span>: { <span class="tok-n">"from"</span>: <span class="tok-s">"billing@acme.example"</span>, <span class="tok-n">"tls"</span>: <span class="tok-k">true</span>, … },
+  <span class="tok-n">"auth"</span>: { <span class="tok-n">"spf"</span>: <span class="tok-s">"pass"</span>, <span class="tok-n">"dkim"</span>: <span class="tok-s">"pass"</span>, <span class="tok-n">"dmarc"</span>: <span class="tok-s">"pass"</span> },
+  <span class="tok-n">"fields"</span>: { <span class="tok-c">/* value, confidence, source, evidence */</span> },
+  <span class="tok-n">"flags"</span>: [], <span class="tok-n">"needs_review"</span>: <span class="tok-k">false</span>, <span class="tok-n">"status"</span>: <span class="tok-s">"parsed"</span>
+}
+
+<span class="tok-c"># v1 = hex hmac_sha256(secret, t + "." + rawBody)</span>
+<span class="tok-c"># Retries at 0s, 30s, 2m, 10m, 1h, 6h. 10s timeout each.</span></code></pre></div>
+    </div>
   </div>
 </section>
 
@@ -400,121 +531,8 @@ k7m2xq4h9bwz+acme@…       # +tag survives</pre>
   </div>
 </section>
 
-<!-- ------------------------------------------------------------------- code -->
-<section class="l-sec" id="api" aria-labelledby="api-title">
-  <div class="l-wrap l-split">
-    <div>
-      <p class="l-kicker">The API</p>
-      <h2 class="l-h2" id="api-title">One request to try it. No address, no DNS.</h2>
-      <p class="l-lede"><code>POST /v1/parse</code> takes raw MIME &mdash; or just a subject and a body &mdash; plus
-        your schema, and returns the same object a mailbox would deliver. Nothing is stored.</p>
-      <ul class="l-checks">
-        <li><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span><b>Bearer key, JSON in, JSON out.</b> Machine-readable reference at
-            <a href="/openapi.json">/openapi.json</a> (OpenAPI 3.1).</span></li>
-        <li><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span><b>Mailboxes when you are ready.</b> Create one, get an address, set a <code>webhook_url</code> or read
-            the <code>/v1/events</code> feed.</span></li>
-        <li><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span><b>Filter on doubt.</b> <code>GET /v1/messages?needs_review=true</code> is a review queue with no
-            extra code.</span></li>
-      </ul>
-      <div class="l-cta-row">
-        <a class="l-btn l-btn-primary" href="/quickstart">Start the quickstart</a>
-        <a class="l-btn l-btn-ghost" href="/docs">API reference</a>
-      </div>
-    </div>
-    <div class="l-code">
-      <div class="l-code-bar">
-        <div class="l-code-tabs" role="tablist" aria-label="Example request and webhook">
-          <button role="tab" id="tab-curl" aria-controls="panel-curl" aria-selected="true" tabindex="0">curl</button>
-          <button role="tab" id="tab-node" aria-controls="panel-node" aria-selected="false" tabindex="-1">Node.js</button>
-          <button role="tab" id="tab-py" aria-controls="panel-py" aria-selected="false" tabindex="-1">Python</button>
-          <button role="tab" id="tab-hook" aria-controls="panel-hook" aria-selected="false" tabindex="-1">webhook</button>
-        </div>
-        <button class="l-copy" type="button" id="copyBtn">Copy</button>
-      </div>
-      <div class="l-code-panel" role="tabpanel" id="panel-curl" aria-labelledby="tab-curl"><pre tabindex="0"><code><span class="tok-c"># Stateless. No address, no DNS, nothing stored.</span>
-curl -X POST <span class="tok-k">$MAILMINT_URL</span>/v1/parse \
-  -H <span class="tok-s">"Authorization: Bearer $MAILMINT_API_KEY"</span> \
-  -H <span class="tok-s">"Content-Type: application/json"</span> \
-  -d <span class="tok-s">'{
-  "subject": "Invoice INV-2291 from Acme Ltd",
-  "text": "Invoice INV-2291\n\nTotal: $31.50\nDue: Sep 8, 2026\n",
-  "schema": [
-    { "name": "invoice_number", "type": "string",
-      "description": "the invoice or reference number" },
-    { "name": "total", "type": "number",
-      "description": "grand total including tax" },
-    { "name": "due_date", "type": "date",
-      "description": "when payment is due" }
-  ]
-}'</span></code></pre></div>
-      <div class="l-code-panel" role="tabpanel" id="panel-node" aria-labelledby="tab-node" hidden><pre tabindex="0"><code><span class="tok-k">import</span> { readFile } <span class="tok-k">from</span> <span class="tok-s">'node:fs/promises'</span>;
-
-<span class="tok-k">const</span> raw = <span class="tok-k">await</span> readFile(<span class="tok-s">'message.eml'</span>);
-<span class="tok-k">const</span> res = <span class="tok-k">await</span> fetch(<span class="tok-s">`${process.env.MAILMINT_URL}/v1/parse`</span>, {
-  method: <span class="tok-s">'POST'</span>,
-  headers: {
-    Authorization: <span class="tok-s">`Bearer ${process.env.MAILMINT_API_KEY}`</span>,
-    <span class="tok-s">'Content-Type'</span>: <span class="tok-s">'application/json'</span>,
-  },
-  body: JSON.stringify({
-    raw_mime: raw.toString(<span class="tok-s">'base64'</span>),
-    schema: [
-      { name: <span class="tok-s">'invoice_number'</span>, type: <span class="tok-s">'string'</span> },
-      { name: <span class="tok-s">'total'</span>,          type: <span class="tok-s">'number'</span> },
-    ],
-  }),
-});
-<span class="tok-k">const</span> result = <span class="tok-k">await</span> res.json();
-<span class="tok-k">if</span> (result.needs_review) console.warn(<span class="tok-s">'check this one:'</span>, result.flags);
-console.log(result.fields.total.value, result.fields.total.confidence);</code></pre></div>
-      <div class="l-code-panel" role="tabpanel" id="panel-py" aria-labelledby="tab-py" hidden><pre tabindex="0"><code><span class="tok-k">import</span> base64, os, pathlib, requests
-
-raw = pathlib.Path(<span class="tok-s">"message.eml"</span>).read_bytes()
-res = requests.post(
-    <span class="tok-s">f"{os.environ['MAILMINT_URL']}/v1/parse"</span>,
-    headers={<span class="tok-s">"Authorization"</span>: <span class="tok-s">f"Bearer {os.environ['MAILMINT_API_KEY']}"</span>},
-    json={
-        <span class="tok-s">"raw_mime"</span>: base64.b64encode(raw).decode(),
-        <span class="tok-s">"schema"</span>: [
-            {<span class="tok-s">"name"</span>: <span class="tok-s">"invoice_number"</span>, <span class="tok-s">"type"</span>: <span class="tok-s">"string"</span>},
-            {<span class="tok-s">"name"</span>: <span class="tok-s">"total"</span>, <span class="tok-s">"type"</span>: <span class="tok-s">"number"</span>},
-        ],
-    },
-    timeout=<span class="tok-f">60</span>,
-)
-res.raise_for_status()
-result = res.json()
-<span class="tok-k">if</span> result[<span class="tok-s">"needs_review"</span>]:
-    print(<span class="tok-s">"check this one:"</span>, result[<span class="tok-s">"flags"</span>])
-total = result[<span class="tok-s">"fields"</span>][<span class="tok-s">"total"</span>]
-print(total[<span class="tok-s">"value"</span>], total[<span class="tok-s">"confidence"</span>], total[<span class="tok-s">"evidence"</span>])</code></pre></div>
-      <div class="l-code-panel" role="tabpanel" id="panel-hook" aria-labelledby="tab-hook" hidden><pre tabindex="0"><code><span class="tok-c"># Mail sent to your address is POSTed to your webhook_url.</span>
-POST /your/endpoint HTTP/1.1
-content-type: application/json
-x-mailmint-event: message.parsed
-x-mailmint-delivery: dlv_01JQ8Z3K4M5N6P7Q8R9S
-x-mailmint-signature: t=1787648043,v1=6a1f…c07b
-
-{
-  <span class="tok-n">"id"</span>: <span class="tok-s">"msg_01JQ8Z3K4M5N6P7Q8R9S"</span>,
-  <span class="tok-n">"mailbox"</span>: { <span class="tok-n">"address"</span>: <span class="tok-s">"k7m2xq4h9bwz@smooth-operator.online"</span>, … },
-  <span class="tok-n">"envelope"</span>: { <span class="tok-n">"from"</span>: <span class="tok-s">"billing@acme.example"</span>, <span class="tok-n">"tls"</span>: <span class="tok-k">true</span>, … },
-  <span class="tok-n">"auth"</span>: { <span class="tok-n">"spf"</span>: <span class="tok-s">"pass"</span>, <span class="tok-n">"dkim"</span>: <span class="tok-s">"pass"</span>, <span class="tok-n">"dmarc"</span>: <span class="tok-s">"pass"</span> },
-  <span class="tok-n">"fields"</span>: { <span class="tok-c">/* value, confidence, source, evidence */</span> },
-  <span class="tok-n">"flags"</span>: [], <span class="tok-n">"needs_review"</span>: <span class="tok-k">false</span>, <span class="tok-n">"status"</span>: <span class="tok-s">"parsed"</span>
-}
-
-<span class="tok-c"># v1 = hex hmac_sha256(secret, t + "." + rawBody)</span>
-<span class="tok-c"># Retries at 0s, 30s, 2m, 10m, 1h, 6h. 10s timeout each.</span></code></pre></div>
-    </div>
-  </div>
-</section>
-
 <!-- -------------------------------------------------------------------- n8n -->
-<section class="l-sec l-sec-alt" id="n8n" aria-labelledby="n8n-title">
+<section class="l-sec" id="n8n" aria-labelledby="n8n-title">
   <div class="l-wrap">
     <div class="l-split">
       <div>
@@ -564,7 +582,7 @@ x-mailmint-signature: t=1787648043,v1=6a1f…c07b
 </section>
 
 <!-- ---------------------------------------------------------------- compare -->
-<section class="l-sec" id="compare" aria-labelledby="cmp-title">
+<section class="l-sec l-sec-alt" id="compare" aria-labelledby="cmp-title">
   <div class="l-wrap">
     <div class="l-head">
       <p class="l-kicker">How it compares</p>
@@ -616,7 +634,7 @@ x-mailmint-signature: t=1787648043,v1=6a1f…c07b
 </section>
 
 <!-- ---------------------------------------------------------------- pricing -->
-<section class="l-sec l-sec-alt" id="pricing" aria-labelledby="price-title">
+<section class="l-sec" id="pricing" aria-labelledby="price-title">
   <div class="l-wrap">
     <div class="l-head center">
       <p class="l-kicker">Pricing</p>
@@ -696,7 +714,7 @@ x-mailmint-signature: t=1787648043,v1=6a1f…c07b
 </section>
 
 <!-- -------------------------------------------------------------------- faq -->
-<section class="l-sec" id="faq" aria-labelledby="faq-title">
+<section class="l-sec l-sec-alt" id="faq" aria-labelledby="faq-title">
   <div class="l-wrap">
     <div class="l-head center">
       <p class="l-kicker">Questions</p>
@@ -760,10 +778,10 @@ x-mailmint-signature: t=1787648043,v1=6a1f…c07b
       <code>/v1/parse</code>. No address, no DNS, nothing stored.</p>
     <div class="l-cta-row">
       <a class="l-btn l-btn-accent l-btn-lg" href="/signup">Get a free API key</a>
-      <a class="l-btn l-btn-ghost l-btn-lg" href="/quickstart">Start the quickstart</a>
     </div>
+    <p class="l-cta-alt">300 parsed emails a month free, no card. <a href="/quickstart">Read the quickstart first</a>.</p>
     <p class="l-note" style="margin:3rem auto 0;max-width:44rem"><strong>Who runs this.</strong> MailMint is built and
-      run by Florian Standhartinger in Passau, Germany. It is new, so there are no customer logos, testimonials or
+      run by Florian Standhartinger in Passau, Germany, and hosted on Hetzner servers in Finland (EU). It is new, so there are no customer logos, testimonials or
       uptime history on this page, and there will not be invented ones. Every number here is either measured and
       dated, or taken from a competitor&rsquo;s own page and attributed. Not true yet: attachment contents are not
       extracted, and there is no SLA or SOC&nbsp;2 report.</p>
