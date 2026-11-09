@@ -383,3 +383,12 @@ body.docs .content figure{border-color:var(--l-line)}
 .l-related .l-h3{font-size:.95rem}
 .l-related .l-card p{font-size:.85rem}
 @media (max-width:960px){body.docs .content{padding-top:1.5rem}body.docs .layout{padding:0 1.1rem}}
+
+/* One primary action per block; the alternative is a plain text line under it. */
+.l-cta-alt{font-size:.92rem;color:var(--l-muted);margin:.9rem 0 0;line-height:1.5}
+.l-cta-alt a{color:inherit;text-decoration:underline;text-underline-offset:3px}
+.l-cta-alt a:hover{color:var(--l-ink)}
+.l-final .l-cta-alt{margin-left:auto;margin-right:auto}
+/* Five tabs no longer fit a phone: the tab strip scrolls, the Copy button stays reachable. */
+.l-code-bar .l-copy{position:sticky;right:0;background:var(--l-code-bar);box-shadow:-10px 0 8px -4px var(--l-code-bar)}
+.l-code-bar .l-copy:hover{background:var(--l-code-bar)}
