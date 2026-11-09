@@ -604,8 +604,8 @@ async function handleEventInTransaction(event) {
         const customerId = typeof obj.customer === 'string' ? obj.customer : obj.customer?.id;
         if (customerId) {
           await run(
-            `UPDATE accounts SET used_month = 0, period_start = date_trunc('month', now() AT TIME ZONE 'UTC')
-              WHERE stripe_customer_id = $1 AND period_start < date_trunc('month', now() AT TIME ZONE 'UTC')`,
+            `UPDATE accounts SET used_month = 0, period_start = date_trunc('month', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'
+              WHERE stripe_customer_id = $1 AND period_start < date_trunc('month', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'`,
             [customerId],
           );
         }

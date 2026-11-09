@@ -436,6 +436,19 @@ const MIGRATIONS = [
        )`,
     ],
   },
+  {
+    id: 14,
+    name: 'quota period starts at 00:00 UTC in any database time zone',
+    statements: [
+      // Migration 1's default yields a timestamp WITHOUT zone, which a database
+      // running in Europe/Berlin stores as 23:00 UTC of the previous day.
+      // rollPeriod() read that as "last month" and reset the counter on every
+      // request. Existing rows are deliberately left alone: rollPeriod() moves
+      // each one to the right instant on its next request.
+      `ALTER TABLE accounts ALTER COLUMN period_start
+         SET DEFAULT (date_trunc('month', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC')`,
+    ],
+  },
 ];
 
 async function migrate() {

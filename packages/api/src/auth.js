@@ -76,7 +76,7 @@ async function rollPeriod(account) {
   const now = new Date();
   if (start.getUTCFullYear() === now.getUTCFullYear() && start.getUTCMonth() === now.getUTCMonth()) return account;
   const { rows } = await query(
-    `UPDATE accounts SET used_month = 0, period_start = date_trunc('month', now() AT TIME ZONE 'UTC')
+    `UPDATE accounts SET used_month = 0, period_start = date_trunc('month', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'
      WHERE id = $1 RETURNING *`,
     [account.id],
   );

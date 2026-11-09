@@ -504,7 +504,7 @@ router.get('/usage', withAuth, asyncRoute(async (req, res) => {
   const plan = PLANS[req.account.plan] || PLANS.free;
   const { rows: counts } = await query(
     `SELECT
-       count(*) FILTER (WHERE received_at >= date_trunc('month', now() AT TIME ZONE 'UTC'))::int AS this_month,
+       count(*) FILTER (WHERE received_at >= date_trunc('month', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC')::int AS this_month,
        count(*) FILTER (WHERE received_at >= now() - interval '24 hours')::int AS last_24h,
        count(*) FILTER (WHERE needs_review)::int AS needs_review,
        count(*)::int AS stored
