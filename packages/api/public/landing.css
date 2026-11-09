@@ -389,6 +389,9 @@ body.docs .content figure{border-color:var(--l-line)}
 .l-cta-alt a{color:inherit;text-decoration:underline;text-underline-offset:3px}
 .l-cta-alt a:hover{color:var(--l-ink)}
 .l-final .l-cta-alt{margin-left:auto;margin-right:auto}
-/* Five tabs no longer fit a phone: the tab strip scrolls, the Copy button stays reachable. */
-.l-code-bar .l-copy{position:sticky;right:0;background:var(--l-code-bar);box-shadow:-10px 0 8px -4px var(--l-code-bar)}
-.l-code-bar .l-copy:hover{background:var(--l-code-bar)}
+/* Five tabs no longer fit a phone: only the tab strip scrolls (its right edge fades to show there is more),
+   the Copy button sits outside the scrolling area. */
+.l-code-bar .l-code-tabs{flex:1 1 auto;min-width:0;overflow-x:auto;scrollbar-width:none}
+.l-code-bar .l-code-tabs::-webkit-scrollbar{display:none}
+.l-code-bar .l-copy{flex:0 0 auto}
+@media (max-width:560px){.l-code-bar .l-code-tabs{padding-right:1.6rem;-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 2.2rem),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 2.2rem),transparent)}}
